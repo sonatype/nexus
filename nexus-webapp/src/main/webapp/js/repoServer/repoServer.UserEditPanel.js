@@ -34,7 +34,7 @@ Sonatype.repoServer.UserEditPanel = function(config){
   
   //List of user roles
   //TODO: This will be a list retrieved from server via REST, currently no role api, so hardcoding
-  this.roleList = [{value : '0', display : 'Example Role'},{value : '1', display : 'Example Role 2'}];
+  this.roleList = [{value : 'roleid', display : 'rolename'},{value : 'roleid2', display : 'rolename2'}];
   
   this.actions = {
     refresh : new Ext.Action({
@@ -57,6 +57,7 @@ Sonatype.repoServer.UserEditPanel = function(config){
   
   //Methods that will take the incoming json data and map over to the ui controls
   this.loadDataModFunc = {
+    roles : this.loadTreeHelper.createDelegate(this)
   };
   
   //Methods that will take the data from the ui controls and map over to json
@@ -66,7 +67,7 @@ Sonatype.repoServer.UserEditPanel = function(config){
   //A record to hold the name and id of a repository
   this.userRecordConstructor = Ext.data.Record.create([
     {name:'resourceURI'},
-    {name:'userId', sortType:Ext.data.SortTypes.asUCString},
+    {name:'userID', sortType:Ext.data.SortTypes.asUCString},
     {name:'name'},
     {name:'email'},
     {name:'status'},
@@ -79,7 +80,7 @@ Sonatype.repoServer.UserEditPanel = function(config){
   this.usersDataStore = new Ext.data.Store({
     url: Sonatype.config.repos.urls.users,
     reader: this.usersReader,
-    sortInfo: {field: 'username', direction: 'ASC'},
+    sortInfo: {field: 'userID', direction: 'ASC'},
     autoLoad: true
   });
   
@@ -336,7 +337,7 @@ Sonatype.repoServer.UserEditPanel = function(config){
 
     //grid view options
     ds: this.usersDataStore,
-    sortInfo:{field: 'userId', direction: "ASC"},
+    sortInfo:{field: 'userID', direction: "ASC"},
     loadMask: true,
     deferredRender: false,
     columns: [
@@ -507,6 +508,7 @@ Ext.extend(Sonatype.repoServer.UserEditPanel, Ext.Panel, {
   
   resetPasswordHandler : function(){
     if (this.ctxRecord && this.ctxRecord.data.resourceURI != 'new'){
+      var rec = this.ctxRecord;
       Sonatype.MessageBox.getDialog().on('show', function(){
         this.focusEl = this.buttons[2]; //ack! we're offset dependent here
         this.focus();
@@ -530,12 +532,21 @@ Ext.extend(Sonatype.repoServer.UserEditPanel, Ext.Panel, {
               },
               scope: this,
               method: 'DELETE',
-              url:rec.data.resourceURI
+              url: rec.data.resourceURI
             });
           }
         }
       });
     } 
+  },
+  
+  resetPasswordCallback : function(options, isSuccess, response){
+    if(isSuccess){
+      Sonatype.MessageBox.alert('The password has been reset.');
+    }
+    else {
+      Sonatype.MessageBox.alert('The server did not reset the password.');
+    }
   },
   
   deleteHandler : function(){
@@ -727,7 +738,7 @@ Ext.extend(Sonatype.repoServer.UserEditPanel, Ext.Panel, {
     if(!formPanel){ //create form and populate current data
       var config = Ext.apply({}, this.formConfig, {id:id});
       
-      config = this.initalizeTreeRoots(id, config);
+      config = this.initializeTreeRoots(id, config);
       
       formPanel = new Ext.FormPanel(config);
       formPanel.form.on('actioncomplete', this.actionCompleteHandler, this);
@@ -743,8 +754,6 @@ Ext.extend(Sonatype.repoServer.UserEditPanel, Ext.Panel, {
       
       formPanel.buttons[0].on('click', this.saveHandler.createDelegate(this, [buttonInfoObj]));
       formPanel.buttons[1].on('click', this.cancelHandler.createDelegate(this, [buttonInfoObj]));
-      
-      this.loadTreesHelper([], {}, formPanel);
   
       this.formDataLoader(formPanel, rec.data.resourceURI, this.loadDataModFunc);
       
@@ -753,6 +762,8 @@ Ext.extend(Sonatype.repoServer.UserEditPanel, Ext.Panel, {
     
     //always set active
     this.formCards.getLayout().setActiveItem(formPanel);
+    
+    formPanel.doLayout();
   },
   
   contextClick : function(grid, index, e){
@@ -839,7 +850,7 @@ Ext.extend(Sonatype.repoServer.UserEditPanel, Ext.Panel, {
       for(var i=0; i<this.roleList.length; i++){
         role = this.roleList[i];
 
-        if(typeof(selectedTree.getNodeById(role)) == 'undefined'){
+        if(typeof(selectedTree.getNodeById(role.value)) == 'undefined'){
           allTree.root.appendChild(
             new Ext.tree.TreeNode({
               id: role.value,

@@ -91,6 +91,13 @@ import org.sonatype.nexus.rest.model.SearchResponse;
 import org.sonatype.nexus.rest.model.StatusConfigurationValidationResponse;
 import org.sonatype.nexus.rest.model.StatusResource;
 import org.sonatype.nexus.rest.model.StatusResourceResponse;
+import org.sonatype.nexus.rest.model.UserListResourceResponse;
+import org.sonatype.nexus.rest.model.UserResource;
+import org.sonatype.nexus.rest.model.UserResourceRequest;
+import org.sonatype.nexus.rest.model.UserResourceStatusResponse;
+import org.sonatype.nexus.rest.model.UserRoleResource;
+import org.sonatype.nexus.rest.model.UserStatusResource;
+import org.sonatype.nexus.rest.model.UserStatusRoleResource;
 import org.sonatype.nexus.rest.model.WastebasketResource;
 import org.sonatype.nexus.rest.model.WastebasketResourceResponse;
 import org.sonatype.nexus.rest.repositories.RepositoryBaseResourceConverter;
@@ -208,6 +215,14 @@ public final class XStreamInitializer
         xstream.omitField( ScheduledServiceTypePropertyResource.class, "modelEncoding" );
         xstream.omitField( ScheduledServiceResourceStatus.class, "modelEncoding" );
         xstream.omitField( ScheduledServiceResourceStatusResponse.class, "modelEncoding" );
+        
+        xstream.omitField( UserListResourceResponse.class, "modelEncoding" );
+        xstream.omitField( UserResourceRequest.class, "modelEncoding" );
+        xstream.omitField( UserResourceStatusResponse.class, "modelEncoding" );
+        xstream.omitField( UserStatusResource.class, "modelEncoding" );
+        xstream.omitField( UserResource.class, "modelEncoding" );
+        xstream.omitField( UserRoleResource.class, "modelEncoding" );
+        xstream.omitField( UserStatusRoleResource.class, "modelEncoding" );
 
         xstream.omitField( NFCResourceResponse.class, "modelEncoding" );
         xstream.omitField( NFCResource.class, "modelEncoding" );

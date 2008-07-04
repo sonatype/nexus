@@ -1508,6 +1508,156 @@
 				</field>
 			</fields>
 		</class>
+		
+		<!-- Users -->
+		
+		<!-- Response Data -->
+		<class>
+            <name>UserListResourceResponse</name>
+            <version>1.0.0+</version>
+            <superClass>NexusResponse</superClass>
+            <fields>
+                <field>
+                    <name>data</name>
+                    <version>1.0.0+</version>
+                    <association>
+                        <type>UserStatusResource</type>
+                        <multiplicity>*</multiplicity>
+                    </association>
+                    <required>true</required>
+                </field>
+            </fields>
+        </class>
+        
+        <class>
+            <name>UserResourceStatusResponse</name>
+            <version>1.0.0+</version>
+            <superClass>NexusResponse</superClass>
+            <fields>
+                <field>
+                    <name>data</name>
+                    <version>1.0.0+</version>
+                    <association>
+                        <type>UserStatusResource</type>
+                    </association>
+                    <required>true</required>
+                </field>
+            </fields>
+        </class>
+        
+        <class>
+            <name>UserResourceRequest</name>
+            <version>1.0.0+</version>
+            <superClass>NexusResponse</superClass>
+            <fields>
+                <field>
+                    <name>data</name>
+                    <version>1.0.0+</version>
+                    <association>
+                        <type>UserResource</type>
+                    </association>
+                    <required>true</required>
+                </field>
+            </fields>
+        </class>
+        
+        <!-- Response Data Contents -->
+        
+		<class>
+		    <name>UserStatusResource</name>
+		    <version>1.0.0+</version>
+		    <fields>
+		        <field>
+                    <name>resourceURI</name>
+                    <version>1.0.0+</version>
+                    <type>String</type>
+                    <required>true</required>
+                </field>
+		        <field>
+    		        <name>userID</name>
+                    <version>1.0.0+</version>
+                    <type>String</type>
+                    <required>true</required>
+		        </field>
+		        <field>
+                    <name>name</name>
+                    <version>1.0.0+</version>
+                    <type>String</type>
+                    <required>true</required>
+                </field>
+                <field>
+                    <name>status</name>
+                    <version>1.0.0+</version>
+                    <type>String</type>
+                    <required>true</required>
+                </field>
+                <field>
+                    <name>email</name>
+                    <version>1.0.0+</version>
+                    <type>String</type>
+                    <required>true</required>
+                </field>
+                <field>
+                    <name>roles</name>
+                    <version>1.0.0+</version>
+                    <association>
+                        <type>UserStatusRoleResource</type>
+                        <multiplicity>*</multiplicity>
+                    </association>
+                    <required>true</required>
+                </field>
+		    </fields>
+		</class>
+		
+		<class>
+            <name>UserStatusRoleResource</name>
+            <version>1.0.0+</version>
+            <superClass>UserRoleResource</superClass>
+            <fields>
+                <field>
+                    <name>display</name>
+                    <version>1.0.0+</version>
+                    <type>String</type>
+                    <required>true</required>
+                </field>
+            </fields>
+        </class>
+        
+        <class>
+            <name>UserResource</name>
+            <version>1.0.0+</version>
+            <superClass>UserStatusResource</superClass>
+            <fields>
+                <field>
+                    <name>password</name>
+                    <version>1.0.0+</version>
+                    <type>String</type>
+                    <required>false</required>
+                </field>
+                <field>
+                    <name>roles</name>
+                    <version>1.0.0+</version>
+                    <association>
+                        <type>UserRoleResource</type>
+                        <multiplicity>*</multiplicity>
+                    </association>
+                    <required>true</required>
+                </field>
+            </fields>
+        </class>
+        
+        <class>
+            <name>UserRoleResource</name>
+            <version>1.0.0+</version>
+            <fields>
+                <field>
+                    <name>value</name>
+                    <version>1.0.0+</version>
+                    <type>String</type>
+                    <required>true</required>
+                </field>
+            </fields>
+        </class>
 
 		<!-- Content -->
 		<class>
