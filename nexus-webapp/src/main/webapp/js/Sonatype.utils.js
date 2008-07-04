@@ -98,11 +98,11 @@ Sonatype.utils = {
   connectionError: function( response, message, offerRestart ) {
     if ( response.status == 403 ) {
       if ( Sonatype.repoServer.RepoServer.loginWindow.isVisible() ) {
-        Ext.MessageBox.show( {
+        Sonatype.MessageBox.show( {
           title: 'Login Error',
           msg: 'Incorrect username or password.<br />Try again.',
-          buttons: Ext.MessageBox.OK,
-          icon: Ext.MessageBox.ERROR,
+          buttons: Sonatype.MessageBox.OK,
+          icon: Sonatype.MessageBox.ERROR,
           animEl: 'mb3'
         } );
       }
@@ -110,12 +110,12 @@ Sonatype.utils = {
         delete Ext.lib.Ajax.defaultHeaders.Authorization;
         Sonatype.state.CookieProvider.clear('authToken');
         Sonatype.state.CookieProvider.clear('username');
-        Ext.MessageBox.show( {
+        Sonatype.MessageBox.show( {
           title: 'Authentication Error',
           msg: 'Your login is incorrect or your session has expired.<br />' +
             'Please login again.',
-          buttons: Ext.MessageBox.OK,
-          icon: Ext.MessageBox.ERROR,
+          buttons: Sonatype.MessageBox.OK,
+          icon: Sonatype.MessageBox.ERROR,
           animEl: 'mb3',
           fn: function(button) {
             window.location.reload();
@@ -124,7 +124,7 @@ Sonatype.utils = {
       }
     }
     else {
-      Ext.MessageBox.show( {
+      Sonatype.MessageBox.show( {
         title: "Connection Error",
         msg: (
           ( message ? message + '<br /><br />' : '' ) + 
@@ -138,8 +138,8 @@ Sonatype.utils = {
               'CANCEL if you wish to retry the same action in a little while.'
               : '' )
         ),
-        buttons: offerRestart ? Ext.MessageBox.OKCANCEL : Ext.MessageBox.OK,
-        icon: Ext.MessageBox.ERROR,
+        buttons: offerRestart ? Sonatype.MessageBox.OKCANCEL : Sonatype.MessageBox.OK,
+        icon: Sonatype.MessageBox.ERROR,
         animEl: 'mb3',
         fn: function(button) {
           if ( offerRestart && button == "ok" ) {
@@ -283,12 +283,12 @@ Sonatype.utils = {
   
   defaultToNo: function() {
     //@note: this handler selects the "No" button as the default
-    //@todo: could extend Ext.MessageBox to take the button to select as a param
-    Ext.Msg.getDialog().on('show', function(){
+    //@todo: could extend Sonatype.MessageBox to take the button to select as a param
+    Sonatype.MessageBox.getDialog().on('show', function(){
         this.focusEl = this.buttons[2]; //ack! we're offset dependent here
         this.focus();
       },
-      Ext.Msg.getDialog(),
+      Sonatype.MessageBox.getDialog(),
       {single:true}
     );
   }

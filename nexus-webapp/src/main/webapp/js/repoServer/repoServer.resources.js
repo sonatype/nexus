@@ -96,6 +96,17 @@ Sonatype.repoServer.resources.help = {
     recurringTime: 'The time this service should start on days it will run.',
     cronCommand: 'A cron expression that will control the running of the service.'
   },
+  
+  // Users help
+  users: {
+    userID : 'The ID assigned to this user, will be used as the username.',
+    name : 'The name of the user.',
+    email : 'Email address, to notify user when necessary.',
+    status : 'The current status of the user.',
+    roles : 'The roles assigned to this user.',
+    password : 'The password required to log the user into the system.',
+    reenterPassword : 'Re-enter the password to validate entry.'
+  },
 
   // Repositories Config help text
   repos : {
