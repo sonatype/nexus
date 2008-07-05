@@ -55,7 +55,7 @@ Sonatype.repoServer.RoleEditPanel = function(config){
   
   //Methods that will take the data from the ui controls and map over to json
   this.submitDataModFunc = {
-    "roles" : this.saveRolesTreeHelper.createDelegate(this)
+    "roles" : this.saveRolesTreeHelper.createDelegate(this),
     "privileges" : this.savePrivilegesTreeHelper.createDelegate(this)
   };
   
@@ -119,7 +119,7 @@ Sonatype.repoServer.RoleEditPanel = function(config){
         helpText: ht.description,
         name: 'description',
         allowBlank: false,
-        width: this.600
+        width: 600
       },
       {
         xtype: 'numberfield',
@@ -129,7 +129,7 @@ Sonatype.repoServer.RoleEditPanel = function(config){
         helpText: ht.sessionTimeout,
         name: 'sessionTimeout',
         allowBlank: false,
-        width: this.600,
+        width: this.COMBO_WIDTH,
         value: 60
       },
       {
@@ -337,7 +337,7 @@ Ext.extend(Sonatype.repoServer.RoleEditPanel, Ext.Panel, {
       form.doAction('sonatypeSubmit', {
         method: (isNew) ? 'POST' : 'PUT',
         url: isNew ? createUri : updateUri,
-        waitMsg: isNew ? 'Creating User...' : 'Updating Role...',
+        waitMsg: isNew ? 'Creating Role...' : 'Updating Role...',
         fpanel: formInfoObj.formPanel,
         dataModifiers: this.submitDataModFunc,
         serviceDataObj : Sonatype.repoServer.referenceData.roles,
@@ -508,7 +508,7 @@ Ext.extend(Sonatype.repoServer.RoleEditPanel, Ext.Panel, {
       }
     }
     else {
-      Sonatype.MessageBox.alert('The server did not delete the user.');
+      Sonatype.MessageBox.alert('The server did not delete the role.');
     }
   },
       
@@ -729,7 +729,7 @@ Ext.extend(Sonatype.repoServer.RoleEditPanel, Ext.Panel, {
           })
         );
       }
-    }
+    },this);
     
     return arr; //return arr, even if empty to comply with sonatypeLoad data modifier requirement
   },
