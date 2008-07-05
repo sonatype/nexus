@@ -100,7 +100,8 @@ Sonatype.config = function() {
         scheduleTypes: servicePath + '/schedules/types',
         upload: servicePath + '/artifact/maven/content',
         trash: servicePath + '/wastebasket',
-        users: servicePath + '/users'
+        users: servicePath + '/users',
+        usersReset: servicePath + '/users/reset'
       }
     },
     

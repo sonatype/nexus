@@ -20,6 +20,7 @@
  */
 package org.sonatype.nexus.rest.users;
 
+import java.util.Iterator;
 import java.util.logging.Level;
 
 import org.restlet.Context;
@@ -29,13 +30,13 @@ import org.restlet.data.Status;
 import org.restlet.resource.Representation;
 import org.sonatype.nexus.rest.AbstractNexusResourceHandler;
 import org.sonatype.nexus.rest.model.UserResource;
+import org.sonatype.nexus.rest.model.UserRoleResource;
 import org.sonatype.nexus.rest.model.UserStatusResource;
-import org.sonatype.nexus.rest.model.UserStatusRoleResource;
 
 public class AbstractUserResourceHandler
 extends AbstractNexusResourceHandler
 {
-    public static final String USER_ID_KEY = "userID";
+    public static final String USER_ID_KEY = "userId";
     private static final String ROLE_VALIDATION_ERROR = "The user cannot have zero roles!";
 
     /**
@@ -56,7 +57,7 @@ extends AbstractNexusResourceHandler
         {
             getLogger().log(
                 Level.INFO,
-                "The userID (" + resource.getUserID() + ") cannot have 0 roles!" );
+                "The userId (" + resource.getUserId() + ") cannot have 0 roles!" );
             
             getResponse().setStatus(
                 Status.CLIENT_ERROR_BAD_REQUEST,
@@ -81,15 +82,37 @@ extends AbstractNexusResourceHandler
         resource.setEmail( "someemail@someemail.com" );
         resource.setName( "Real Name" );
         resource.setStatus( "active" );
-        resource.setUserID( "realuser" );
-        resource.setResourceURI( calculateSubReference( resource.getUserID() ).toString() );
+        resource.setUserId( "realuser" );
+        resource.setResourceURI( calculateSubReference( resource.getUserId() ).toString() );
 
-        UserStatusRoleResource roleResource = new UserStatusRoleResource();
-        roleResource.setValue( "roleid" );
-        roleResource.setDisplay( "rolename" );
+        UserRoleResource roleResource = new UserRoleResource();
+        roleResource.setRoleId( "roleid" );
+        roleResource.setRoleName( "rolename" );
         
         resource.addRole( roleResource );
         
         return resource;
+    }
+    
+    public UserStatusResource requestToResponseModel( UserResource resource )
+    {
+        UserStatusResource statusResource = new UserStatusResource();
+        
+        statusResource.setEmail( resource.getEmail() );
+        statusResource.setName( resource.getName() );
+        statusResource.setResourceURI( calculateSubReference( resource.getUserId() ).toString() );
+        statusResource.setStatus( resource.getStatus() );
+        statusResource.setUserId( resource.getUserId() );
+        
+        for ( Iterator iter = resource.getRoles().iterator(); iter.hasNext(); )
+        {
+            UserRoleResource role = ( UserRoleResource ) iter.next();
+            UserRoleResource statusRole = new UserRoleResource();
+            statusRole.setRoleId( role.getRoleId() );
+            statusRole.setRoleName( role.getRoleName() );
+            statusResource.addRole( statusRole );
+        }
+        
+        return statusResource;
     }
 }

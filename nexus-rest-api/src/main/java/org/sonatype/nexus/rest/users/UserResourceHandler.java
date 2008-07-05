@@ -99,6 +99,12 @@ public class UserResourceHandler
             if ( validateFields( resource, representation ) )
             {
                 //TODO: actually store the data here
+                
+                UserResourceStatusResponse response = new UserResourceStatusResponse();
+                
+                response.setData( requestToResponseModel( request.getData() ) );
+                
+                getResponse().setEntity( serialize( representation, response ) );
             }
         }
     }

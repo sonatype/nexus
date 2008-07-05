@@ -99,7 +99,7 @@ Sonatype.repoServer.resources.help = {
   
   // Users help
   users: {
-    userID : 'The ID assigned to this user, will be used as the username.',
+    userId : 'The ID assigned to this user, will be used as the username.',
     name : 'The name of the user.',
     email : 'Email address, to notify user when necessary.',
     status : 'The current status of the user.',

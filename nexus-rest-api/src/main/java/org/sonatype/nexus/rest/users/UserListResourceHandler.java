@@ -30,7 +30,6 @@ import org.sonatype.nexus.rest.model.UserResource;
 import org.sonatype.nexus.rest.model.UserResourceRequest;
 import org.sonatype.nexus.rest.model.UserRoleResource;
 import org.sonatype.nexus.rest.model.UserStatusResource;
-import org.sonatype.nexus.rest.model.UserStatusRoleResource;
 
 public class UserListResourceHandler
 extends AbstractUserResourceHandler
@@ -68,12 +67,12 @@ extends AbstractUserResourceHandler
         resource.setEmail( "someemail@someemail.com" );
         resource.setName( "Real Name" );
         resource.setStatus( "active" );
-        resource.setUserID( "realuser" );
-        resource.setResourceURI( calculateSubReference( resource.getUserID() ).toString() );
+        resource.setUserId( "realuser" );
+        resource.setResourceURI( calculateSubReference( resource.getUserId() ).toString() );
         
-        UserStatusRoleResource roleResource = new UserStatusRoleResource();
-        roleResource.setValue( "roleid" );
-        roleResource.setDisplay( "rolename" );
+        UserRoleResource roleResource = new UserRoleResource();
+        roleResource.setRoleId( "roleid" );
+        roleResource.setRoleName( "rolename" );
         
         resource.addRole( roleResource );
         
@@ -84,12 +83,12 @@ extends AbstractUserResourceHandler
         resource.setEmail( "someotheremail@someotheremail.com" );
         resource.setName( "Realer Name" );
         resource.setStatus( "disabled" );
-        resource.setUserID( "realeruser" );
-        resource.setResourceURI( calculateSubReference( resource.getUserID() ).toString() );
+        resource.setUserId( "realeruser" );
+        resource.setResourceURI( calculateSubReference( resource.getUserId() ).toString() );
         
-        roleResource = new UserStatusRoleResource();
-        roleResource.setValue( "roleid" );
-        roleResource.setDisplay( "rolename" );
+        roleResource = new UserRoleResource();
+        roleResource.setRoleId( "roleid" );
+        roleResource.setRoleName( "rolename" );
         
         resource.addRole( roleResource );
         
@@ -100,12 +99,12 @@ extends AbstractUserResourceHandler
         resource.setEmail( "yetanotheremail@yetanotheremail.com" );
         resource.setName( "Realest Name" );
         resource.setStatus( "locked" );
-        resource.setUserID( "realestuser" );
-        resource.setResourceURI( calculateSubReference( resource.getUserID() ).toString() );
+        resource.setUserId( "realestuser" );
+        resource.setResourceURI( calculateSubReference( resource.getUserId() ).toString() );
         
-        roleResource = new UserStatusRoleResource();
-        roleResource.setValue( "roleid" );
-        roleResource.setDisplay( "rolename" );
+        roleResource = new UserRoleResource();
+        roleResource.setRoleId( "roleid" );
+        roleResource.setRoleName( "rolename" );
         
         resource.addRole( roleResource );
         

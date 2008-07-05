@@ -34,7 +34,11 @@ Sonatype.repoServer.UserEditPanel = function(config){
   
   //List of user roles
   //TODO: This will be a list retrieved from server via REST, currently no role api, so hardcoding
-  this.roleList = [{value : 'roleid', display : 'rolename'},{value : 'roleid2', display : 'rolename2'}];
+  this.roleList = [{roleId : 'roleid', roleName : 'rolename'},{roleId : 'roleid2', roleName : 'rolename2'}];
+  
+  this.roleCombiner = function(val, parent) {
+    return Sonatype.utils.joinArrayObject(val, 'roleName');
+  };
   
   this.actions = {
     refresh : new Ext.Action({
@@ -57,21 +61,24 @@ Sonatype.repoServer.UserEditPanel = function(config){
   
   //Methods that will take the incoming json data and map over to the ui controls
   this.loadDataModFunc = {
-    roles : this.loadTreeHelper.createDelegate(this)
+    "roles" : this.loadTreeHelper.createDelegate(this)
   };
   
   //Methods that will take the data from the ui controls and map over to json
   this.submitDataModFunc = {
+    "password" : Sonatype.utils.convert.passwordToString,
+    "roles" : this.saveTreeHelper.createDelegate(this)
   };
   
   //A record to hold the name and id of a repository
   this.userRecordConstructor = Ext.data.Record.create([
     {name:'resourceURI'},
-    {name:'userID', sortType:Ext.data.SortTypes.asUCString},
+    {name:'userId', sortType:Ext.data.SortTypes.asUCString},
     {name:'name'},
     {name:'email'},
     {name:'status'},
-    {name:'roles'}
+    {name:'roles'},
+    {name:'displayRoles', mapping:'roles', convert: this.roleCombiner}
   ]);
   
   
@@ -80,7 +87,7 @@ Sonatype.repoServer.UserEditPanel = function(config){
   this.usersDataStore = new Ext.data.Store({
     url: Sonatype.config.repos.urls.users,
     reader: this.usersReader,
-    sortInfo: {field: 'userID', direction: 'ASC'},
+    sortInfo: {field: 'userId', direction: 'ASC'},
     autoLoad: true
   });
   
@@ -107,8 +114,8 @@ Sonatype.repoServer.UserEditPanel = function(config){
         fieldLabel: 'User ID',
         itemCls: 'required-field',
         labelStyle: 'margin-left: 15px; width: 185px;',
-        helpText: ht.userID,
-        name: 'userID',
+        helpText: ht.userId,
+        name: 'userId',
         allowBlank: false,
         width: this.COMBO_WIDTH
       },
@@ -160,7 +167,12 @@ Sonatype.repoServer.UserEditPanel = function(config){
         helpText: ht.password,
         name: 'password',
         allowBlank: false,
-        width: this.COMBO_WIDTH
+        width: this.COMBO_WIDTH,
+        minLength: 4,
+        minLengthText : "Password must be 4 characters or more",
+        maxLength: 25,
+        maxLengthText : "Password must be 25 characters or less",
+        value: Sonatype.utils.passwordPlaceholder
       },
       {
         xtype: 'textfield',
@@ -171,7 +183,14 @@ Sonatype.repoServer.UserEditPanel = function(config){
         helpText: ht.reenterPassword,
         name: 'reenterPassword',
         allowBlank: false,
-        width: this.COMBO_WIDTH
+        width: this.COMBO_WIDTH,
+        minLength: 4,
+        minLengthText : "Password must be 4 characters or more",
+        maxLength: 25,
+        maxLengthText : "Password must be 25 characters or less",
+        vtype: 'password',
+        value: Sonatype.utils.passwordPlaceholder,
+        initialPasswordField: 'password'
       },
       {
         xtype: 'panel',
@@ -337,15 +356,15 @@ Sonatype.repoServer.UserEditPanel = function(config){
 
     //grid view options
     ds: this.usersDataStore,
-    sortInfo:{field: 'userID', direction: "ASC"},
+    sortInfo:{field: 'userId', direction: "ASC"},
     loadMask: true,
     deferredRender: false,
     columns: [
-      {header: 'User ID', dataIndex: 'userID', width:175, id: 'user-config-userid-col'},
+      {header: 'User ID', dataIndex: 'userId', width:175, id: 'user-config-userid-col'},
       {header: 'Name', dataIndex: 'name', width:175, id: 'user-config-name-col'},
       {header: 'Email', dataIndex: 'email', width:175, id: 'user-config-email-col'},
       {header: 'Status', dataIndex: 'status', width:175, id: 'user-config-status-col'},
-      {header: 'Roles', dataIndex: 'roles', width:175, id: 'user-config-roles-col'}
+      {header: 'Roles', dataIndex: 'displayRoles', width:175, id: 'user-config-roles-col'}
     ],
     autoExpandColumn: 'user-config-roles-col',
     disableSelection: false,
@@ -413,7 +432,7 @@ Ext.extend(Sonatype.repoServer.UserEditPanel, Ext.Panel, {
         waitMsg: isNew ? 'Creating User...' : 'Updating User...',
         fpanel: formInfoObj.formPanel,
         dataModifiers: this.submitDataModFunc,
-        serviceDataObj : Sonatype.repoServer.referenceData.user,
+        serviceDataObj : Sonatype.repoServer.referenceData.users,
         isNew : isNew //extra option to send to callback, instead of conditioning on method
       });
     }
@@ -475,7 +494,7 @@ Ext.extend(Sonatype.repoServer.UserEditPanel, Ext.Panel, {
     
     //add place holder to grid
     var newRec = new this.userRecordConstructor({
-        userID : 'New User',
+        userId : 'New User',
         resourceURI : 'new'
       },
       id); //use "new_user_" id instead of resourceURI like the reader does
@@ -519,7 +538,7 @@ Ext.extend(Sonatype.repoServer.UserEditPanel, Ext.Panel, {
       Sonatype.MessageBox.show({
         animEl: this.usersGridPanel.getEl(),
         title : 'Reset user password?',
-        msg : 'Reset the ' + rec.get('userID') + ' user password?',
+        msg : 'Reset the ' + rec.get('userId') + ' user password?',
         buttons: Sonatype.MessageBox.YESNO,
         scope: this,
         icon: Sonatype.MessageBox.QUESTION,
@@ -532,7 +551,7 @@ Ext.extend(Sonatype.repoServer.UserEditPanel, Ext.Panel, {
               },
               scope: this,
               method: 'DELETE',
-              url: rec.data.resourceURI
+              url: Sonatype.config.repos.urls.usersReset + '/' + rec.data.userId
             });
           }
         }
@@ -572,7 +591,7 @@ Ext.extend(Sonatype.repoServer.UserEditPanel, Ext.Panel, {
         Sonatype.MessageBox.show({
           animEl: this.usersGridPanel.getEl(),
           title : 'Delete User?',
-          msg : 'Delete the ' + rec.get('userID') + ' User?',
+          msg : 'Delete the ' + rec.get('userId') + ' User?',
           buttons: Sonatype.MessageBox.YESNO,
           scope: this,
           icon: Sonatype.MessageBox.QUESTION,
@@ -640,12 +659,13 @@ Ext.extend(Sonatype.repoServer.UserEditPanel, Ext.Panel, {
         var sentData = action.output.data;
         
         var dataObj = {
-          userID : receivedData.userID,
+          userId : receivedData.userId,
           name : receivedData.name,
           resourceURI : receivedData.resourceURI,
           email : receivedData.email,
           status : receivedData.status,
-          roles : receivedData.roles
+          roles : receivedData.roles,
+          displayRoles : this.roleCombiner(receivedData.roles)
         };
         
         var newRec = new this.userRecordConstructor(
@@ -691,10 +711,11 @@ Ext.extend(Sonatype.repoServer.UserEditPanel, Ext.Panel, {
   updateUserRecord : function(rec, receivedData){
         rec.beginEdit();
         rec.set('name', receivedData.name);
-        rec.set('userID', receivedData.userID);
+        rec.set('userId', receivedData.userId);
         rec.set('email', receivedData.email);
         rec.set('status', receivedData.status);
         rec.set('roles', receivedData.roles);
+        rec.set('displayRoles', this.roleCombiner(receivedData.roles));
         rec.commit();
         rec.endEdit();
   },
@@ -825,7 +846,7 @@ Ext.extend(Sonatype.repoServer.UserEditPanel, Ext.Panel, {
 
     return newConfig;
   },
-  
+    
   loadTreeHelper : function(arr, srcObj, fpanel){
     var selectedTree = fpanel.find('id', 'roles_tree')[0];
     var allTree = fpanel.find('id', 'all_roles_tree')[0];
@@ -836,9 +857,9 @@ Ext.extend(Sonatype.repoServer.UserEditPanel, Ext.Panel, {
       role = arr[i];
       selectedTree.root.appendChild(
         new Ext.tree.TreeNode({
-          id: role.value,
-          text: role.display,
-          payload: role.value, //sonatype added attribute
+          id: role.roleId,
+          text: role.roleName,
+          payload: role, //sonatype added attribute
           allowChildren: false,
           draggable: true,
           leaf: true
@@ -850,12 +871,12 @@ Ext.extend(Sonatype.repoServer.UserEditPanel, Ext.Panel, {
       for(var i=0; i<this.roleList.length; i++){
         role = this.roleList[i];
 
-        if(typeof(selectedTree.getNodeById(role.value)) == 'undefined'){
+        if(typeof(selectedTree.getNodeById(role.roleId)) == 'undefined'){
           allTree.root.appendChild(
             new Ext.tree.TreeNode({
-              id: role.value,
-              text: role.display,
-              payload: role.value, //sonatype added attribute
+              id: role.roleId,
+              text: role.roleName,
+              payload: role, //sonatype added attribute
               allowChildren: false,
               draggable: true,
               leaf: true
@@ -869,5 +890,19 @@ Ext.extend(Sonatype.repoServer.UserEditPanel, Ext.Panel, {
     }
     
     return arr; //return arr, even if empty to comply with sonatypeLoad data modifier requirement
-  }
+  },
+  
+  saveTreeHelper : function(val, fpanel){
+    var tree = fpanel.find('id', 'roles_tree')[0];
+
+    var outputArr = [];
+    var nodes = tree.root.childNodes;
+
+    for(var i = 0; i < nodes.length; i++){
+      outputArr[i] = nodes[i].attributes.payload;
+      Ext.apply(outputArr[i], {'@class':'org.sonatype.nexus.rest.model.UserRoleResource'});
+    }
+
+    return outputArr;
+  },
 });

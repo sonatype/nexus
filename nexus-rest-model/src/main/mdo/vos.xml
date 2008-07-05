@@ -1574,7 +1574,7 @@
                     <required>true</required>
                 </field>
 		        <field>
-    		        <name>userID</name>
+    		        <name>userId</name>
                     <version>1.0.0+</version>
                     <type>String</type>
                     <required>true</required>
@@ -1601,27 +1601,13 @@
                     <name>roles</name>
                     <version>1.0.0+</version>
                     <association>
-                        <type>UserStatusRoleResource</type>
+                        <type>UserRoleResource</type>
                         <multiplicity>*</multiplicity>
                     </association>
                     <required>true</required>
                 </field>
 		    </fields>
 		</class>
-		
-		<class>
-            <name>UserStatusRoleResource</name>
-            <version>1.0.0+</version>
-            <superClass>UserRoleResource</superClass>
-            <fields>
-                <field>
-                    <name>display</name>
-                    <version>1.0.0+</version>
-                    <type>String</type>
-                    <required>true</required>
-                </field>
-            </fields>
-        </class>
         
         <class>
             <name>UserResource</name>
@@ -1651,7 +1637,13 @@
             <version>1.0.0+</version>
             <fields>
                 <field>
-                    <name>value</name>
+                    <name>roleId</name>
+                    <version>1.0.0+</version>
+                    <type>String</type>
+                    <required>true</required>
+                </field>
+                <field>
+                    <name>roleName</name>
                     <version>1.0.0+</version>
                     <type>String</type>
                     <required>true</required>

@@ -97,7 +97,6 @@ import org.sonatype.nexus.rest.model.UserResourceRequest;
 import org.sonatype.nexus.rest.model.UserResourceStatusResponse;
 import org.sonatype.nexus.rest.model.UserRoleResource;
 import org.sonatype.nexus.rest.model.UserStatusResource;
-import org.sonatype.nexus.rest.model.UserStatusRoleResource;
 import org.sonatype.nexus.rest.model.WastebasketResource;
 import org.sonatype.nexus.rest.model.WastebasketResourceResponse;
 import org.sonatype.nexus.rest.repositories.RepositoryBaseResourceConverter;
@@ -222,7 +221,6 @@ public final class XStreamInitializer
         xstream.omitField( UserStatusResource.class, "modelEncoding" );
         xstream.omitField( UserResource.class, "modelEncoding" );
         xstream.omitField( UserRoleResource.class, "modelEncoding" );
-        xstream.omitField( UserStatusRoleResource.class, "modelEncoding" );
 
         xstream.omitField( NFCResourceResponse.class, "modelEncoding" );
         xstream.omitField( NFCResource.class, "modelEncoding" );
