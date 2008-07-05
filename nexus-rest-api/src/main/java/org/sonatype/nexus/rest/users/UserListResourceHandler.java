@@ -28,6 +28,7 @@ import org.restlet.resource.Variant;
 import org.sonatype.nexus.rest.model.UserListResourceResponse;
 import org.sonatype.nexus.rest.model.UserResource;
 import org.sonatype.nexus.rest.model.UserResourceRequest;
+import org.sonatype.nexus.rest.model.UserResourceStatusResponse;
 import org.sonatype.nexus.rest.model.UserRoleResource;
 import org.sonatype.nexus.rest.model.UserStatusResource;
 
@@ -136,6 +137,14 @@ extends AbstractUserResourceHandler
             if ( validateFields( resource, representation ) )
             {
                 //TODO: actually store the data here
+                
+                UserResourceStatusResponse response = new UserResourceStatusResponse();
+                
+                response.setData( requestToResponseModel( request.getData() ) );
+                
+                response.getData().setUserId( "newuserid" );
+                
+                getResponse().setEntity( serialize( representation, response ) );
             }
         }
     }

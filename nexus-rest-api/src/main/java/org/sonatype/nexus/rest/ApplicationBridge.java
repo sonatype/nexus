@@ -55,6 +55,8 @@ import org.sonatype.nexus.rest.repositories.RepositoryMetaResourceHandler;
 import org.sonatype.nexus.rest.repositories.RepositoryResourceHandler;
 import org.sonatype.nexus.rest.repositories.RepositoryStatusResourceHandler;
 import org.sonatype.nexus.rest.repositorystatuses.RepositoryStatusesListResourceHandler;
+import org.sonatype.nexus.rest.roles.RoleListResourceHandler;
+import org.sonatype.nexus.rest.roles.RoleResourceHandler;
 import org.sonatype.nexus.rest.routes.RepositoryRouteListResourceHandler;
 import org.sonatype.nexus.rest.routes.RepositoryRouteResourceHandler;
 import org.sonatype.nexus.rest.schedules.ScheduledServiceListResourceHandler;
@@ -344,6 +346,14 @@ public class ApplicationBridge
             router.attach( 
                  "/users/reset/{" + UserResourceHandler.USER_ID_KEY + "}", 
                  protectResource( UserResetResourceHandler.class ) );
+            
+            router.attach( 
+                "/roles", 
+                protectResource( RoleListResourceHandler.class ) );
+                      
+            router.attach( 
+                "/roles/{" + RoleResourceHandler.ROLE_ID_KEY + "}", 
+                protectResource( RoleResourceHandler.class ) );
         }
         catch ( ConfigurationException e )
         {

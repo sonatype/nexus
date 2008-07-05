@@ -101,7 +101,8 @@ Sonatype.config = function() {
         upload: servicePath + '/artifact/maven/content',
         trash: servicePath + '/wastebasket',
         users: servicePath + '/users',
-        usersReset: servicePath + '/users/reset'
+        usersReset: servicePath + '/users/reset',
+        roles: servicePath + '/roles',
       }
     },
     
@@ -131,7 +132,8 @@ Sonatype.user.anon = {
     configRules : 0,
     configRepos : 0,
     configSchedules : 0,
-    configUsers : 0
+    configUsers : 0,
+    configRoles : 0
   }
 };
 

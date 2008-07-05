@@ -451,8 +451,6 @@ Ext.extend(Sonatype.repoServer.UserEditPanel, Ext.Panel, {
 
     //delete row from grid if canceling a new repo form
     if(formInfoObj.isNew){
-      //Enable add button on new cancel
-      this.usersGridPanel.getTopToolbar().items.get('user-add-btn').enable();
       store.remove( store.getById(formInfoObj.formPanel.id) );
     }
     
@@ -904,5 +902,5 @@ Ext.extend(Sonatype.repoServer.UserEditPanel, Ext.Panel, {
     }
 
     return outputArr;
-  },
+  }
 });

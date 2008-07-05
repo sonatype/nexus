@@ -107,6 +107,15 @@ Sonatype.repoServer.resources.help = {
     password : 'The password required to log the user into the system.',
     reenterPassword : 'Re-enter the password to validate entry.'
   },
+  
+  // Roles help
+  roles: {
+    id : 'The ID assigned to this role.',
+    name : 'The name of this role.',
+    description : 'The description of this role.',
+    sessionTimeout : 'The number of minutes to wait before timing out a user session.',
+    rolesAndPrivileges : 'Roles and privileges contained in this Role.'
+  },
 
   // Repositories Config help text
   repos : {

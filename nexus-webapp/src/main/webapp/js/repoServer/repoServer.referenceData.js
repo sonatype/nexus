@@ -248,6 +248,15 @@ Sonatype.repoServer.referenceData = {
     status : "",
     password : "",
     roles : []
+  },
+  
+  roles : {
+    id : "",
+    name : "",
+    description : "",
+    sessionTimeout : 0,
+    roles : [],
+    privileges : []
   }
   
 };
