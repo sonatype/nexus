@@ -23,13 +23,11 @@ package org.sonatype.nexus.rest.roles;
 import junit.framework.TestCase;
 
 import org.restlet.data.MediaType;
-import org.sonatype.nexus.rest.ApplicationBridge;
 import org.sonatype.nexus.rest.model.RoleContainedPrivilegeResource;
 import org.sonatype.nexus.rest.model.RoleContainedRoleResource;
 import org.sonatype.nexus.rest.model.RoleResource;
 import org.sonatype.nexus.rest.model.RoleResourceRequest;
 import org.sonatype.nexus.rest.model.RoleResourceResponse;
-import org.sonatype.nexus.rest.model.UserRoleResource;
 import org.sonatype.nexus.rest.xstream.XStreamInitializer;
 import org.sonatype.plexus.rest.representation.XStreamRepresentation;
 import org.sonatype.plexus.rest.xstream.json.JsonOrgHierarchicalStreamDriver;
