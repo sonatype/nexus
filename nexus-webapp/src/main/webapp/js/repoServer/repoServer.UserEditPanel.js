@@ -31,11 +31,7 @@ Sonatype.repoServer.UserEditPanel = function(config){
   
   //List of user statuses
   this.statusStore = new Ext.data.SimpleStore({fields:['value','display'], data:[['active','Active'],['locked','Locked'],['disabled','Disabled']]});
-  
-  //List of user roles
-  //TODO: This will be a list retrieved from server via REST, currently no role api, so hardcoding
-  this.roleList = [{roleId : 'roleid', roleName : 'rolename'},{roleId : 'roleid2', roleName : 'rolename2'}];
-  
+    
   this.roleCombiner = function(val, parent) {
     return Sonatype.utils.joinArrayObject(val, 'roleName');
   };
@@ -81,6 +77,12 @@ Sonatype.repoServer.UserEditPanel = function(config){
     {name:'displayRoles', mapping:'roles', convert: this.roleCombiner}
   ]);
   
+  //A record to hold the name and id of a role
+  this.roleRecordConstructor = Ext.data.Record.create([
+    {name:'id'},
+    {name:'name', sortType:Ext.data.SortTypes.asUCString}
+  ]);
+  
   
   //Reader and datastore that queries the server for the list of currently defined users
   this.usersReader = new Ext.data.JsonReader({root: 'data', id: 'resourceURI'}, this.userRecordConstructor );
@@ -88,6 +90,14 @@ Sonatype.repoServer.UserEditPanel = function(config){
     url: Sonatype.config.repos.urls.users,
     reader: this.usersReader,
     sortInfo: {field: 'userId', direction: 'ASC'},
+    autoLoad: true
+  });
+  
+  this.roleReader = new Ext.data.JsonReader({root: 'data', id: 'id'}, this.roleRecordConstructor );  
+  this.roleDataStore = new Ext.data.Store({
+    url: Sonatype.config.repos.urls.roles,
+    reader: this.roleReader,
+    sortInfo: {field: 'name', direction: 'ASC'},
     autoLoad: true
   });
   
@@ -412,6 +422,8 @@ Ext.extend(Sonatype.repoServer.UserEditPanel, Ext.Panel, {
   reloadAll : function(){
     this.usersDataStore.removeAll();
     this.usersDataStore.reload();
+    this.roleDataStore.removeAll();
+    this.roleDataStore.reload();
     this.formCards.items.each(function(item, i, len){
       if(i>0){this.remove(item, true);}
     }, this.formCards);
@@ -458,7 +470,6 @@ Ext.extend(Sonatype.repoServer.UserEditPanel, Ext.Panel, {
     var i = store.indexOfId(formLayout.activeItem.id);
     if (i >= 0){
       gridSelectModel.selectRow(i);
-      this.rowClick(this.usersGridPanel, i, null);
     }
     else{
       gridSelectModel.clearSelections();
@@ -859,35 +870,29 @@ Ext.extend(Sonatype.repoServer.UserEditPanel, Ext.Panel, {
         new Ext.tree.TreeNode({
           id: role.roleId,
           text: role.roleName,
-          payload: role, //sonatype added attribute
+          payload: role.roleId, //sonatype added attribute
           allowChildren: false,
           draggable: true,
           leaf: true
         })
       );
     }
-
-    if(this.roleList){
-      for(var i=0; i<this.roleList.length; i++){
-        role = this.roleList[i];
-
-        if(typeof(selectedTree.getNodeById(role.roleId)) == 'undefined'){
-          allTree.root.appendChild(
-            new Ext.tree.TreeNode({
-              id: role.roleId,
-              text: role.roleName,
-              payload: role, //sonatype added attribute
-              allowChildren: false,
-              draggable: true,
-              leaf: true
-            })
-          );
-        }
+    
+    
+    this.roleDataStore.each(function(item, i, len){
+      if(typeof(selectedTree.getNodeById(item.data.id)) == 'undefined'){
+        allTree.root.appendChild(
+          new Ext.tree.TreeNode({
+            id: item.data.id,
+            text: item.data.name,
+            payload: item.data.id, //sonatype added attribute
+            allowChildren: false,
+            draggable: true,
+            leaf: true
+          })
+        );
       }
-    }
-    else {
-      //@todo: race condition or error retrieving repos list
-    }
+    }, this);
     
     return arr; //return arr, even if empty to comply with sonatypeLoad data modifier requirement
   },
@@ -899,7 +904,7 @@ Ext.extend(Sonatype.repoServer.UserEditPanel, Ext.Panel, {
     var nodes = tree.root.childNodes;
 
     for(var i = 0; i < nodes.length; i++){
-      outputArr[i] = nodes[i].attributes.payload;
+      outputArr[i] = {roleId : nodes[i].attributes.payload};
       Ext.apply(outputArr[i], {'@class':'org.sonatype.nexus.rest.model.UserRoleResource'});
     }
 

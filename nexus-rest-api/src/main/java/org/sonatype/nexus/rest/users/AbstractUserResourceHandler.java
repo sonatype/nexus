@@ -109,7 +109,9 @@ extends AbstractNexusResourceHandler
             UserRoleResource role = ( UserRoleResource ) iter.next();
             UserRoleResource statusRole = new UserRoleResource();
             statusRole.setRoleId( role.getRoleId() );
-            statusRole.setRoleName( role.getRoleName() );
+            //TODO: This name field will have to be loaded from the object
+            //as it's not required to be sent in from ui
+            statusRole.setRoleName( "temprolename" );
             statusResource.addRole( statusRole );
         }
         
