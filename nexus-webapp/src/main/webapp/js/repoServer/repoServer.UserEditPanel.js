@@ -458,6 +458,7 @@ Ext.extend(Sonatype.repoServer.UserEditPanel, Ext.Panel, {
     var i = store.indexOfId(formLayout.activeItem.id);
     if (i >= 0){
       gridSelectModel.selectRow(i);
+      this.rowClick(this.usersGridPanel, i, null);
     }
     else{
       gridSelectModel.clearSelections();
@@ -777,12 +778,13 @@ Ext.extend(Sonatype.repoServer.UserEditPanel, Ext.Panel, {
       this.formDataLoader(formPanel, rec.data.resourceURI, this.loadDataModFunc);
       
       this.formCards.add(formPanel);
+      this.formCards.getLayout().setActiveItem(formPanel);    
+      formPanel.doLayout();
     }
-    
-    //always set active
-    this.formCards.getLayout().setActiveItem(formPanel);
-    
-    formPanel.doLayout();
+    else{
+      //always set active
+      this.formCards.getLayout().setActiveItem(formPanel);
+    }
   },
   
   contextClick : function(grid, index, e){

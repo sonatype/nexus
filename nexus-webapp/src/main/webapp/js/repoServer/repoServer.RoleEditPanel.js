@@ -119,7 +119,7 @@ Sonatype.repoServer.RoleEditPanel = function(config){
         helpText: ht.description,
         name: 'description',
         allowBlank: false,
-        width: 600
+        width: this.COMBO_WIDTH
       },
       {
         xtype: 'numberfield',
@@ -366,6 +366,7 @@ Ext.extend(Sonatype.repoServer.RoleEditPanel, Ext.Panel, {
     var i = store.indexOfId(formLayout.activeItem.id);
     if (i >= 0){
       gridSelectModel.selectRow(i);
+      this.rowClick(this.rolesGridPanel, i, null);
     }
     else{
       gridSelectModel.clearSelections();
@@ -643,12 +644,16 @@ Ext.extend(Sonatype.repoServer.RoleEditPanel, Ext.Panel, {
       this.formDataLoader(formPanel, rec.data.resourceURI, this.loadDataModFunc);
       
       this.formCards.add(formPanel);
+      
+      //always set active
+      this.formCards.getLayout().setActiveItem(formPanel);
+      
+      formPanel.doLayout();
     }
-    
-    //always set active
-    this.formCards.getLayout().setActiveItem(formPanel);
-    
-    formPanel.doLayout();
+    else{
+      //always set active
+      this.formCards.getLayout().setActiveItem(formPanel);
+    }
   },
   
   contextClick : function(grid, index, e){
