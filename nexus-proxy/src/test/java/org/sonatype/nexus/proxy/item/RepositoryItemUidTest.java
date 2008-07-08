@@ -62,38 +62,70 @@ public class RepositoryItemUidTest
             uidE.unlock();
         }
     }
-
-    public void testLocksOfSameUid()
+    
+    public void testConcurrentLocksOfSameUid()
         throws Exception
     {
         RepositoryItemUid uidA = new RepositoryItemUid( repository, "/a.txt" );
         
-        ArrayList<Thread> threads = new ArrayList<Thread>();
+        Thread thread = new Thread( new RepositoryItemUidLockProcessLauncher( uidA, 100, 20) );
+        Thread thread2 = new Thread( new RepositoryItemUidLockProcessLauncher( uidA, 100, 20) );
         
-        for ( int i = 15 ; i < 100 ; i++ )
+        thread.start();
+        thread2.start();
+        
+        Thread.sleep( 5 );
+        
+        assertEquals( 1, RepositoryItemUid.getLockCount() );
+        
+        thread.join();
+        thread2.join();
+        
+        assertEquals( 0, RepositoryItemUid.getLockCount() );
+    }
+    
+    private static final class RepositoryItemUidLockProcessLauncher
+        implements
+            Runnable
+    {
+        private RepositoryItemUid uid;
+        private int threadCount;
+        private long timeout;
+        
+        public RepositoryItemUidLockProcessLauncher( RepositoryItemUid uid, int threadCount, long timeout )
         {
-            threads.add( new Thread( new RepositoryItemUidLockProcess( uidA, i ) ) );
+            this.uid = uid;
+            this.threadCount = threadCount;
+            this.timeout = timeout;
         }
-        uidA.lock();
-        assert RepositoryItemUid.getLockCount() == 1;
         
-        for ( Iterator<Thread> iter = threads.iterator() ; iter.hasNext() ; )
+        public void run()
         {
-            iter.next().start();
+            ArrayList<Thread> threads = new ArrayList<Thread>();
+            
+            for ( int i = 0 ; i < threadCount ; i++ )
+            {
+                threads.add( new Thread( new RepositoryItemUidLockProcess( this.uid, timeout ) ) );
+            }
+            
+            for ( Iterator<Thread> iter = threads.iterator() ; iter.hasNext() ; )
+            {
+                iter.next().start();
+            }
+            
+            try
+            {
+                Thread.sleep( 5 );
+                
+                for ( Iterator<Thread> iter = threads.iterator() ; iter.hasNext() ; )
+                {
+                    iter.next().join();
+                }
+            }
+            catch ( InterruptedException e )
+            {
+            }
         }
-        
-        Thread.sleep( 10 );
-        
-        assert RepositoryItemUid.getLockCount() == 1;
-        
-        uidA.unlock();
-        
-        for ( Iterator<Thread> iter = threads.iterator() ; iter.hasNext() ; )
-        {
-            iter.next().join();
-        }
-        
-        assert RepositoryItemUid.getLockCount() == 0;
     }
 
     private static final class RepositoryItemUidLockProcess
