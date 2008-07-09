@@ -74,7 +74,7 @@ public class RepositoryItemUidTest
         thread.start();
         thread2.start();
         
-        Thread.sleep( 5 );
+        Thread.sleep( 10 );
         
         assertEquals( 1, RepositoryItemUid.getLockCount() );
         
