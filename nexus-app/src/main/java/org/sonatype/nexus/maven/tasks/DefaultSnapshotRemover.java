@@ -23,6 +23,7 @@ package org.sonatype.nexus.maven.tasks;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeSet;
@@ -264,59 +265,70 @@ public class DefaultSnapshotRemover
 
                     return;
                 }
+                
+                HashSet<Long> versionsToRemove = new HashSet<Long>();
 
                 // gathering the facts
                 for ( StorageItem item : items )
                 {
                     if ( !item.isVirtual() && !StorageCollectionItem.class.isAssignableFrom( item.getClass() ) )
                     {
-                        // process only snapshot non-checksums
-                        if ( M2ArtifactRecognizer.isSnapshot( item.getPath() )
-                            && !M2ArtifactRecognizer.isMetadata( item.getPath() )
-                            && !M2ArtifactRecognizer.isChecksum( item.getPath() ) 
-                            && !M2ArtifactRecognizer.isSignature( item.getPath() ) )
-                        {
-                            gav = ( (MavenRepository) coll.getRepositoryItemUid().getRepository() )
-                                .getGavCalculator().pathToGav( item.getPath() );
-
-                            if ( gav != null )
+                        gav = ( (MavenRepository) coll.getRepositoryItemUid().getRepository() )
+                            .getGavCalculator().pathToGav( item.getPath() );
+                        
+                        if ( gav != null )
+                        {                            
+                            // if we find a pom, check for delete on release
+                            if ( M2ArtifactRecognizer.isPom( item.getPath() ) )
                             {
                                 if ( request.isRemoveIfReleaseExists() && releaseExistsForSnapshot( gav ) )
                                 {
+                                    getLogger().debug( "Found POM and release exists, removing whole gav." );
+                                    
                                     removeWholeGAV = true;
-
+    
                                     gavToRemove = gav;
-
+    
+                                    //Will break out and junk whole gav
                                     break;
                                 }
+                            }
+                            
+                            item.getItemContext().put( Gav.class.getName(), gav );
+                            
+                            long itemTimestamp = System.currentTimeMillis();
+                            
+                            getLogger().debug( "NOW is " + itemTimestamp );
 
-                                item.getItemContext().put( Gav.class.getName(), gav );
+                            if ( gav.getSnapshotTimeStamp() != null )
+                            {
+                                getLogger().debug( "Using GAV snapshot timestamp" );
 
-                                long itemTimestamp = System.currentTimeMillis();
+                                itemTimestamp = gav.getSnapshotTimeStamp().longValue();
+                            }
+                            else
+                            {
+                                getLogger().debug( "GAV Snapshot timestamp not available, using item.getCreated()" );
 
-                                getLogger().debug( "NOW is " + itemTimestamp );
-
-                                if ( gav.getSnapshotTimeStamp() != null )
-                                {
-                                    getLogger().debug( "Using GAV snapshot timestamp" );
-
-                                    itemTimestamp = gav.getSnapshotTimeStamp().longValue();
-                                }
-                                else
-                                {
-                                    getLogger().debug( "GAV Snapshot timestamp not available, using item.getCreated()" );
-
-                                    itemTimestamp = item.getCreated();
-                                }
-
+                                itemTimestamp = item.getCreated();
+                            }
+                            
+                            // If this timestamp is already marked to be removed, junk it
+                            if ( versionsToRemove.contains( new Long( itemTimestamp ) ) )
+                            {
+                                addStorageFileItemToMap( deletableSnapshotsAndFiles, gav, (StorageFileItem) item );
+                            }
+                            else
+                            {        
                                 getLogger()
                                     .debug( "itemTimestamp=" + itemTimestamp + ", dateTreshold=" + dateThreshold );
-
+    
                                 // if dateTreshold is not used (zero days) OR
                                 // if itemTimestamp is less then dateTreshold (NB: both are positive!)
                                 // below will the retentionCount overrule if needed this
                                 if ( -1 == dateThreshold || itemTimestamp < dateThreshold )
                                 {
+                                    versionsToRemove.add( new Long( itemTimestamp ) );
                                     addStorageFileItemToMap( deletableSnapshotsAndFiles, gav, (StorageFileItem) item );
                                 }
                                 else
@@ -337,7 +349,7 @@ public class DefaultSnapshotRemover
                             .getArtifactId(), gavToRemove.getVersion() );
 
                         // remove the whole GAV
-                        repository.deleteArtifact( req, true, true );
+                        repository.deleteArtifact( req, true, true, true );
                     }
                     catch ( Exception e )
                     {
@@ -384,14 +396,22 @@ public class DefaultSnapshotRemover
                             try
                             {
                                 gav = (Gav) file.getItemContext().get( Gav.class.getName() );
-
-                                // TODO: extension VS packaging!
-
-                                ArtifactStoreRequest req = new ArtifactStoreRequest( gav.getGroupId(), gav
-                                    .getArtifactId(), gav.getVersion(), gav.getExtension(), gav.getClassifier() );
-
-                                // delete the artifact only
-                                repository.deleteArtifact( req, true, false );
+                                                                
+                                ArtifactStoreRequest req = new ArtifactStoreRequest( 
+                                    gav.getGroupId(), 
+                                    gav.getArtifactId(), 
+                                    gav.getVersion(), 
+                                    gav.getExtension(), 
+                                    gav.getClassifier() );
+                                
+                                if ( "pom".equals( gav.getExtension() ))
+                                {
+                                    repository.deleteArtifactPom( req, false, false, false );
+                                }
+                                else
+                                {
+                                    repository.deleteArtifact( req, false, false, false );
+                                }
 
                                 deletedFiles++;
                             }
