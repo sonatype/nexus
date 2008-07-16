@@ -10,7 +10,7 @@
 	<artifactId>nexus</artifactId>
 	<packaging>pom</packaging>
 	<name>Nexus Repository Manager</name>
-	<version>1.0.0-beta-5.1-SNAPSHOT</version>
+	<version>1.0.0-beta-4.2</version>
 	<description>Sonatype Nexus Repository Manager</description>
 	<inceptionYear>2007</inceptionYear>
 	<mailingLists />
@@ -118,7 +118,7 @@
         <jsw.binaries.version>3.2.3.2</jsw.binaries.version>
         <plexus.container.version>1.0-alpha-47</plexus.container.version>
         <plx.plugin.version>1.1</plx.plugin.version>
-        <nexus.indexer.version>1.0-beta-4.2</nexus.indexer.version>
+        <nexus.indexer.version>1.0-beta-4.3</nexus.indexer.version>
 	</properties>
 
 	<dependencyManagement>
@@ -664,8 +664,8 @@
 	</reporting>
 
   <scm>
-    <connection>scm:svn:http://svn.sonatype.org/nexus/branches/nexus-1.0.0-beta-4.1</connection>
-    <developerConnection>scm:svn:https://svn.sonatype.org/nexus/branches/nexus-1.0.0-beta-4.1</developerConnection>
-    <url>http://svn.sonatype.org/nexus/branches/nexus-1.0.0-beta-4.1</url>
+    <connection>scm:svn:http://svn.sonatype.org/nexus/tags/nexus-1.0.0-beta-4.2</connection>
+    <developerConnection>scm:svn:https://svn.sonatype.org/nexus/tags/nexus-1.0.0-beta-4.2</developerConnection>
+    <url>http://svn.sonatype.org/nexus/tags/nexus-1.0.0-beta-4.2</url>
   </scm>
 </project>
