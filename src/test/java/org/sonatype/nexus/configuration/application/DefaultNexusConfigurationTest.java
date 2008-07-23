@@ -18,7 +18,7 @@
  * along with this program.  If not, see http://www.gnu.org/licenses/.
  *
  */
-package org.sonatype.nexus.configuration;
+package org.sonatype.nexus.configuration.application;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -29,6 +29,8 @@ import org.codehaus.plexus.util.FileUtils;
 import org.codehaus.plexus.util.IOUtil;
 import org.codehaus.plexus.util.io.InputStreamFacade;
 import org.sonatype.nexus.AbstractNexusTestCase;
+import org.sonatype.nexus.configuration.application.DefaultNexusConfiguration;
+import org.sonatype.nexus.configuration.application.NexusConfiguration;
 import org.sonatype.nexus.configuration.model.CRemoteHttpProxySettings;
 import org.sonatype.nexus.configuration.model.Configuration;
 import org.sonatype.nexus.proxy.maven.maven2.M2GroupIdBasedRepositoryRouter;

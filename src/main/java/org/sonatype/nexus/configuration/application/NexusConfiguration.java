@@ -18,16 +18,17 @@
  * along with this program.  If not, see http://www.gnu.org/licenses/.
  *
  */
-package org.sonatype.nexus.configuration;
+package org.sonatype.nexus.configuration.application;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 
+import org.sonatype.nexus.configuration.ConfigurationException;
+import org.sonatype.nexus.configuration.application.source.ApplicationConfigurationSource;
 import org.sonatype.nexus.configuration.model.CRepository;
 import org.sonatype.nexus.configuration.model.CRepositoryShadow;
 import org.sonatype.nexus.configuration.model.Configuration;
-import org.sonatype.nexus.configuration.source.ConfigurationSource;
 import org.sonatype.nexus.configuration.validator.InvalidConfigurationException;
 import org.sonatype.nexus.proxy.access.AccessManager;
 import org.sonatype.nexus.proxy.repository.Repository;
@@ -74,7 +75,7 @@ public interface NexusConfiguration
         throws ConfigurationException,
             IOException;
 
-    ConfigurationSource getConfigurationSource();
+    ApplicationConfigurationSource getConfigurationSource();
 
     InputStream getConfigurationAsStream()
         throws IOException;

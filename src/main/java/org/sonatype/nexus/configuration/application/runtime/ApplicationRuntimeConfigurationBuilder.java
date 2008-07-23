@@ -18,9 +18,9 @@
  * along with this program.  If not, see http://www.gnu.org/licenses/.
  *
  */
-package org.sonatype.nexus.configuration.runtime;
+package org.sonatype.nexus.configuration.application.runtime;
 
-import org.sonatype.nexus.configuration.NexusConfiguration;
+import org.sonatype.nexus.configuration.application.NexusConfiguration;
 import org.sonatype.nexus.configuration.model.CRepository;
 import org.sonatype.nexus.configuration.model.CRepositoryShadow;
 import org.sonatype.nexus.configuration.model.Configuration;
@@ -36,10 +36,10 @@ import org.sonatype.nexus.security.AuthenticationSource;
  * 
  * @author cstamas
  */
-public interface RuntimeConfigurationBuilder
+public interface ApplicationRuntimeConfigurationBuilder
 {
 
-    String ROLE = RuntimeConfigurationBuilder.class.getName();
+    String ROLE = ApplicationRuntimeConfigurationBuilder.class.getName();
 
     void initialize( NexusConfiguration configuration );
 

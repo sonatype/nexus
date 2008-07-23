@@ -18,7 +18,7 @@
  * along with this program.  If not, see http://www.gnu.org/licenses/.
  *
  */
-package org.sonatype.nexus.configuration.runtime;
+package org.sonatype.nexus.configuration.application.runtime;
 
 import java.io.File;
 import java.net.MalformedURLException;
@@ -34,7 +34,7 @@ import org.codehaus.plexus.context.ContextException;
 import org.codehaus.plexus.logging.AbstractLogEnabled;
 import org.codehaus.plexus.personality.plexus.lifecycle.phase.Contextualizable;
 import org.sonatype.nexus.configuration.ModelloUtils;
-import org.sonatype.nexus.configuration.NexusConfiguration;
+import org.sonatype.nexus.configuration.application.NexusConfiguration;
 import org.sonatype.nexus.configuration.model.CAuthzSource;
 import org.sonatype.nexus.configuration.model.CRepository;
 import org.sonatype.nexus.configuration.model.CRepositoryShadow;
@@ -67,9 +67,9 @@ import org.sonatype.nexus.security.OpenAuthenticationSource;
  * @author cstamas
  * @plexus.component
  */
-public class DefaultRuntimeConfigurationBuilder
+public class DefaultApplicationRuntimeConfigurationBuilder
     extends AbstractLogEnabled
-    implements RuntimeConfigurationBuilder, Contextualizable
+    implements ApplicationRuntimeConfigurationBuilder, Contextualizable
 {
     public static final String DEFAULT_LS_PROVIDER = "file";
 

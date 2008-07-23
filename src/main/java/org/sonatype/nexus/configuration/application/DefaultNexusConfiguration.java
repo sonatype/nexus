@@ -18,7 +18,7 @@
  * along with this program.  If not, see http://www.gnu.org/licenses/.
  *
  */
-package org.sonatype.nexus.configuration;
+package org.sonatype.nexus.configuration.application;
 
 import java.io.File;
 import java.io.IOException;
@@ -33,6 +33,12 @@ import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
 import org.codehaus.plexus.logging.AbstractLogEnabled;
+import org.sonatype.nexus.configuration.ConfigurationChangeEvent;
+import org.sonatype.nexus.configuration.ConfigurationChangeListener;
+import org.sonatype.nexus.configuration.ConfigurationException;
+import org.sonatype.nexus.configuration.application.runtime.ApplicationRuntimeConfigurationBuilder;
+import org.sonatype.nexus.configuration.application.source.ApplicationConfigurationSource;
+import org.sonatype.nexus.configuration.application.validator.ApplicationConfigurationValidator;
 import org.sonatype.nexus.configuration.model.CAuthSource;
 import org.sonatype.nexus.configuration.model.CGroupsSettingPathMappingItem;
 import org.sonatype.nexus.configuration.model.CRemoteConnectionSettings;
@@ -45,9 +51,6 @@ import org.sonatype.nexus.configuration.model.CRepositoryShadow;
 import org.sonatype.nexus.configuration.model.CRepositoryTarget;
 import org.sonatype.nexus.configuration.model.CRouting;
 import org.sonatype.nexus.configuration.model.Configuration;
-import org.sonatype.nexus.configuration.runtime.RuntimeConfigurationBuilder;
-import org.sonatype.nexus.configuration.source.ConfigurationSource;
-import org.sonatype.nexus.configuration.validator.ConfigurationValidator;
 import org.sonatype.nexus.configuration.validator.InvalidConfigurationException;
 import org.sonatype.nexus.configuration.validator.ValidationResponse;
 import org.sonatype.nexus.proxy.NoSuchRepositoryException;
@@ -82,21 +85,21 @@ public class DefaultNexusConfiguration
      * 
      * @plexus.requirement role-hint="file"
      */
-    private ConfigurationSource configurationSource;
+    private ApplicationConfigurationSource configurationSource;
 
     /**
      * The config validator.
      * 
      * @plexus.requirement
      */
-    private ConfigurationValidator configurationValidator;
+    private ApplicationConfigurationValidator configurationValidator;
 
     /**
      * The runtime configuration builder.
      * 
      * @plexus.requirement
      */
-    private RuntimeConfigurationBuilder runtimeConfigurationBuilder;
+    private ApplicationRuntimeConfigurationBuilder runtimeConfigurationBuilder;
 
     /**
      * The repository registry.
@@ -262,7 +265,7 @@ public class DefaultNexusConfiguration
         return configurationSource.getConfiguration();
     }
 
-    public ConfigurationSource getConfigurationSource()
+    public ApplicationConfigurationSource getConfigurationSource()
     {
         return configurationSource;
     }

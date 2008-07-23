@@ -18,57 +18,33 @@
  * along with this program.  If not, see http://www.gnu.org/licenses/.
  *
  */
-package org.sonatype.nexus.configuration;
+package org.sonatype.nexus.configuration.security;
 
-import java.io.File;
 import java.io.IOException;
 
-import org.sonatype.nexus.configuration.model.Configuration;
+import org.sonatype.nexus.configuration.ConfigurationChangeEvent;
+import org.sonatype.nexus.configuration.ConfigurationChangeListener;
+import org.sonatype.nexus.configuration.security.model.Configuration;
 
 /**
  * Adapter for NexusConfiguration.
  * 
  * @author cstamas
- * @plexus.component role="org.sonatype.nexus.configuration.ApplicationConfiguration"
+ * @plexus.component role="org.sonatype.nexus.configuration.security.SecurityConfiguration"
  */
-public class ApplicationConfigurationAdapter
-    implements ApplicationConfiguration
+public class NexusSecurityConfigurationAdapter
+    implements SecurityConfiguration
 {
     /**
      * @plexus.requirement
      */
-    private NexusConfiguration nexusConfiguration;
+    private NexusSecurityConfiguration nexusConfiguration;
 
     public Configuration getConfiguration()
     {
         return nexusConfiguration.getConfiguration();
     }
-
-    public File getWorkingDirectory()
-    {
-        return nexusConfiguration.getWorkingDirectory();
-    }
-
-    public File getWorkingDirectory( String key )
-    {
-        return nexusConfiguration.getWorkingDirectory( key );
-    }
-
-    public File getTemporaryDirectory()
-    {
-        return nexusConfiguration.getTemporaryDirectory();
-    }
-
-    public File getWastebasketDirectory()
-    {
-        return nexusConfiguration.getWastebasketDirectory();
-    }
-
-    public File getConfigurationDirectory()
-    {
-        return nexusConfiguration.getConfigurationDirectory();
-    }
-
+    
     public void saveConfiguration()
         throws IOException
     {
