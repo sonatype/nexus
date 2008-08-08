@@ -22,7 +22,7 @@ package org.sonatype.nexus.rest.index;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.Collections;
 
 import org.restlet.Context;
 import org.restlet.data.Form;
@@ -31,6 +31,7 @@ import org.restlet.data.Response;
 import org.restlet.data.Status;
 import org.restlet.resource.Representation;
 import org.restlet.resource.Variant;
+import org.sonatype.nexus.index.ArtifactInfo;
 import org.sonatype.nexus.index.FlatSearchResponse;
 import org.sonatype.nexus.rest.model.NexusArtifact;
 import org.sonatype.nexus.rest.model.SearchResponse;
@@ -59,6 +60,10 @@ public class IndexResourceHandler
         Form form = getRequest().getResourceRef().getQueryAsForm();
 
         String query = form.getFirstValue( "q" );
+
+        String className = form.getFirstValue( "cn" );
+
+        String sha1 = form.getFirstValue( "sha1" );
 
         String g = form.getFirstValue( "g" );
 
@@ -98,12 +103,25 @@ public class IndexResourceHandler
 
         FlatSearchResponse searchResult = null;
 
-        Collection<NexusArtifact> ais = null;
+        NexusArtifact na = null;
 
-        if ( query != null )
+        if ( sha1 != null )
+        {
+            na = ai2Na( getNexus().identifyArtifact( ArtifactInfo.SHA1, sha1 ) );
+        }
+        else if ( query != null )
         {
             searchResult = getNexus()
                 .searchArtifactFlat( query, getRepositoryId(), getRepositoryGroupId(), from, count );
+        }
+        else if ( className != null )
+        {
+            searchResult = getNexus().searchArtifactClassFlat(
+                className,
+                getRepositoryId(),
+                getRepositoryGroupId(),
+                from,
+                count );
         }
         else if ( g != null || a != null || v != null || c != null )
         {
@@ -119,22 +137,48 @@ public class IndexResourceHandler
         }
         else
         {
-            getResponse().setStatus( Status.CLIENT_ERROR_BAD_REQUEST, "Search query not found in request!" );
+            getResponse().setStatus(
+                Status.CLIENT_ERROR_BAD_REQUEST,
+                "Search query not found in request! (q OR cn OR g,a,v,c)" );
 
             return null;
         }
 
-        ais = ai2NaColl( searchResult.getResults() );
-
         SearchResponse result = new SearchResponse();
 
-        result.setTotalCount( searchResult.getTotalHits() );
+        if ( searchResult != null )
+        {
+            // non-identify search happened
+            result.setTotalCount( searchResult.getTotalHits() );
 
-        result.setFrom( from == null ? -1 : from.intValue() );
+            result.setFrom( from == null ? -1 : from.intValue() );
 
-        result.setCount( count == null ? -1 : count.intValue() );
+            result.setCount( count == null ? -1 : count.intValue() );
 
-        result.setData( new ArrayList<NexusArtifact>( ais ) );
+            result.setData( new ArrayList<NexusArtifact>( ai2NaColl( searchResult.getResults() ) ) );
+        }
+        else if ( na != null )
+        {
+            // searhcResult is null and na is not, it is identify
+            result.setTotalCount( 1 );
+
+            result.setFrom( -1 );
+
+            result.setCount( 1 );
+
+            result.setData( new ArrayList<NexusArtifact>( Collections.singleton( na ) ) );
+        }
+        else
+        {
+            // otherwise, we have no results (unsuccesful identify returns null!)
+            result.setTotalCount( 0 );
+
+            result.setFrom( -1 );
+
+            result.setCount( 1 );
+
+            result.setData( new ArrayList<NexusArtifact>() );
+        }
 
         return serialize( variant, result );
     }
@@ -146,6 +190,8 @@ public class IndexResourceHandler
         task.setRepositoryId( getRepositoryId() );
 
         task.setRepositoryGroupId( getRepositoryGroupId() );
+
+        task.setResourceStorePath( getResourceStorePath() );
 
         super.handleDelete( task );
     }

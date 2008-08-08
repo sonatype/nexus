@@ -24,14 +24,13 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.commons.io.FilenameUtils;
 import org.codehaus.plexus.personality.plexus.lifecycle.phase.Initializable;
 import org.codehaus.plexus.util.IOUtil;
-import org.sonatype.nexus.configuration.ApplicationConfiguration;
 import org.sonatype.nexus.configuration.ConfigurationChangeEvent;
+import org.sonatype.nexus.configuration.application.ApplicationConfiguration;
 import org.sonatype.nexus.proxy.LoggingComponent;
 import org.sonatype.nexus.proxy.item.AbstractStorageItem;
 import org.sonatype.nexus.proxy.item.DefaultStorageCollectionItem;
@@ -68,11 +67,6 @@ public class DefaultAttributeStorage
     private XStream xstream;
 
     /**
-     * The table of current operations.
-     */
-    private volatile ConcurrentHashMap<String, ReentrantLock> locks;
-
-    /**
      * Instantiates a new FSX stream attribute storage.
      */
     public DefaultAttributeStorage()
@@ -82,7 +76,6 @@ public class DefaultAttributeStorage
         this.xstream.alias( "file", DefaultStorageFileItem.class );
         this.xstream.alias( "collection", DefaultStorageCollectionItem.class );
         this.xstream.alias( "link", DefaultStorageLinkItem.class );
-        this.locks = new ConcurrentHashMap<String, ReentrantLock>();
     }
 
     public void initialize()
@@ -93,43 +86,6 @@ public class DefaultAttributeStorage
     public void onConfigurationChange( ConfigurationChangeEvent evt )
     {
         this.workingDirectory = null;
-    }
-
-    protected ReentrantLock getLock( RepositoryItemUid uid )
-    {
-        ReentrantLock lock = null;
-
-        synchronized ( locks )
-        {
-            if ( !locks.containsKey( uid.toString() ) )
-            {
-                locks.put( uid.toString(), new ReentrantLock() );
-            }
-
-            lock = locks.get( uid.toString() );
-        }
-
-        return lock;
-    }
-
-    protected void lockFor( RepositoryItemUid uid )
-    {
-        getLock( uid ).lock();
-    }
-
-    protected void releaseFor( RepositoryItemUid uid )
-    {
-        ReentrantLock lock = getLock( uid );
-
-        lock.unlock();
-
-        if ( lock.getHoldCount() == 0 )
-        {
-            synchronized ( locks )
-            {
-                locks.remove( uid.toString() );
-            }
-        }
     }
 
     /**
@@ -174,10 +130,10 @@ public class DefaultAttributeStorage
 
     public boolean deleteAttributes( RepositoryItemUid uid )
     {
+        ReentrantLock lock = uid.lock();
+
         try
         {
-            lockFor( uid );
-
             if ( getLogger().isDebugEnabled() )
             {
                 getLogger().debug( "Deleting attributes on UID=" + uid.toString() );
@@ -200,16 +156,16 @@ public class DefaultAttributeStorage
         }
         finally
         {
-            releaseFor( uid );
+            uid.unlock( lock );
         }
     }
 
     public AbstractStorageItem getAttributes( RepositoryItemUid uid )
     {
+        ReentrantLock lock = uid.lock();
+
         try
         {
-            lockFor( uid );
-
             if ( getLogger().isDebugEnabled() )
             {
                 getLogger().debug( "Loading attributes on UID=" + uid.toString() );
@@ -224,23 +180,23 @@ public class DefaultAttributeStorage
             }
             catch ( IOException ex )
             {
-                getLogger().error( "Got IOException during store of UID=" + uid.toString(), ex );
+                getLogger().error( "Got IOException during reading of UID=" + uid.toString(), ex );
 
                 return null;
             }
         }
         finally
         {
-            releaseFor( uid );
+            uid.unlock( lock );
         }
     }
 
     public void putAttribute( AbstractStorageItem item )
     {
+        ReentrantLock lock = item.getRepositoryItemUid().lock();
+
         try
         {
-            lockFor( item.getRepositoryItemUid() );
-
             if ( getLogger().isDebugEnabled() )
             {
                 getLogger().debug( "Storing attributes on UID=" + item.getRepositoryItemUid() );
@@ -306,7 +262,7 @@ public class DefaultAttributeStorage
         }
         finally
         {
-            releaseFor( item.getRepositoryItemUid() );
+            item.getRepositoryItemUid().unlock( lock );
         }
     }
 
@@ -400,5 +356,4 @@ public class DefaultAttributeStorage
             return result;
         }
     }
-
 }

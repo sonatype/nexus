@@ -20,8 +20,6 @@
  */
 package org.sonatype.nexus.proxy.access;
 
-import java.util.List;
-
 import org.sonatype.nexus.proxy.AccessDeniedException;
 import org.sonatype.nexus.proxy.ResourceStoreRequest;
 import org.sonatype.nexus.proxy.repository.Repository;
@@ -33,8 +31,22 @@ import org.sonatype.nexus.proxy.repository.Repository;
  */
 public interface AccessManager
 {
-
     String ROLE = AccessManager.class.getName();
+
+    /**
+     * Key used for authenticated username in request.
+     */
+    String REQUEST_USER = "request.user";
+
+    /**
+     * Key used for request source address.
+     */
+    String REQUEST_REMOTE_ADDRESS = "request.address";
+
+    /**
+     * Key used to mark is the request coming over confidential channel (https).
+     */
+    String REQUEST_CONFIDENTIAL = "request.isConfidential";
 
     /**
      * The implementation of this method should throw AccessDeniedException or any subclass if it denies access.
@@ -46,12 +58,4 @@ public interface AccessManager
      */
     void decide( ResourceStoreRequest request, Repository repository, RepositoryPermission permission )
         throws AccessDeniedException;
-
-    /**
-     * Returns the list of voters that participate in voting. The list may be empty.
-     * 
-     * @return
-     */
-    List<AccessDecisionVoter> getVoters();
-
 }

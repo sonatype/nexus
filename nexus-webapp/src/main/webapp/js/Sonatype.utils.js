@@ -96,24 +96,41 @@ Sonatype.utils = {
   },
 
   connectionError: function( response, message, offerRestart ) {
-    if ( response.status == 403 ) {
+    var serverMessage = ''; 
+    var r = response.responseText;
+    if ( r ) {
+      var n1 = r.toLowerCase().indexOf( '<h3>' ) + 4;
+      var n2 = r.toLowerCase().indexOf( '</h3>' );
+      if ( n2 > n1 ) {
+        serverMessage = '<br /><br />' + r.substring( n1, n2 );
+      }
+    }
+
+    if ( response.status == 403 || response.status == 401 ) {
       if ( Sonatype.repoServer.RepoServer.loginWindow.isVisible() ) {
-        Sonatype.MessageBox.show( {
-          title: 'Login Error',
-          msg: 'Incorrect username or password.<br />Try again.',
-          buttons: Sonatype.MessageBox.OK,
-          icon: Sonatype.MessageBox.ERROR,
-          animEl: 'mb3'
-        } );
+        var nexusReason = response.getResponseHeader['X-Nexus-Reason']; 
+        if ( nexusReason && nexusReason.substring(0,7) == 'expired' ) {
+          Sonatype.repoServer.RepoServer.loginWindow.hide();
+          Sonatype.utils.changePassword( Sonatype.repoServer.RepoServer.loginForm.find('name', 'username')[0].getValue() );
+        }
+        else {
+          Sonatype.MessageBox.show( {
+            title: 'Login Error',
+            msg: 'Incorrect username or password.<br />Try again.' + serverMessage,
+            buttons: Sonatype.MessageBox.OK,
+            icon: Sonatype.MessageBox.ERROR,
+            animEl: 'mb3'
+          } );
+        }
       }
       else {
         delete Ext.lib.Ajax.defaultHeaders.Authorization;
-        Sonatype.state.CookieProvider.clear('authToken');
-        Sonatype.state.CookieProvider.clear('username');
+//        Sonatype.state.CookieProvider.clear('authToken');
+//        Sonatype.state.CookieProvider.clear('username');
         Sonatype.MessageBox.show( {
           title: 'Authentication Error',
           msg: 'Your login is incorrect or your session has expired.<br />' +
-            'Please login again.',
+            'Please login again.' + serverMessage,
           buttons: Sonatype.MessageBox.OK,
           icon: Sonatype.MessageBox.ERROR,
           animEl: 'mb3',
@@ -125,9 +142,9 @@ Sonatype.utils = {
     }
     else {
       Sonatype.MessageBox.show( {
-        title: "Connection Error",
+        title: "Error",
         msg: (
-          ( message ? message + '<br /><br />' : '' ) + 
+          ( message ? message + serverMessage + '<br /><br />' : '' ) + 
           ( response.status ?
               'Nexus returned an error: ERROR ' + response.status + ': ' + response.statusText
               :
@@ -291,6 +308,366 @@ Sonatype.utils = {
       Sonatype.MessageBox.getDialog(),
       {single:true}
     );
+  },
+  
+  getCookie: function(cookieName) {
+    var c = document.cookie + ";";
+    var re = /\s?(.*?)=(.*?);/g;
+    var matches;
+    while((matches = re.exec(c)) != null){
+      if ( matches[1] == cookieName ) {
+    	return matches[2];
+      }
+    }
+    return null;
+  },
+  
+  setCookie: function(cookieName, value) {
+    document.cookie = cookieName + "=" + value +
+	    "; path=" + Sonatype.config.resourcePath
+  },
+
+  clearCookie : function(cookieName){
+    document.cookie = cookieName + "=null; expires=Thu, 01-Jan-70 00:00:01 GMT" +
+      "; path=" + Sonatype.config.resourcePath
+  },
+  
+  recoverUsername: function() {
+    var w = new Ext.Window({
+      title: 'Username Recovery',
+      closable: true,
+      autoWidth: false,
+      width: 300,
+      autoHeight: true,
+      modal:true,
+      constrain: true,
+      resizable: false,
+      draggable: false,
+      items: [
+        {
+          xtype: 'form',
+          labelAlign: 'right',
+          labelWidth:60,
+          frame:true,  
+          defaultType:'textfield',
+          monitorValid:true,
+          items:[
+            {
+              xtype: 'panel',
+              style: 'padding-left: 70px; padding-bottom: 10px',
+              html: 'Please enter the e-mail address you used to register your account and we will send you your username.'
+            },
+            {
+              fieldLabel: 'E-mail', 
+              name: 'email',
+              width: 200,
+              allowBlank: false 
+            }
+          ],
+          buttons: [
+            {
+              text: 'E-mail Username',
+              formBind: true,
+              scope: this,
+              handler: function(){
+                var email = w.find('name', 'email')[0].getValue();
+
+                Ext.Ajax.request({
+                  scope: this,
+                  method: 'POST',
+                  jsonData: {
+                    data: {
+                      email: email
+                    }
+                  },
+                  url: Sonatype.config.repos.urls.usersForgotId + '/' + email,
+                  success: function(response, options){
+                    w.close();
+                    Sonatype.MessageBox.show( {
+                      title: 'Username Recovery',
+                      msg: 'Username request completed successfully.' +
+                        '<br /><br />' +
+                        'Check your mailbox, the username reminder should arrive in a few minutes.',
+                      buttons: Sonatype.MessageBox.OK,
+                      icon: Sonatype.MessageBox.INFO,
+                      animEl: 'mb3'
+                    } );
+                  },
+                  failure: function(response, options){
+                    Sonatype.utils.connectionError( response, 'There is a problem retrieving your username.' )
+                  }
+                });
+              }
+            },
+            {
+              text: 'Cancel',
+              formBind: false,
+              scope: this,
+              handler: function(){
+                w.close();
+              }
+            }
+          ]
+        }
+      ]
+    });
+
+    w.show();
+  },
+  
+  recoverPassword: function() {
+    var w = new Ext.Window({
+      title: 'Password Recovery',
+      closable: true,
+      autoWidth: false,
+      width: 300,
+      autoHeight: true,
+      modal:true,
+      constrain: true,
+      resizable: false,
+      draggable: false,
+      items: [
+        {
+          xtype: 'form',
+          labelAlign: 'right',
+          labelWidth:60,
+          frame:true,  
+          defaultType:'textfield',
+          monitorValid:true,
+          items:[
+            {
+              xtype: 'panel',
+              style: 'padding-left: 70px; padding-bottom: 10px',
+              html: 'Please enter your username and e-mail address below. We will send you a new password.'
+            },
+            { 
+              fieldLabel: 'Username', 
+              name: 'username',
+              width: 200,
+              allowBlank: false 
+            },
+            { 
+              fieldLabel: 'E-mail', 
+              name: 'email',
+              width: 200,
+              allowBlank: false 
+            }
+          ],
+          buttons: [
+            {
+              text: 'Reset Password',
+              formBind: true,
+              scope: this,
+              handler: function(){
+                var username = w.find('name', 'username')[0].getValue();
+                var email = w.find('name', 'email')[0].getValue();
+
+                Ext.Ajax.request({
+                  scope: this,
+                  method: 'POST',
+                  jsonData: {
+                    data: {
+                      userId: username,
+                      email: email
+                    }
+                  },
+                  url: Sonatype.config.repos.urls.usersForgotPassword,
+                  success: function(response, options){
+                    w.close();
+                    Sonatype.MessageBox.show( {
+                      title: 'Reset Password',
+                      msg: 'Password request completed successfully.' +
+                        '<br /><br />' +
+                        'Check your mailbox, your new password should arrive in a few minutes.',
+                      buttons: Sonatype.MessageBox.OK,
+                      icon: Sonatype.MessageBox.INFO,
+                      animEl: 'mb3'
+                    } );
+                  },
+                  failure: function(response, options){
+                    Sonatype.utils.connectionError( response, 'There is a problem resetting your password.' )
+                  }
+                });
+              }
+            },
+            {
+              text: 'Cancel',
+              formBind: false,
+              scope: this,
+              handler: function(){
+                w.close();
+              }
+            }
+          ]
+        }
+      ]
+    });
+
+    w.show();
+  },
+  
+  changePassword: function( expiredUsername ) {
+    var w = new Ext.Window({
+      title: 'Change Password',
+      closable: true,
+      autoWidth: false,
+      width: 350,
+      autoHeight: true,
+      modal:true,
+      constrain: true,
+      resizable: false,
+      draggable: false,
+      items: [
+        {
+          xtype: 'form',
+          labelAlign: 'right',
+          labelWidth:110,
+          frame:true,  
+          defaultType:'textfield',
+          monitorValid:true,
+          items:[
+            {
+              xtype: 'panel',
+              style: 'padding-left: 70px; padding-bottom: 10px',
+              html: ( expiredUsername ? 'Your password has expired, you need to reset it. ' : '' ) +
+                'Please enter your current password and then the new password twice to confirm.'
+            },
+            { 
+              fieldLabel: 'Current Password', 
+              inputType: 'password',
+              name: 'currentPassword',
+              width: 200,
+              allowBlank: false 
+            },
+            { 
+              fieldLabel: 'New Password', 
+              inputType: 'password',
+              name: 'newPassword',
+              width: 200,
+              allowBlank: false 
+            },
+            { 
+              fieldLabel: 'Confirm Password', 
+              inputType: 'password',
+              name: 'confirmPassword',
+              width: 200,
+              allowBlank: false,
+              validator: function( s ) {
+                var firstField = this.ownerCt.find( 'name', 'newPassword' )[0];
+                if ( firstField && firstField.getRawValue() != s ) {
+                  return "Passwords don't match";
+                }
+                return true;
+              }
+            }
+          ],
+          buttons: [
+            {
+              text: 'Change Password',
+              formBind: true,
+              scope: this,
+              handler: function(){
+                var currentPassword = w.find('name', 'currentPassword')[0].getValue();
+                var newPassword = w.find('name', 'newPassword')[0].getValue();
+
+                Ext.Ajax.request({
+                  scope: this,
+                  method: 'POST',
+                  jsonData: {
+                    data: {
+                      userId: expiredUsername ? expiredUsername : Sonatype.user.curr.username,
+                      oldPassword: currentPassword,
+                      newPassword: newPassword
+                    }
+                  },
+                  url: Sonatype.config.repos.urls.usersChangePassword,
+                  success: function(response, options){
+                    if ( expiredUsername ) {
+                      Sonatype.utils.doLogin( w, expiredUsername, newPassword );
+                      w.close();
+                    }
+                    else {
+                      w.close();
+                      Sonatype.MessageBox.show( {
+                        title: 'Password Changed',
+                        msg: 'Password change request completed successfully.',
+                        buttons: Sonatype.MessageBox.OK,
+                        icon: Sonatype.MessageBox.INFO,
+                        animEl: 'mb3'
+                      } );
+                    }
+                  },
+                  failure: function(response, options){
+                    Sonatype.utils.connectionError( response, 'There is a problem changing your password.' )
+                  }
+                });
+              }
+            },
+            {
+              text: 'Cancel',
+              formBind: false,
+              scope: this,
+              handler: function(){
+                w.close();
+              }
+            }
+          ]
+        }
+      ]
+    });
+
+    w.show();
+  },
+  
+  doLogin: function( activeWindow, username, password ) {
+    activeWindow.getEl().mask("Logging you in...");
+
+    var token = Sonatype.utils.base64.encode(username + ':' + password); 
+    Ext.Ajax.request({
+      method: 'GET',
+      cbPassThru : {
+        username : username
+      },
+      headers: {'Authorization' : 'Basic ' + token}, //@todo: send HTTP basic auth data
+      url: Sonatype.config.repos.urls.login,
+      success: function(response, options){
+        //get user permissions
+        var respObj = Ext.decode(response.responseText);
+        var newUserPerms = respObj.data.clientPermissions;
+        
+//        var rememberMe = Sonatype.utils.getCookie('nxRememberMe');
+
+        Sonatype.user.curr.username = options.cbPassThru.username;
+//        Sonatype.user.curr.authToken = respObj.data.authToken;
+        Sonatype.user.curr.repoServer = newUserPerms;
+        
+//        Sonatype.state.CookieProvider.set('authToken', Sonatype.user.curr.authToken);
+        Sonatype.state.CookieProvider.set('username', Sonatype.user.curr.username);
+        
+//        Ext.lib.Ajax.defaultHeaders.Authorization = 'NexusAuthToken ' + Sonatype.user.curr.authToken;
+        Ext.lib.Ajax.defaultHeaders.Authorization = 'Basic ' + token;
+
+        Sonatype.user.curr.isLoggedIn = true;
+        Sonatype.view.updateLoginLinkText();
+
+        Sonatype.repoServer.RepoServer.resetMainTabPanel();
+        
+        activeWindow.getEl().unmask();
+        if ( Sonatype.repoServer.RepoServer.loginWindow.isVisible() ) {
+          Sonatype.repoServer.RepoServer.loginWindow.hide();
+          Sonatype.repoServer.RepoServer.loginForm.getForm().reset();
+        }
+        
+        Sonatype.repoServer.RepoServer.createSubComponents(); //update left panel
+      },
+      failure: function(response, options){
+        activeWindow.getEl().unmask();
+        if ( Sonatype.repoServer.RepoServer.loginWindow.isVisible() ) {
+          Sonatype.repoServer.RepoServer.loginForm.find('name', 'password')[0].focus(true);
+        }
+      }
+
+    });
   }
 };
 

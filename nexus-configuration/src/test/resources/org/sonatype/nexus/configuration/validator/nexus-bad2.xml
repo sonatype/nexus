@@ -4,10 +4,21 @@
 <!-- used as default config source -->
 
 <nexusConfiguration>
-	<version>1.0.2</version>
+	<version>1.0.4</version>
 	<workingDirectory>${nexus.home}/nexus-work</workingDirectory>
 	<applicationLogDirectory>${nexus.home}/logs</applicationLogDirectory>
-
+	
+    <smtpConfiguration>
+        <host>smtp-host</host>
+        <port>1234</port>
+        <sslEnabled>false</sslEnabled>
+        <tlsEnabled>false</tlsEnabled>
+        <username>smtp-username</username>
+        <password>smtp-password</password>
+        <debugMode>false</debugMode>
+        <systemEmailAddress>system@nexus.org</systemEmailAddress>
+    </smtpConfiguration>
+    
 	<security>
 		<enabled>false</enabled>
 	</security>
@@ -30,7 +41,6 @@
 	
 	<restApi>
 		<accessAllowedFrom>*</accessAllowedFrom>
-		<authTokenExpiration>10080</authTokenExpiration>
 	</restApi>
 	
 	<httpProxy>
@@ -175,6 +185,7 @@
 		<pathMappings>
 			<pathMapping>
 				<id>inhouse-stuff</id>
+				<groupId>*</groupId>
 				<routePattern>.*/(com|org)/somecompany/.*</routePattern>
 				<routeType>inclusive</routeType>
 				<repositories>
@@ -184,6 +195,7 @@
 			</pathMapping>
 			<pathMapping>
 				<id>maven-stuff</id>
+				<groupId>*</groupId>
 				<routePattern>.*/org/apache/maven/.*</routePattern>
 				<routeType>inclusive</routeType>
 				<repositories>
@@ -193,6 +205,7 @@
 			</pathMapping>
 			<pathMapping>
 				<id>plexus-stuff</id>
+				<groupId>*</groupId>
 				<routePattern>.*/org/codehaus/plexus/.*</routePattern>
 				<routeType>inclusive</routeType>
 				<repositories>
@@ -202,6 +215,7 @@
 			</pathMapping>
 			<pathMapping>
 				<id>apache-stuff</id>
+				<groupId>*</groupId>
 				<routePattern>.*/org/apache/.*</routePattern>
 				<routeType>exclusive</routeType>
 				<repositories>

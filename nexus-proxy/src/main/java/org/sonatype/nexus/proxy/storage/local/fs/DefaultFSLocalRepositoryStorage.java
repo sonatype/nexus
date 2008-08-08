@@ -62,9 +62,6 @@ public class DefaultFSLocalRepositoryStorage
     extends AbstractLocalRepositoryStorage
     implements LocalRepositoryStorage
 {
-
-    public static final String FS_FILE = "fs.file";
-
     private static final String LINK_PREFIX = "LINK to ";
 
     /**
@@ -116,7 +113,7 @@ public class DefaultFSLocalRepositoryStorage
      * @param uid the uid
      * @return the file from base
      */
-    protected File getFileFromBase( RepositoryItemUid uid )
+    public File getFileFromBase( RepositoryItemUid uid )
         throws StorageException
     {
         File repoBase = getBaseDir( uid.getRepository() );
@@ -169,9 +166,9 @@ public class DefaultFSLocalRepositoryStorage
             StorageException
     {
         boolean mustBeACollection = tuid.getPath().endsWith( RepositoryItemUid.PATH_SEPARATOR );
-        
+
         String path = tuid.getPath();
-        
+
         if ( path.endsWith( "/" ) )
         {
             path = path.substring( 0, path.length() - 1 );
@@ -225,9 +222,7 @@ public class DefaultFSLocalRepositoryStorage
         {
             throw new ItemNotFoundException( uid );
         }
-        
-        result.getItemContext().put( FS_FILE, target );
-        
+
         return result;
     }
 
@@ -266,6 +261,15 @@ public class DefaultFSLocalRepositoryStorage
         }
     }
 
+    private synchronized void mkParentDirs( File target )
+        throws StorageException
+    {
+        if ( !target.getParentFile().exists() && !target.getParentFile().mkdirs() )
+        {
+            throw new StorageException( "Could not create the directory hiearchy to write " + target.getAbsolutePath() );
+        }
+    }
+
     public void storeItem( AbstractStorageItem item )
         throws UnsupportedStorageOperationException,
             StorageException
@@ -278,14 +282,11 @@ public class DefaultFSLocalRepositoryStorage
         File target = null;
         if ( StorageFileItem.class.isAssignableFrom( item.getClass() ) )
         {
-            target = getFileFromBase( item.getRepositoryItemUid() );;
+            target = getFileFromBase( item.getRepositoryItemUid() );
             try
             {
-                if ( !target.getParentFile().exists() && !target.getParentFile().mkdirs() )
-                {
-                    throw new StorageException( "Could not create the directory hiearchy to write "
-                        + target.getAbsolutePath() );
-                }
+                mkParentDirs( target );
+
                 InputStream is = null;
                 FileOutputStream os = null;
 
@@ -335,11 +336,9 @@ public class DefaultFSLocalRepositoryStorage
         else if ( StorageCollectionItem.class.isAssignableFrom( item.getClass() ) )
         {
             target = getFileFromBase( item.getRepositoryItemUid() );
-            if ( !target.getParentFile().exists() && !target.getParentFile().mkdirs() )
-            {
-                throw new StorageException( "Could not create the directory hiearchy to write "
-                    + target.getAbsolutePath() );
-            }
+
+            mkParentDirs( target );
+
             target.mkdir();
             target.setLastModified( item.getModified() );
             getAttributesHandler().storeAttributes( item, null );
@@ -349,11 +348,9 @@ public class DefaultFSLocalRepositoryStorage
             try
             {
                 target = getFileFromBase( item.getRepositoryItemUid() );
-                if ( !target.getParentFile().exists() && !target.getParentFile().mkdirs() )
-                {
-                    throw new StorageException( "Could not create the directory hiearchy to write "
-                        + target.getAbsolutePath() );
-                }
+
+                mkParentDirs( target );
+
                 FileOutputStream os = new FileOutputStream( target );
                 IOUtil.copy( new ByteArrayInputStream( ( LINK_PREFIX + ( (StorageLinkItem) item ).getTarget() )
                     .getBytes() ), os );
@@ -373,7 +370,6 @@ public class DefaultFSLocalRepositoryStorage
                     + item.getRepositoryItemUid().toString(), ex );
             }
         }
-        item.getItemContext().put( FS_FILE, target );
     }
 
     public void shredItem( RepositoryItemUid uid )

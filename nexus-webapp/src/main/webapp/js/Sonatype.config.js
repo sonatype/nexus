@@ -96,13 +96,19 @@ Sonatype.config = function() {
         status: servicePath + '/status',
         identify: servicePath + '/identify/sha1',
         schedules: servicePath + '/schedules',
-        scheduleRun: servicePath + '/schedules/run',
-        scheduleTypes: servicePath + '/schedules/types',
+        scheduleRun: servicePath + '/schedule_run',
+        scheduleTypes: servicePath + '/schedule_types',
         upload: servicePath + '/artifact/maven/content',
         trash: servicePath + '/wastebasket',
         users: servicePath + '/users',
-        usersReset: servicePath + '/users/reset',
+        usersReset: servicePath + '/users_reset',
+        usersForgotId: servicePath + '/users_forgotid',
+        usersForgotPassword: servicePath + '/users_forgotpw',
+        usersChangePassword: servicePath + '/users_changepw',
         roles: servicePath + '/roles',
+        privileges: servicePath + '/privileges',
+        repoTargets: servicePath + '/repo_targets',
+        repoContentClasses: servicePath + '/repo_content_classes'
       }
     },
     
@@ -119,12 +125,12 @@ Sonatype.user.anon = {
   isLoggedIn : false,
   authToken : null,
   repoServer : {
-    viewSearch : 1,
+    viewSearch : 0,
     viewUpdatedArtifacts : 0,
-    viewCachedArtifacts : 1,
-    viewDeployedArtifacts : 1,
-    viewSystemChanges : 1,
-    maintRepos : 1,
+    viewCachedArtifacts : 0,
+    viewDeployedArtifacts : 0,
+    viewSystemChanges : 0,
+    maintRepos : 0,
     maintLogs : 0,
     maintConfig : 0,
     configServer : 0,
@@ -133,7 +139,20 @@ Sonatype.user.anon = {
     configRepos : 0,
     configSchedules : 0,
     configUsers : 0,
-    configRoles : 0
+    configRoles : 0,
+    configPrivileges : 0,
+    configRepoTargets : 0,
+    actionForgotPassword: 0,
+    actionForgotUserid: 0,
+    actionChangePassword: 0,
+    actionResetPassword: 0,
+    actionEmptyTrash: 0,
+    actionRunTask: 0,
+    actionDeleteCache: 0,
+    actionRebuildAttribs: 0,
+    actionUploadArtifact: 0,
+    actionReindex: 0,
+    actionChecksumSearch: 0
   }
 };
 

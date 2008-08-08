@@ -27,6 +27,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
+import org.codehaus.plexus.interpolation.InterpolationException;
 import org.codehaus.plexus.logging.AbstractLogEnabled;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 import org.sonatype.nexus.configuration.model.CGroupsSettingPathMappingItem;
@@ -116,18 +117,21 @@ public class NexusConfigurationBuilder
                 }
                 repository.setMetadataMaxAge( getTTLValue( repoLogicBean, "metadataExpirationPeriodInSeconds" ) );
 
-                // Proximity have no standard security solution
-                repository.setRealmId( null );
                 // Proximity did not have this feature
                 repository.setMaintainProxiedRepositoryMetadata( false );
 
                 repository.setLocalStorage( new CLocalStorage() );
                 Xpp3Dom ls = ctx.getLocalStorageBeans().get( getPropertyValue( repoBean, "localStorage", "ref" ) );
                 String lsPath = getPropertyValue( ls, "storageDirFile" );
-                lsPath = applicationInterpolatorProvider.interpolate( lsPath, "" );
                 try
                 {
+                    lsPath = applicationInterpolatorProvider.getInterpolator().interpolate( lsPath, "" );
+
                     repository.getLocalStorage().setUrl( new File( lsPath ).toURI().toURL().toString() );
+                }
+                catch ( InterpolationException e )
+                {
+                    res.getExceptions().add( e );
                 }
                 catch ( MalformedURLException e )
                 {

@@ -20,13 +20,13 @@
  */
 //Instance of Ext.FormPanel
 Sonatype.repoServer.ServerEditPanel = function(config){
-  var baseUrlChanged = false;
+
   var config = config || {};
   var defaultConfig = {autoScroll:true};
   Ext.apply(this, config, defaultConfig);
   
   var tfStore = new Ext.data.SimpleStore({fields:['value'], data:[['True'],['False']]});
-  var securityConfigStore = new Ext.data.SimpleStore({fields:['value'], data:[['Off'],['Simple'],['Custom']]});
+  var securityConfigStore = new Ext.data.SimpleStore({fields:['value','display'], data:[[false,'Off'],[true,'On']]});
   
   // help text alias
   var ht = Sonatype.repoServer.resources.help.server;
@@ -73,6 +73,77 @@ Sonatype.repoServer.ServerEditPanel = function(config){
             fieldLabel: 'Log Directory',
             helpText: ht.logDirectory,
             name: 'logDirectory',
+            anchor: Sonatype.view.FIELD_OFFSET,
+            allowBlank:false,
+            itemCls: 'required-field'
+          }
+        ]
+      },
+      {
+        xtype: 'fieldset',
+        checkboxToggle:false,
+        title: 'SMTP Settings',
+        anchor: Sonatype.view.FIELDSET_OFFSET,
+        collapsible: true,
+        autoHeight:true,
+        layoutConfig: {
+          labelSeparator: ''
+        },
+
+        items: [
+          {
+            xtype: 'textfield',
+            fieldLabel: 'Hostname',
+            itemCls: 'required-field',
+            helpText: ht.smtphost,
+            name: 'smtpSettings.host',
+            anchor: Sonatype.view.FIELD_OFFSET,
+            allowBlank:false,
+            itemCls: 'required-field'
+          },
+          {
+            xtype: 'numberfield',
+            fieldLabel: 'Port',
+            helpText: ht.smtpport,
+            name: 'smtpSettings.port',
+            anchor: Sonatype.view.FIELD_OFFSET,
+            allowBlank:false,
+            itemCls: 'required-field'
+          },
+          {
+            xtype: 'textfield',
+            fieldLabel: 'Username',
+            helpText: ht.smtpuser,
+            name: 'smtpSettings.username',
+            anchor: Sonatype.view.FIELD_OFFSET,
+            allowBlank:true
+          },
+          {
+            xtype: 'textfield',
+            inputType:'password',
+            fieldLabel: 'Password',
+            helpText: ht.smtppass,
+            name: 'smtpSettings.password',
+            anchor: Sonatype.view.FIELD_OFFSET,
+            allowBlank:true
+          },
+          {
+            xtype: 'checkbox',
+            fieldLabel: 'SSL Enabled',
+            helpText: ht.smtpssl,
+            name: 'smtpSettings.sslEnabled'
+          },
+          {
+            xtype: 'checkbox',
+            fieldLabel: 'TLS Enabled',
+            helpText: ht.smtptls,
+            name: 'smtpSettings.tlsEnabled'
+          },
+          {
+            xtype: 'textfield',
+            fieldLabel: 'System Email',
+            helpText: ht.smtpsysemail,
+            name: 'smtpSettings.systemEmailAddress',
             anchor: Sonatype.view.FIELD_OFFSET,
             allowBlank:false,
             itemCls: 'required-field'
@@ -149,13 +220,14 @@ Sonatype.repoServer.ServerEditPanel = function(config){
         items: [
           {
             xtype: 'combo',
-            fieldLabel: 'Security Model',
+            fieldLabel: 'Security',
             itemCls: 'required-field',
-            helpText: ht.securityConfiguration,
-            name: 'securityConfiguration',
+            helpText: ht.security,
+            name: 'securityEnabled',
             width: 150,
             store: securityConfigStore,
-            displayField:'value',
+            valueField:'value',
+            displayField:'display',
             editable: false,
             forceSelection: true,
             mode: 'local',
@@ -164,33 +236,35 @@ Sonatype.repoServer.ServerEditPanel = function(config){
             selectOnFocus:true,
             allowBlank: false
           },
-          { 
-            xtype: 'textfield',
-            fieldLabel:'Admin Password', 
-            name:'adminPassword', 
-            inputType:'password',
-            helpText: ht.adminPassword,
-            width: 100,
-            allowBlank:true,
-            minLength: 4,
-            minLengthText : "Password must be 4 characters or more",
-            maxLength: 25,
-            maxLengthText : "Password must be 25 characters or less",
-            value: Sonatype.utils.passwordPlaceholder 
+          {
+            xtype: 'checkbox',
+            fieldLabel: 'Anonymous Access',
+            helpText: ht.anonymous,
+            name: 'securityAnonymousAccessEnabled'
           },
           { 
             xtype: 'textfield',
-            fieldLabel:'Deployment Password', 
-            name:'deploymentPassword', 
+            fieldLabel:'Anonymous Username', 
+            name:'securityAnonymousUsername',
+            helpText: ht.anonUsername,
+            width: 100,
+            allowBlank:true,
+            anchor: Sonatype.view.FIELD_OFFSET
+          },
+          { 
+            xtype: 'textfield',
+            fieldLabel:'Anonymous Password', 
+            name:'securityAnonymousPassword', 
             inputType:'password',
-            helpText: ht.deploymentPassword,
+            helpText: ht.anonPassword,
             width: 100,
             allowBlank:true,
             minLength: 4,
             minLengthText : "Password must be 4 characters or more",
             maxLength: 25,
             maxLengthText : "Password must be 25 characters or less",
-            value: Sonatype.utils.passwordPlaceholder 
+            value: Sonatype.utils.passwordPlaceholder,
+            anchor: Sonatype.view.FIELD_OFFSET 
           }
         ]
       },
@@ -302,6 +376,7 @@ Sonatype.repoServer.ServerEditPanel = function(config){
                 xtype: 'textfield',
                 fieldLabel: 'Password',
                 helpText: ht.password,
+                inputType:'password',
                 name: 'globalHttpProxySettings.authentication.password',
                 width: 100,
                 allowBlank:true
@@ -318,6 +393,7 @@ Sonatype.repoServer.ServerEditPanel = function(config){
                 xtype: 'textfield',
                 fieldLabel: 'Key Passphrase',
                 helpText: ht.passphrase,
+                inputType:'password',
                 name: 'globalHttpProxySettings.authentication.passphrase',
                 width: 100,
                 allowBlank:true
@@ -391,8 +467,11 @@ Sonatype.repoServer.ServerEditPanel = function(config){
   this.formPanel.form.on('actioncomplete', this.actionCompleteHandler, this.formPanel);
   this.formPanel.form.on('actionfailed', this.actionFailedHandler, this.formPanel);
   
-  var securityConfigField = this.formPanel.find('name', 'securityConfiguration')[0];
-  securityConfigField.on('select', this.securityConfigSelectHandler, securityConfigField);
+  var securityConfigField = this.formPanel.find('name', 'securityEnabled')[0];
+  securityConfigField.on('select', this.securitySelectHandler, securityConfigField);
+  
+  var anonymousField = this.formPanel.find('name', 'securityAnonymousAccessEnabled')[0];
+  anonymousField.on('check', this.anonymousCheckHandler, anonymousField);
 };
 
 Ext.extend(Sonatype.repoServer.ServerEditPanel, Ext.Panel, {
@@ -424,13 +503,10 @@ Ext.extend(Sonatype.repoServer.ServerEditPanel, Ext.Panel, {
   
   saveBtnHandler : function() {
     var wkDirField = this.find('name', 'workingDirectory')[0];
-    var securityConfigField = this.find('name', 'securityConfiguration')[0];
     var baseUrlField = this.find('name', 'baseUrl')[0];
     if (this.form.isValid()) {
-      if (baseUrlField.isDirty()) {
-        this.baseUrlChanged = true;
-      }
-      if (wkDirField.isDirty() || securityConfigField.isDirty()) {
+
+      if (wkDirField.isDirty()) {
         //@note: this handler selects the "No" button as the default
         //@todo: could extend Sonatype.MessageBox to take the button to select as a param
         Sonatype.MessageBox.getDialog().on('show', function(){
@@ -442,8 +518,8 @@ Ext.extend(Sonatype.repoServer.ServerEditPanel, Ext.Panel, {
       
         Sonatype.MessageBox.show({
           animEl: this,
-          title : 'Change Working Directory? or Security Model?',
-          msg : 'Changing the Working Directory or Security Model requires a manual restart of Nexus.<br/><br/>Do you want to continue?',
+          title : 'Change Working Directory?',
+          msg : 'Changing the Working Directory requires a manual restart of Nexus.<br/><br/>Do you want to continue?',
           buttons: Sonatype.MessageBox.YESNO,
           scope: this,
           icon: Sonatype.MessageBox.QUESTION,
@@ -481,9 +557,7 @@ Ext.extend(Sonatype.repoServer.ServerEditPanel, Ext.Panel, {
         "routing.followLinks" : Sonatype.utils.convert.stringContextToBool,
         "routing.groups.stopItemSearchOnFirstFoundFile" : Sonatype.utils.convert.stringContextToBool,
         "routing.groups.mergeMetadata" : Sonatype.utils.convert.stringContextToBool,
-        "adminPassword" : Sonatype.utils.convert.passwordToString,
-        "deploymentPassword" : Sonatype.utils.convert.passwordToString,
-        "securityConfiguration" : Sonatype.utils.lowercase,
+        "securityAnonymousPassword" : Sonatype.utils.convert.passwordToString,
         "baseUrl" : Sonatype.utils.returnValidStr
       },
       serviceDataObj : Sonatype.repoServer.referenceData.globalSettingsState
@@ -512,7 +586,6 @@ Ext.extend(Sonatype.repoServer.ServerEditPanel, Ext.Panel, {
         "routing.followLinks" : Sonatype.utils.capitalize,
         "routing.groups.stopItemSearchOnFirstFoundFile" : Sonatype.utils.capitalize,
         "routing.groups.mergeMetadata" : Sonatype.utils.capitalize,
-        "securityConfiguration" : Sonatype.utils.capitalize,
         "baseUrl" : function(str) {
             if (!Ext.isEmpty(str)){
               appSettingsPanel.expand();
@@ -544,17 +617,14 @@ Ext.extend(Sonatype.repoServer.ServerEditPanel, Ext.Panel, {
       if (action.options.restartRequired) {
         Sonatype.MessageBox.show({
           title : 'Restart Required',
-          msg : 'Nexus must now be restarted for the Working Directory and/or Security Model change to take effect',
+          msg : 'Nexus must now be restarted for the Working Directory change to take effect',
           buttons: false,
           closable: false,
           icon: Sonatype.MessageBox.WARNING
         });
       }
-      else if (action.options.fpanel.baseUrlChanged){
-        window.location = action.options.fpanel.find('name', 'baseUrl')[0].getValue();
-      }
-      action.options.fpanel.find('name', 'adminPassword')[0].setValue(Sonatype.utils.passwordPlaceholder);
-      action.options.fpanel.find('name', 'deploymentPassword')[0].setValue(Sonatype.utils.passwordPlaceholder);
+
+      action.options.fpanel.find('name', 'securityAnonymousPassword')[0].setValue(Sonatype.utils.passwordPlaceholder);
     }
     
     if (action.type == 'sonatypeLoad'){
@@ -563,12 +633,12 @@ Ext.extend(Sonatype.repoServer.ServerEditPanel, Ext.Panel, {
       //        default behavior sets the original value to whatever is specified in the config.
       var wkDirField = this.find('name', 'workingDirectory')[0];
       wkDirField.originalValue = wkDirField.getValue();
-      var disablePW = true;
-      if (action.options.fpanel.find('name', 'securityConfiguration')[0].getValue() == 'Simple') {
-        disablePW = false;
+      var disableAnonFields = true;
+      if (action.options.fpanel.find('name', 'securityAnonymousAccessEnabled')[0].getValue() == true) {
+        disableAnonFields = false;
       }
-      action.options.fpanel.find('name', 'adminPassword')[0].setDisabled(disablePW);
-      action.options.fpanel.find('name', 'deploymentPassword')[0].setDisabled(disablePW);
+      action.options.fpanel.find('name', 'securityAnonymousUsername')[0].setDisabled(disableAnonFields);
+      action.options.fpanel.find('name', 'securityAnonymousPassword')[0].setDisabled(disableAnonFields);
       if (!Ext.isEmpty(action.options.fpanel.find('name', 'baseUrl')[0].getValue())) {
         action.options.fpanel.find('id', (action.options.fpanel.id + '_' + 'applicationServerSettings'))[0].expand();
       }
@@ -596,14 +666,12 @@ Ext.extend(Sonatype.repoServer.ServerEditPanel, Ext.Panel, {
     //@todo: need global alert mechanism for fatal errors.
   },
   
-  securityConfigSelectHandler : function(combo, record, index){
-    var disabled = true;
-    if (record.data.value == 'Simple') {
-      disabled = false;
-    }
-    
-    this.ownerCt.find('name', 'adminPassword')[0].setDisabled(disabled);
-    this.ownerCt.find('name', 'deploymentPassword')[0].setDisabled(disabled);
+  securitySelectHandler : function(combo, record, index){
+  },
+  
+  anonymousCheckHandler : function(checkbox, checked){
+    this.ownerCt.find('name', 'securityAnonymousUsername')[0].setDisabled(!checked);
+    this.ownerCt.find('name', 'securityAnonymousPassword')[0].setDisabled(!checked);
   }
   
 });

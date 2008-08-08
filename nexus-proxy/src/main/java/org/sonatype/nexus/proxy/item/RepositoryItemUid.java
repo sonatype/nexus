@@ -20,6 +20,9 @@
  */
 package org.sonatype.nexus.proxy.item;
 
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantLock;
+
 import org.codehaus.plexus.util.StringUtils;
 import org.sonatype.nexus.proxy.NoSuchRepositoryException;
 import org.sonatype.nexus.proxy.registry.RepositoryRegistry;
@@ -31,6 +34,7 @@ import org.sonatype.nexus.proxy.repository.Repository;
  */
 public class RepositoryItemUid
 {
+    private static final ConcurrentHashMap<String, ReentrantLock> locks = new ConcurrentHashMap<String, ReentrantLock>();
 
     /** Constant to denote a separator in Proximity paths. */
     public static final String PATH_SEPARATOR = "/";
@@ -109,11 +113,6 @@ public class RepositoryItemUid
             {
                 this.path = RepositoryItemUid.PATH_ROOT + path;
             }
-
-            // if ( this.path.length() > 1 && this.path.endsWith( RepositoryItemUid.PATH_SEPARATOR ) )
-            // {
-             //   this.path = path.substring( 0, this.path.length() - 1 );
-            // }
         }
         else
         {
@@ -146,4 +145,37 @@ public class RepositoryItemUid
         return getRepository().getId() + ":" + getPath();
     }
 
+    public static int getLockCount()
+    {
+        return locks.size();
+    }
+
+    public ReentrantLock lock()
+    {
+        ReentrantLock newLock = new ReentrantLock();
+
+        ReentrantLock oldLock = locks.putIfAbsent( toString(), newLock );
+
+        ReentrantLock lock = ( oldLock == null ) ? newLock : oldLock;
+
+        lock.lock();
+
+        return lock;
+    }
+
+    public void unlock( ReentrantLock lock )
+    {
+        synchronized ( locks )
+        {
+            if ( lock != null )
+            {
+                if ( !lock.hasQueuedThreads() )
+                {
+                    locks.remove( toString() );
+                }
+
+                lock.unlock();
+            }
+        }
+    }
 }

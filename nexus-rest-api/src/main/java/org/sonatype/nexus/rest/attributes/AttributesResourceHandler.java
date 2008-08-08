@@ -43,6 +43,8 @@ public class AttributesResourceHandler
         task.setRepositoryId( getRepositoryId() );
 
         task.setRepositoryGroupId( getRepositoryGroupId() );
+        
+        task.setResourceStorePath( getResourceStorePath() );
 
         super.handleDelete( task );
     }

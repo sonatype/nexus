@@ -211,6 +211,35 @@
 					</association>
 					<required>false</required>
 				</field>
+				<field>
+					<name>repositoryTargets</name>
+					<version>1.0.4+</version>
+					<description>The repository targets.</description>
+					<association>
+						<type>CRepositoryTarget</type>
+						<multiplicity>*</multiplicity>
+					</association>
+					<required>false</required>
+				</field>
+				<field>
+					<name>tasks</name>
+					<version>1.0.4+</version>
+					<description>Currently defined tasks</description>
+					<required>false</required>
+					<association>
+						<type>CScheduledTask</type>
+						<multiplicity>*</multiplicity>
+					</association>
+				</field>
+				<field>
+                    <name>smtpConfiguration</name>
+                    <version>1.0.4+</version>
+                    <description>SMTP Parameters</description>
+                    <required>true</required>
+                    <association>
+                        <type>CSmtpConfiguration</type>
+                    </association>
+                </field>
 			</fields>
 			<codeSegments>
 				<codeSegment>
@@ -227,23 +256,29 @@
 ]]></code>
 				</codeSegment>
 				<codeSegment>
-					<version>1.0.2</version>
+					<version>1.0.2+</version>
 					<code><![CDATA[
-    public static final String MODEL_VERSION = "1.0.2";
-    
     public static final String LOCAL_STATUS_IN_SERVICE = "inService";
 
     public static final String LOCAL_STATUS_OUT_OF_SERVICE = "outOfService";
 ]]></code>
 				</codeSegment>
 				<codeSegment>
+					<version>1.0.2</version>
+					<code><![CDATA[
+    public static final String MODEL_VERSION = "1.0.2";
+]]></code>
+				</codeSegment>
+				<codeSegment>
 					<version>1.0.3</version>
 					<code><![CDATA[
     public static final String MODEL_VERSION = "1.0.3";
-    
-    public static final String LOCAL_STATUS_IN_SERVICE = "inService";
-
-    public static final String LOCAL_STATUS_OUT_OF_SERVICE = "outOfService";
+]]></code>
+				</codeSegment>
+				<codeSegment>
+					<version>1.0.4</version>
+					<code><![CDATA[
+    public static final String MODEL_VERSION = "1.0.4";
 ]]></code>
 				</codeSegment>
 			</codeSegments>
@@ -252,9 +287,7 @@
 		<class>
 			<name>CRemoteNexusInstance</name>
 			<version>1.0.2+</version>
-			<description>
-				The known remote Nexus instances.
-			</description>
+			<description>The known remote Nexus instances.</description>
 			<fields>
 				<field>
 					<name>alias</name>
@@ -272,7 +305,7 @@
 				</field>
 			</fields>
 		</class>
-		
+
 		<!-- CONNECTION AND PROXIES -->
 		<class>
 			<name>CRemoteConnectionSettings</name>
@@ -700,18 +733,7 @@
 				</field>
 				<field>
 					<name>offline</name>
-					<version>1.0.0</version>
-					<type>boolean</type>
-					<required>true</required>
-					<description>
-						If true, repository will never try to reach it's remote peer. Will offer the content it has in
-						cache/local store.
-					</description>
-					<defaultValue>false</defaultValue>
-				</field>
-				<field>
-					<name>offline</name>
-					<version>1.0.1</version>
+					<version>1.0.0/1.0.1</version>
 					<type>boolean</type>
 					<required>true</required>
 					<description>
@@ -837,7 +859,7 @@
 				</field>
 				<field>
 					<name>realmId</name>
-					<version>1.0.0+</version>
+					<version>1.0.0/1.0.3</version>
 					<type>String</type>
 					<required>false</required>
 					<description>The ID of defined realm from "security" section of configuration.</description>
@@ -1060,9 +1082,7 @@
 					<version>1.0.0+</version>
 					<type>String</type>
 					<required>true</required>
-					<description>
-						Shadow type.
-					</description>
+					<description>Shadow type.</description>
 					<defaultValue>maven1</defaultValue>
 				</field>
 				<field>
@@ -1077,7 +1097,7 @@
 				</field>
 				<field>
 					<name>realmId</name>
-					<version>1.0.0+</version>
+					<version>1.0.0/1.0.3</version>
 					<type>String</type>
 					<required>false</required>
 					<description>The ID of defined realm from "security" section of configuration.</description>
@@ -1183,6 +1203,12 @@
 					<required>true</required>
 				</field>
 				<field>
+					<name>groupId</name>
+					<version>1.0.4+</version>
+					<type>String</type>
+					<required>true</required>
+				</field>
+				<field>
 					<name>routePattern</name>
 					<version>1.0.1+</version>
 					<type>String</type>
@@ -1213,6 +1239,12 @@
     public static final String INCLUSION_RULE_TYPE = "inclusive";
     
     public static final String BLOCKING_RULE_TYPE = "blocking";
+]]></code>
+				</codeSegment>
+				<codeSegment>
+					<version>1.0.4+</version>
+					<code><![CDATA[
+    public static final String ALL_GROUPS = "*";
 ]]></code>
 				</codeSegment>
 			</codeSegments>
@@ -1282,8 +1314,40 @@
 					<defaultValue>false</defaultValue>
 				</field>
 				<field>
+					<name>anonymousUsername</name>
+					<version>1.0.4+</version>
+					<type>String</type>
+					<required>true</required>
+					<description>
+						The username used to log in as anonymous user. The account should be enabled and existing according to the
+						used JSecurity realm!
+					</description>
+					<defaultValue>anonymous</defaultValue>
+				</field>
+				<field>
+					<name>anonymousPassword</name>
+					<version>1.0.4+</version>
+					<type>String</type>
+					<required>true</required>
+					<description>
+						The username used to log in as anonymous user. The account should be enabled and existing according to the
+						used JSecurity realm!
+					</description>
+					<defaultValue>anonymous</defaultValue>
+				</field>
+				<field>
+					<name>realms</name>
+					<version>1.0.4+</version>
+					<description>The list of JSecurity realms used in Nexus.</description>
+					<association>
+						<type>String</type>
+						<multiplicity>*</multiplicity>
+					</association>
+					<required>true</required>
+				</field>
+				<field>
 					<name>authenticationSource</name>
-					<version>1.0.0+</version>
+					<version>1.0.0/1.0.3</version>
 					<description>The authentication source to use with Nexus.</description>
 					<association>
 						<type>CAuthSource</type>
@@ -1292,7 +1356,7 @@
 				</field>
 				<field>
 					<name>realms</name>
-					<version>1.0.0+</version>
+					<version>1.0.0/1.0.3</version>
 					<description>The list of realms used to Nexus.</description>
 					<association>
 						<type>CAuthzSource</type>
@@ -1304,7 +1368,7 @@
 		</class>
 		<class>
 			<name>CAuthSource</name>
-			<version>1.0.0+</version>
+			<version>1.0.0/1.0.3</version>
 			<description>Authentication source definition.</description>
 			<fields>
 				<field>
@@ -1329,7 +1393,7 @@
 		</class>
 		<class>
 			<name>CAuthzSource</name>
-			<version>1.0.0+</version>
+			<version>1.0.0/1.0.3</version>
 			<description>Authorization source definition (realm).</description>
 			<fields>
 				<field>
@@ -1370,7 +1434,9 @@
 					<version>1.0.3+</version>
 					<type>String</type>
 					<required>true</required>
-					<description>The base URL against to build absolute URLs in REST responses, RSS feeds, mails, etc.</description>
+					<description>
+						The base URL against to build absolute URLs in REST responses, RSS feeds, mails, etc.
+					</description>
 				</field>
 				<field>
 					<name>accessAllowedFrom</name>
@@ -1382,7 +1448,7 @@
 				</field>
 				<field>
 					<name>authTokenExpiration</name>
-					<version>1.0.2+</version>
+					<version>1.0.2/1.0.3</version>
 					<type>int</type>
 					<required>true</required>
 					<description>The auth token expiration in minutes. Default is one week.</description>
@@ -1433,201 +1499,414 @@
 				</codeSegment>
 			</codeSegments>
 		</class>
-		
+
+		<!-- Repository target -->
+		<class>
+			<name>CRepositoryTarget</name>
+			<version>1.0.4+</version>
+			<description>A repository target.</description>
+			<fields>
+				<field>
+					<name>id</name>
+					<type>String</type>
+					<version>1.0.4+</version>
+					<required>true</required>
+					<description>The ID of target.</description>
+				</field>
+				<field>
+					<name>name</name>
+					<type>String</type>
+					<version>1.0.4+</version>
+					<required>true</required>
+					<description>The name of the Target.</description>
+				</field>
+				<field>
+					<name>contentClass</name>
+					<type>String</type>
+					<version>1.0.4+</version>
+					<required>true</required>
+					<description>The repository contentClass this Target is applicable.</description>
+				</field>
+				<field>
+					<name>patterns</name>
+					<version>1.0.4+</version>
+					<description>The patterns that comprises this target.</description>
+					<required>true</required>
+					<association>
+						<type>String</type>
+						<multiplicity>*</multiplicity>
+					</association>
+				</field>
+			</fields>
+		</class>
+
 		<!-- Scheduled Tasks -->
-		
+
 		<class>
-            <name>CTaskConfiguration</name>
-            <version>1.0.0+</version>
-            <description>The main configuration of the scheduled tasks</description>
-            <fields>
-                <field>
-                    <name>tasks</name>
-                    <version>1.0.0+</version>
-                    <description>Currently defined tasks</description>
-                    <required>false</required>
-                    <association>
-                        <type>CScheduledTask</type>
-                        <multiplicity>*</multiplicity>
-                    </association>
-                </field>            
-            </fields>
-        </class>         
-        
+			<name>CScheduledTask</name>
+			<description>A scheduled task</description>
+			<version>1.0.3+</version>
+			<fields>
+				<field>
+					<name>id</name>
+					<type>String</type>
+					<version>1.0.3+</version>
+					<required>true</required>
+					<description>The id of the task</description>
+				</field>
+				<field>
+					<name>name</name>
+					<type>String</type>
+					<version>1.0.3+</version>
+					<required>true</required>
+					<description>The name of the task</description>
+				</field>
+				<field>
+					<name>enabled</name>
+					<type>boolean</type>
+					<version>1.0.3+</version>
+					<required>true</required>
+					<description>The flag determining if the task should run</description>
+				</field>
+				<field>
+					<name>type</name>
+					<type>String</type>
+					<version>1.0.3+</version>
+					<required>true</required>
+					<description>The type of the task</description>
+				</field>
+				<field>
+					<name>status</name>
+					<type>String</type>
+					<version>1.0.3+</version>
+					<required>true</required>
+					<description>The current status of the task</description>
+				</field>
+				<field>
+					<name>lastRun</name>
+					<type>Date</type>
+					<version>1.0.3+</version>
+					<required>true</required>
+					<description>The date the task last ran</description>
+				</field>
+				<field>
+					<name>nextRun</name>
+					<type>Date</type>
+					<version>1.0.3+</version>
+					<required>true</required>
+					<description>The date the task will run next</description>
+				</field>
+				<field>
+					<name>schedule</name>
+					<association>
+						<type>CSchedule</type>
+					</association>
+					<version>1.0.3</version>
+					<required>true</required>
+					<description>The schedule that controls the time this task is run</description>
+				</field>
+				<field>
+					<name>schedule</name>
+					<association>
+						<type>CScheduleConfig</type>
+					</association>
+					<version>1.0.4+</version>
+					<required>true</required>
+					<description>The schedule that controls the time this task is run</description>
+				</field>
+				<field>
+					<name>properties</name>
+					<version>1.0.3+</version>
+					<description>Properties to configure the task</description>
+					<required>false</required>
+					<association>
+						<type>CProps</type>
+						<multiplicity>*</multiplicity>
+					</association>
+				</field>
+			</fields>
+		</class>
+
+		<class>
+			<name>CScheduleConfig</name>
+			<version>1.0.4+</version>
+			<description>A schedule configuration.</description>
+			<fields>
+				<field>
+					<name>type</name>
+					<type>String</type>
+					<version>1.0.4+</version>
+					<required>true</required>
+					<description>The type of the schedule</description>
+				</field>
+				<field>
+					<name>startDate</name>
+					<type>Date</type>
+					<version>1.0.4+</version>
+					<required>true</required>
+					<description>The schedule that controls the time this task is run</description>
+				</field>
+				<field>
+					<name>endDate</name>
+					<type>Date</type>
+					<version>1.0.4+</version>
+					<required>true</required>
+					<description>The schedule that controls the time this task is run</description>
+				</field>
+				<field>
+					<name>daysOfWeek</name>
+					<version>1.0.4+</version>
+					<description>Days of the week to run</description>
+					<required>true</required>
+					<association>
+						<type>String</type>
+						<multiplicity>*</multiplicity>
+					</association>
+				</field>
+				<field>
+					<name>daysOfMonth</name>
+					<version>1.0.4+</version>
+					<description>Days of the month to run</description>
+					<required>true</required>
+					<association>
+						<type>String</type>
+						<multiplicity>*</multiplicity>
+					</association>
+				</field>
+				<field>
+					<name>cronCommand</name>
+					<type>String</type>
+					<version>1.0.4+</version>
+					<description>cron scheduling configuration command</description>
+					<required>true</required>
+				</field>
+			</fields>
+			<codeSegments>
+				<codeSegment>
+					<version>1.0.4+</version>
+					<code><![CDATA[
+    public static final String TYPE_MANUAL = "manual";
+
+    public static final String TYPE_RUN_NOW = "runNow";
+
+    public static final String TYPE_ONCE = "once";
+    
+    public static final String TYPE_DAILY = "daily";
+    
+    public static final String TYPE_WEEKLY = "weekly";
+    
+    public static final String TYPE_MONTHLY = "monthly";
+    
+    public static final String TYPE_ADVANCED = "advanced";
+]]></code>
+				</codeSegment>
+			</codeSegments>
+		</class>
+
+		<!-- WARNING! The CTaskConfiguration class should be used only for migration from b4.x to b5! -->
+		<!-- It is frozen to model version 1.0.3 -->
+		<class>
+			<name>CTaskConfiguration</name>
+			<version>1.0.3</version>
+			<description>The main configuration of the scheduled tasks</description>
+			<fields>
+				<field>
+					<name>tasks</name>
+					<version>1.0.3</version>
+					<description>Currently defined tasks</description>
+					<required>false</required>
+					<association>
+						<type>CScheduledTask</type>
+						<multiplicity>*</multiplicity>
+					</association>
+				</field>
+			</fields>
+		</class>
+		<class>
+			<name>CSchedule</name>
+			<version>1.0.3</version>
+			<description>A schedule, which can be used to control a task.</description>
+		</class>
+
+		<class>
+			<name>CRunNowSchedule</name>
+			<superClass>CSchedule</superClass>
+			<version>1.0.3</version>
+			<description>A special schedule, that doesn't get stored, just runs once, now, and thats it</description>
+		</class>
+
+		<class>
+			<name>COnceSchedule</name>
+			<superClass>CSchedule</superClass>
+			<version>1.0.3</version>
+			<description>A schedule, which will run a task once.</description>
+			<fields>
+				<field>
+					<name>startDate</name>
+					<type>Date</type>
+					<version>1.0.3</version>
+					<required>true</required>
+					<description>The schedule that controls the time this task is run</description>
+				</field>
+			</fields>
+		</class>
+
+		<class>
+			<name>CDailySchedule</name>
+			<superClass>COnceSchedule</superClass>
+			<version>1.0.3</version>
+			<description>A schedule, which will run a task daily.</description>
+			<fields>
+				<field>
+					<name>endDate</name>
+					<type>Date</type>
+					<version>1.0.3</version>
+					<required>true</required>
+					<description>The schedule that controls the time this task is run</description>
+				</field>
+			</fields>
+		</class>
+
+		<class>
+			<name>CWeeklySchedule</name>
+			<superClass>CDailySchedule</superClass>
+			<version>1.0.3</version>
+			<description>A schedule, which will run a task weekly.</description>
+			<fields>
+				<field>
+					<name>daysOfWeek</name>
+					<version>1.0.3</version>
+					<description>Days of the week to run</description>
+					<required>true</required>
+					<association>
+						<type>String</type>
+						<multiplicity>*</multiplicity>
+					</association>
+				</field>
+			</fields>
+		</class>
+
+		<class>
+			<name>CMonthlySchedule</name>
+			<superClass>CDailySchedule</superClass>
+			<version>1.0.3</version>
+			<description>A schedule, which will run a task monthly.</description>
+			<fields>
+				<field>
+					<name>daysOfMonth</name>
+					<version>1.0.3</version>
+					<description>Days of the month to run</description>
+					<required>true</required>
+					<association>
+						<type>String</type>
+						<multiplicity>*</multiplicity>
+					</association>
+				</field>
+			</fields>
+		</class>
+
+		<class>
+			<name>CAdvancedSchedule</name>
+			<superClass>CSchedule</superClass>
+			<version>1.0.3</version>
+			<description>A schedule, which will run a task using a cron command.</description>
+			<fields>
+				<field>
+					<name>cronCommand</name>
+					<type>String</type>
+					<version>1.0.3</version>
+					<description>cron scheduling configuration command</description>
+					<required>true</required>
+				</field>
+			</fields>
+		</class>
+		
+		<!-- SMTP Settings -->
         <class>
-            <name>CScheduledTask</name>
-            <description>A scheduled task</description>
+            <name>CSmtpConfiguration</name>
+            <version>1.0.4+</version>
+            <description>The SMTP Settings.</description>
             <fields>
                 <field>
-                    <name>id</name>
+                    <name>host</name>
+                    <version>1.0.4+</version>
                     <type>String</type>
-                    <version>1.0.0+</version>
                     <required>true</required>
-                    <description>The id of the task</description>
+                    <description>
+                        The host of the smtp server.
+                    </description>
                 </field>
                 <field>
-                    <name>name</name>
-                    <type>String</type>
-                    <version>1.0.0+</version>
+                    <name>port</name>
+                    <version>1.0.4+</version>
+                    <type>int</type>
                     <required>true</required>
-                    <description>The name of the task</description>
+                    <description>
+                        The port of the smtp server.
+                    </description>
+                    <defaultValue>-1</defaultValue>
                 </field>
                 <field>
-                    <name>enabled</name>
+                    <name>sslEnabled</name>
+                    <version>1.0.4+</version>
                     <type>boolean</type>
-                    <version>1.0.0+</version>
-                    <required>true</required>
-                    <description>The flag determining if the task should run</description>
-                </field>
-                <field>
-                    <name>type</name>
-                    <type>String</type>
-                    <version>1.0.0+</version>
-                    <required>true</required>
-                    <description>The type of the task</description>
-                </field>
-                <field>
-                    <name>status</name>
-                    <type>String</type>
-                    <version>1.0.0+</version>
-                    <required>true</required>
-                    <description>The current status of the task</description>
-                </field>
-                <field>
-                    <name>lastRun</name>
-                    <type>Date</type>
-                    <version>1.0.0+</version>
-                    <required>true</required>
-                    <description>The date the task last ran</description>
-                </field>
-                <field>
-                    <name>nextRun</name>
-                    <type>Date</type>
-                    <version>1.0.0+</version>
-                    <required>true</required>
-                    <description>The date the task will run next</description>
-                </field>
-                <field>
-                    <name>schedule</name>
-                    <association>
-                        <type>CSchedule</type>
-                    </association>
-                    <version>1.0.0+</version>
-                    <required>true</required>
-                    <description>The schedule that controls the time this task is run</description>
-                </field>
-                <field>
-                    <name>properties</name>
-                    <version>1.0.0+</version>
-                    <description>Properties to configure the task</description>
                     <required>false</required>
-                    <association>
-                        <type>CProps</type>
-                        <multiplicity>*</multiplicity>
-                    </association>
+                    <description>
+                        Enable ssl.
+                    </description>
+                    <defaultValue>false</defaultValue>
                 </field>
-            </fields>
-        </class>
-		
-		<class>
-            <name>CSchedule</name>
-            <version>1.0.0+</version>
-            <description>A schedule, which can be used to control a task.</description>
-        </class>
-        
-        <class>
-            <name>CRunNowSchedule</name>
-            <superClass>CSchedule</superClass>
-            <version>1.0.0+</version>
-            <description>A special schedule, that doesn't get stored, just runs once, now, and thats it</description>
-        </class>
-        
-        <class>
-            <name>COnceSchedule</name>
-            <superClass>CSchedule</superClass>
-            <version>1.0.0+</version>
-            <description>A schedule, which will run a task once.</description>
-            <fields>
                 <field>
-                    <name>startDate</name>
-                    <type>Date</type>
-                    <version>1.0.0+</version>
-                    <required>true</required>
-                    <description>The schedule that controls the time this task is run</description>
+                    <name>tlsEnabled</name>
+                    <version>1.0.4+</version>
+                    <type>boolean</type>
+                    <required>false</required>
+                    <description>
+                        Enable tls.
+                    </description>
+                    <defaultValue>false</defaultValue>
                 </field>
-            </fields>
-        </class>
-        
-        <class>
-            <name>CDailySchedule</name>
-            <superClass>COnceSchedule</superClass>
-            <version>1.0.0+</version>
-            <description>A schedule, which will run a task daily.</description>
-            <fields>
                 <field>
-                    <name>endDate</name>
-                    <type>Date</type>
-                    <version>1.0.0+</version>
-                    <required>true</required>
-                    <description>The schedule that controls the time this task is run</description>
-                </field>
-            </fields>
-        </class>
-        
-        <class>
-            <name>CWeeklySchedule</name>
-            <superClass>CDailySchedule</superClass>
-            <version>1.0.0+</version>
-            <description>A schedule, which will run a task weekly.</description>
-            <fields>
-                <field>
-                    <name>daysOfWeek</name>
-                    <version>1.0.0+</version>
-                    <description>Days of the week to run</description>
-                    <required>true</required>
-                    <association>
-                        <type>String</type>
-                        <multiplicity>*</multiplicity>
-                    </association>
-                </field>
-            </fields>
-        </class>
-        
-        <class>
-            <name>CMonthlySchedule</name>
-            <superClass>CDailySchedule</superClass>
-            <version>1.0.0+</version>
-            <description>A schedule, which will run a task monthly.</description>
-            <fields>
-                <field>
-                    <name>daysOfMonth</name>
-                    <version>1.0.0+</version>
-                    <description>Days of the month to run</description>
-                    <required>true</required>
-                    <association>
-                        <type>String</type>
-                        <multiplicity>*</multiplicity>
-                    </association>
-                </field>
-            </fields>
-        </class>
-        
-        <class>
-            <name>CAdvancedSchedule</name>
-            <superClass>CSchedule</superClass>
-            <version>1.0.0+</version>
-            <description>A schedule, which will run a task using a cron command.</description>
-            <fields>
-                <field>
-                    <name>cronCommand</name>
+                    <name>username</name>
+                    <version>1.0.4+</version>
                     <type>String</type>
-                    <version>1.0.0+</version>
-                    <description>cron scheduling configuration command</description>
+                    <required>false</required>
+                    <description>
+                        Username to access smtp server.
+                    </description>
+                </field>
+                <field>
+                    <name>password</name>
+                    <version>1.0.4+</version>
+                    <type>String</type>
+                    <required>false</required>
+                    <description>
+                        Password to access smtp server.
+                    </description>
+                </field>
+                <field>
+                    <name>debugMode</name>
+                    <version>1.0.4+</version>
+                    <type>boolean</type>
+                    <required>false</required>
+                    <description>
+                        Enable debug mode.
+                    </description>
+                    <defaultValue>false</defaultValue>
+                </field>
+                <field>
+                    <name>systemEmailAddress</name>
+                    <version>1.0.4+</version>
+                    <type>String</type>
                     <required>true</required>
+                    <description>
+                        Email addresses that Nexus will use to send emails from.
+                    </description>
+                    <defaultValue>nexus-system@sonatype.org</defaultValue>
                 </field>
             </fields>
         </class>
-        
+
 		<!-- UTIL -->
 		<class>
 			<name>CProps</name>

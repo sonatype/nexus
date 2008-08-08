@@ -9,7 +9,7 @@ import org.codehaus.plexus.personality.plexus.lifecycle.phase.Initializable;
 import org.codehaus.plexus.personality.plexus.lifecycle.phase.InitializationException;
 import org.codehaus.plexus.util.FileUtils;
 import org.codehaus.plexus.util.IOUtil;
-import org.sonatype.nexus.configuration.ApplicationConfiguration;
+import org.sonatype.nexus.configuration.application.ApplicationConfiguration;
 import org.sonatype.nexus.configuration.ConfigurationChangeEvent;
 import org.sonatype.nexus.configuration.ConfigurationChangeListener;
 import org.sonatype.nexus.proxy.ItemNotFoundException;
@@ -56,7 +56,7 @@ public class DefaultFSWastebasket
         if ( wastebasketDirectory == null )
         {
             wastebasketDirectory = applicationConfiguration.getWastebasketDirectory();
-            
+
             wastebasketDirectory.mkdirs();
         }
 
@@ -151,10 +151,11 @@ public class DefaultFSWastebasket
                     basketFile.mkdirs();
 
                     // a collection (dir)
-                    if ( item.getItemContext().containsKey( DefaultFSLocalRepositoryStorage.FS_FILE ) )
+                    if ( DefaultFSLocalRepositoryStorage.class.isAssignableFrom( ls.getClass() ) )
                     {
                         // an easy way, we have a File
-                        File itemFile = (File) item.getItemContext().get( DefaultFSLocalRepositoryStorage.FS_FILE );
+                        File itemFile = ( (DefaultFSLocalRepositoryStorage) ls ).getFileFromBase( item
+                            .getRepositoryItemUid() );
 
                         FileUtils.copyDirectory( itemFile, basketFile );
                     }

@@ -2,14 +2,16 @@ package org.sonatype.nexus.test.utils;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Map;
 
-import org.apache.http.client.utils.URLUtils;
+import org.codehaus.plexus.util.InterpolationFilterReader;
 
 /**
  * Simple File testing utilities.
@@ -130,7 +132,9 @@ public class FileTestingUtils
     public static File getTestFile( Class clazz, String filename )
     {
         String resource = clazz.getName().replace( '.', '/' ) + "Resources/" + filename;
+        System.out.println( "Looking for resource: " + resource );
         URL classURL = Thread.currentThread().getContextClassLoader().getResource( resource );
+        System.out.println( "found: " + classURL );
         return new File( classURL.getFile() );
     }
 
@@ -147,14 +151,40 @@ public class FileTestingUtils
         try
         {
             URL url = new URL( args[0] );
-            System.out.println( createSHA1FromURL( url ));
+            System.out.println( createSHA1FromURL( url ) );
         }
         catch ( Exception e )
         {
             System.out.println( usage );
-            e.printStackTrace(System.out);
+            e.printStackTrace( System.out );
         }
 
+    }
+
+    public static void interpolationFileCopy( File from, File dest, Map<String, String> variables )
+        throws IOException
+    {
+        
+        // we may also need to create any parent directories
+        if( dest.getParentFile() != null && !dest.getParentFile().exists())
+        {
+            dest.getParentFile().mkdirs();
+        }
+        
+        FileReader fileReader = new FileReader( from );
+        InterpolationFilterReader filterReader = new InterpolationFilterReader( fileReader, variables );
+
+        FileWriter fos = new FileWriter( dest );
+        
+        int readChar = -1;
+        while( (readChar = (int) filterReader.read() ) != -1)
+        {
+         fos.write( readChar );   
+        }
+        
+        // close everything
+        fileReader.close();
+        fos.close();
     }
 
 }

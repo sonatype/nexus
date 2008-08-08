@@ -31,7 +31,6 @@ Sonatype.repoServer.SchedulesEditPanel = function(config){
   
   //List of schedule types
   //None removed for the time being
-  //this.scheduleTypeStore = new Ext.data.SimpleStore({fields:['value'], data:[['None'],['Once'],['Daily'],['Weekly'],['Monthly'],['Advanced']]});
   this.scheduleTypeStore = new Ext.data.SimpleStore({fields:['value'], data:[['Manual'],['Once'],['Daily'],['Weekly'],['Monthly'],['Advanced']]});
   //List of weekdays
   this.weekdaysList = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
@@ -243,13 +242,6 @@ Sonatype.repoServer.SchedulesEditPanel = function(config){
     sortInfo: {field: 'name', direction: 'ASC'},
     autoLoad: true
   });
-  
-  //This is the dynamically generated array that contains the items that will be shown as properties for the different
-  //service types, there will be 1 item in this array for each serviceType retrieved from the serviceTypeDataStore
-  this.serviceTypePanelItems = [];
-  
-  //Populate the dynamic content
-  this.populateServiceTypePanelItems();
 
   this.COMBO_WIDTH = 300;
   
@@ -295,7 +287,7 @@ Sonatype.repoServer.SchedulesEditPanel = function(config){
       },
       {
         xtype: 'combo',
-        fieldLabel: 'Service Type',
+        fieldLabel: 'Task Type',
         labelStyle: 'margin-left: 15px; width: 185px;',
         itemCls: 'required-field',
         helpText: ht.serviceType,
@@ -323,7 +315,7 @@ Sonatype.repoServer.SchedulesEditPanel = function(config){
         deferredRender: false,
         autoScroll: false,
         frame: false,
-        items: this.serviceTypePanelItems
+        items: []
       },
       {
         xtype: 'combo',
@@ -557,7 +549,7 @@ Sonatype.repoServer.SchedulesEditPanel = function(config){
                     //note: this style matches the expected behavior
                     bodyStyle: 'background-color:#FFFFFF; border: 1px solid #B5B8C8',
                     width: 225,
-                    height: 150,
+                    height: Ext.isGecko ? 165 : 150,
                     animate:true,
                     lines: false,
                     autoScroll:true,
@@ -875,7 +867,8 @@ Sonatype.repoServer.SchedulesEditPanel = function(config){
     buttons: [
       {
         id: 'savebutton',
-        text: 'Save'
+        text: 'Save',
+        disabled: true
       },
       {
         id: 'cancelbutton',
@@ -883,6 +876,8 @@ Sonatype.repoServer.SchedulesEditPanel = function(config){
       }
     ]
   };
+  
+  this.sp = Sonatype.lib.Permissions;
 
   this.schedulesGridPanel = new Ext.grid.GridPanel({
     title: 'Scheduled Tasks',
@@ -912,7 +907,8 @@ Sonatype.repoServer.SchedulesEditPanel = function(config){
         icon: Sonatype.config.resourcePath + '/images/icons/add.png',
         cls: 'x-btn-text-icon',
         scope: this,
-        handler: this.addResourceHandler
+        handler: this.addResourceHandler,
+        disabled: !this.sp.checkPermission(Sonatype.user.curr.repoServer.configSchedules, this.sp.CREATE)
       },
       {
         id: 'schedule-delete-btn',
@@ -920,7 +916,8 @@ Sonatype.repoServer.SchedulesEditPanel = function(config){
         icon: Sonatype.config.resourcePath + '/images/icons/delete.png',
         cls: 'x-btn-text-icon',
         scope:this,
-        handler: this.deleteHandler
+        handler: this.deleteHandler,
+        disabled: !this.sp.checkPermission(Sonatype.user.curr.repoServer.configSchedules, this.sp.DELETE)
       }
     ],
 
@@ -981,20 +978,21 @@ Sonatype.repoServer.SchedulesEditPanel = function(config){
 
 Ext.extend(Sonatype.repoServer.SchedulesEditPanel, Ext.Panel, {
   //Populate the dynamic content, based upon the currently defined service types from the server
-  populateServiceTypePanelItems : function() {
+  populateServiceTypePanelItems : function(id) {
     //If the items haven't loaded yet, wait until they are.   This of course requires that their be at least
     //1 service type available at ALL times on the server.
     //TODO: could probably use better logic here
     if (this.serviceTypeDataStore.data.items.length < 1){
       return this.populateServiceTypePanelItems.defer(300, this, arguments);
     }
-    //Add the default card, simply an empty formset
-    this.serviceTypePanelItems[0] =
-    {
+    
+    var allItems = [];
+    
+    allItems[0] = {
       xtype:'fieldset',
-      id:'emptyItem',
+      id: id + '_emptyItem',
       checkboxToggle:false,
-      title: 'Service Settings',
+      title: 'Task Settings',
       anchor: Sonatype.view.FIELDSET_OFFSET,
       collapsible: false,
       autoHeight:true,
@@ -1002,6 +1000,7 @@ Ext.extend(Sonatype.repoServer.SchedulesEditPanel, Ext.Panel, {
         labelSeparator: ''
       }
     };
+    
     //Now add the dynamic content
     this.serviceTypeDataStore.each(function(item, i, len){
       var items = [];
@@ -1127,24 +1126,25 @@ Ext.extend(Sonatype.repoServer.SchedulesEditPanel, Ext.Panel, {
             minListWidth: this.COMBO_WIDTH
           };
         }
+        
+        allItems[i + 1] = {
+          xtype:'fieldset',
+          id:id + '_' + item.data.id,
+          checkboxToggle:false,
+          title: 'Task Settings',
+          anchor: Sonatype.view.FIELDSET_OFFSET,
+          collapsible: false,
+          autoHeight:true,
+          labelWidth: 175,
+          layoutConfig: {
+            labelSeparator: ''
+          },
+          items:items
+        };
       }  
-
-      this.serviceTypePanelItems[i + 1] =
-      {
-        xtype:'fieldset',
-        id:item.data.id,
-        checkboxToggle:false,
-        title: 'Service Settings',
-        anchor: Sonatype.view.FIELDSET_OFFSET,
-        collapsible: false,
-        autoHeight:true,
-        labelWidth: 175,
-        layoutConfig: {
-          labelSeparator: ''
-        },
-        items:items
-      };
     }, this);
+    
+    return allItems;
   },
   
   //Dump the currently stored data and requery for everything
@@ -1160,8 +1160,8 @@ Ext.extend(Sonatype.repoServer.SchedulesEditPanel, Ext.Panel, {
     }, this.formCards);
     
     this.formCards.getLayout().setActiveItem(0);
-    //Enable add button on refresh
-    this.schedulesGridPanel.getTopToolbar().items.get('schedule-add-btn').enable();
+//    //Enable add button on refresh
+//    this.schedulesGridPanel.getTopToolbar().items.get('schedule-add-btn').enable();
   },
   
   markTreeInvalid : function(tree) {
@@ -1185,7 +1185,7 @@ Ext.extend(Sonatype.repoServer.SchedulesEditPanel, Ext.Panel, {
       var isNew = formInfoObj.isNew;
       var serviceSchedule = formInfoObj.formPanel.find('name', 'schedule')[0].getValue().toLowerCase();
       var createUri = Sonatype.config.repos.urls.schedules;
-      var updateUri = (formInfoObj.resourceUri) ? formInfoObj.resourceUri : '';
+      var updateUri = (formInfoObj.resourceURI) ? formInfoObj.resourceURI : '';
       var form = formInfoObj.formPanel.form;
     
       form.doAction('sonatypeSubmit', {
@@ -1213,8 +1213,8 @@ Ext.extend(Sonatype.repoServer.SchedulesEditPanel, Ext.Panel, {
 
     //delete row from grid if canceling a new repo form
     if(formInfoObj.isNew){
-      //Enable add button on new cancel
-      this.schedulesGridPanel.getTopToolbar().items.get('schedule-add-btn').enable();
+//      //Enable add button on new cancel
+//      this.schedulesGridPanel.getTopToolbar().items.get('schedule-add-btn').enable();
       store.remove( store.getById(formInfoObj.formPanel.id) );
     }
     
@@ -1230,11 +1230,12 @@ Ext.extend(Sonatype.repoServer.SchedulesEditPanel, Ext.Panel, {
   
   addResourceHandler : function() {
     //first disable the add button, at least until save/cancel/delete/refresh
-    this.schedulesGridPanel.getTopToolbar().items.get('schedule-add-btn').disable();
+//    this.schedulesGridPanel.getTopToolbar().items.get('schedule-add-btn').disable();
     var id = 'new_schedule_' + new Date().getTime();
 
     var config = Ext.apply({}, this.formConfig.schedule, {id:id});
     config = this.configUniqueIdHelper(id, config);
+    Ext.apply(config.items[4].items,this.populateServiceTypePanelItems(id));
     var formPanel = new Ext.FormPanel(config);
     
     formPanel.form.on('actioncomplete', this.actionCompleteHandler, this);
@@ -1272,7 +1273,7 @@ Ext.extend(Sonatype.repoServer.SchedulesEditPanel, Ext.Panel, {
     //add new form
     this.formCards.add(formPanel);
     
-    //always set active and re-layout
+    //always set active
     this.formCards.getLayout().setActiveItem(formPanel);
   },
   
@@ -1443,7 +1444,12 @@ Ext.extend(Sonatype.repoServer.SchedulesEditPanel, Ext.Panel, {
           name : receivedData.resource.name,
           id : receivedData.resource.id,
           resourceURI : receivedData.resourceURI,
-          typeName : this.serviceTypeDataStore.getAt(this.serviceTypeDataStore.find('id',receivedData.resource.typeId)).data.name,
+          typeName : this.serviceTypeDataStore.getAt(this.serviceTypeDataStore.findBy(function(record, id){
+              if (record.data.id == receivedData.resource.typeId){
+                  return true;
+                }
+                return false;
+              })).data.name,
           typeId : receivedData.resource.typeId,
           status : receivedData.status,
           schedule : receivedData.resource.schedule,
@@ -1469,7 +1475,7 @@ Ext.extend(Sonatype.repoServer.SchedulesEditPanel, Ext.Panel, {
         var buttonInfoObj = {
             formPanel : action.options.fpanel,
             isNew : false,
-            resourceUri : dataObj.resourceURI
+            resourceURI : dataObj.resourceURI
           };
 
         if (dataObj.schedule == 'once'){
@@ -1487,8 +1493,8 @@ Ext.extend(Sonatype.repoServer.SchedulesEditPanel, Ext.Panel, {
         //disable the service type, only avaiable on add
         action.options.fpanel.find('name', 'typeId')[0].disable();
         
-        //Enable add button on save complete
-        this.schedulesGridPanel.getTopToolbar().items.get('schedule-add-btn').enable();
+//        //Enable add button on save complete
+//        this.schedulesGridPanel.getTopToolbar().items.get('schedule-add-btn').enable();
       }
       else {
         var sentData = action.output.data;
@@ -1508,7 +1514,12 @@ Ext.extend(Sonatype.repoServer.SchedulesEditPanel, Ext.Panel, {
         rec.beginEdit();
         rec.set('name', receivedData.resource.name);
         rec.set('typeId', receivedData.resource.typeId);
-        rec.set('typeName', this.serviceTypeDataStore.getAt(this.serviceTypeDataStore.find('id',receivedData.resource.typeId)).data.name);
+        rec.set('typeName', this.serviceTypeDataStore.getAt(this.serviceTypeDataStore.findBy(function(record, id){
+            if (record.data.id == receivedData.resource.typeId){
+                return true;
+              }
+              return false;
+            })).data.name);
         rec.set('schedule', receivedData.resource.schedule);
         rec.set('status', receivedData.status);
         rec.set('nextRunTime', receivedData.nextRunTime);
@@ -1544,8 +1555,8 @@ Ext.extend(Sonatype.repoServer.SchedulesEditPanel, Ext.Panel, {
     }
   },
 
-  formDataLoader : function(formPanel, resourceUri, modFuncs){
-    formPanel.getForm().doAction('sonatypeLoad', {url:resourceUri, method:'GET', fpanel:formPanel, dataModifiers: modFuncs, scope: this});
+  formDataLoader : function(formPanel, resourceURI, modFuncs){
+    formPanel.getForm().doAction('sonatypeLoad', {url:resourceURI, method:'GET', fpanel:formPanel, dataModifiers: modFuncs, scope: this});
   },
 
   rowClick : function(grid, rowIndex, e){
@@ -1558,15 +1569,16 @@ Ext.extend(Sonatype.repoServer.SchedulesEditPanel, Ext.Panel, {
     if(!formPanel){ //create form and populate current data
       var config = Ext.apply({}, this.formConfig.schedule, {id:id});
       config = this.configUniqueIdHelper(id, config);
-      
+      Ext.apply(config.items[4].items,this.populateServiceTypePanelItems(id));
       formPanel = new Ext.FormPanel(config);
+      
       formPanel.form.on('actioncomplete', this.actionCompleteHandler, this);
       formPanel.form.on('actionfailed', this.actionFailedHandler, this);
       formPanel.on('beforerender', this.beforeFormRenderHandler, this);
       formPanel.on('afterlayout', this.afterLayoutFormHandler, this, {single:true});
   
       //On load need to make sure and set the proper schedule type card as active    
-      schedulePanel = formPanel.find('id', 'schedule-config-card-panel')[0];
+      schedulePanel = formPanel.findById( formPanel.id + '_schedule-config-card-panel');
       if (rec.data.schedule == 'once'){
         schedulePanel.activeItem = 1;
       }
@@ -1591,9 +1603,9 @@ Ext.extend(Sonatype.repoServer.SchedulesEditPanel, Ext.Panel, {
       }
       
       //Need to do the same w/ service type and make sure the correct card is active.  Dynamic cards, so little more generic
-      var serviceTypePanel = formPanel.find('id', 'service-type-config-card-panel')[0];
+      var serviceTypePanel = formPanel.findById(formPanel.id + '_service-type-config-card-panel');
       serviceTypePanel.items.each(function(item,i,len){
-        if (item.id == rec.data.typeId){
+        if (item.id == id + '_' + rec.data.typeId){
           serviceTypePanel.activeItem = i;
           item.items.each(function(item){
             item.disabled=false;
@@ -1607,7 +1619,7 @@ Ext.extend(Sonatype.repoServer.SchedulesEditPanel, Ext.Panel, {
       var buttonInfoObj = {
         formPanel : formPanel,
         isNew : false, //not a new route form, see assumption
-        resourceUri : rec.data.resourceURI
+        resourceURI : rec.data.resourceURI
       };
       
       formPanel.buttons[0].on('click', this.saveHandler.createDelegate(this, [buttonInfoObj]));
@@ -1622,9 +1634,7 @@ Ext.extend(Sonatype.repoServer.SchedulesEditPanel, Ext.Panel, {
     
     //always set active
     this.formCards.getLayout().setActiveItem(formPanel);
-    if (schedulePanel != null){    
-      schedulePanel.doLayout();
-    }
+    formPanel.doLayout();
   },
   
   contextClick : function(grid, index, e){
@@ -1640,13 +1650,17 @@ Ext.extend(Sonatype.repoServer.SchedulesEditPanel, Ext.Panel, {
     var menu = new Ext.menu.Menu({
       id:'schedules-grid-ctx',
       items: [
-        this.actions.refresh,
-        this.actions.deleteAction
+        this.actions.refresh
       ]
     });
     
-    if (this.ctxRecord.data.status == 'SUBMITTED'
-      || this.ctxRecord.data.status == 'WAITING') {
+    if (this.sp.checkPermission(Sonatype.user.curr.repoServer.configSchedules, this.sp.DELETE)){
+        menu.add(this.actions.deleteAction);
+    }
+    
+    if (this.sp.checkPermission(Sonatype.user.curr.repoServer.actionRunTask, this.sp.READ)
+      && (this.ctxRecord.data.status == 'SUBMITTED'
+      || this.ctxRecord.data.status == 'WAITING')) {
       menu.add(this.actions.run);
     }
     
@@ -1664,15 +1678,16 @@ Ext.extend(Sonatype.repoServer.SchedulesEditPanel, Ext.Panel, {
   },
   
   serviceTypeSelectHandler : function(combo, record, index){
-    var serviceTypePanel = this.find('id', 'service-type-config-card-panel')[0];
+    var serviceTypePanel = this.findById(this.id + '_service-type-config-card-panel');
     //First disable all the items currently on screen, so they wont be validated/submitted etc
     serviceTypePanel.getLayout().activeItem.items.each(function(item){
       item.disable();
     });
     //Then find the proper card to activate (based upon id of the serviceType)
     //Then enable the fields in that card
+    var formId = this.id;
     serviceTypePanel.items.each(function(item,i,len){
-      if (item.id == record.data.id){
+      if (item.id == formId + '_' + record.data.id){
         serviceTypePanel.getLayout().setActiveItem(item);
         item.items.each(function(item){
           item.enable();
@@ -1683,7 +1698,7 @@ Ext.extend(Sonatype.repoServer.SchedulesEditPanel, Ext.Panel, {
   },
   
   serviceScheduleSelectHandler : function(combo, record, index){
-    var schedulePanel = this.find('id', 'schedule-config-card-panel')[0];
+    var schedulePanel = this.findById(this.id + '_schedule-config-card-panel');
     //First disable all the items currently on screen, so they wont be validated/submitted etc
     schedulePanel.getLayout().activeItem.items.each(function(item){
       item.disable();
@@ -1718,16 +1733,33 @@ Ext.extend(Sonatype.repoServer.SchedulesEditPanel, Ext.Panel, {
   configUniqueIdHelper : function(id, config){
     //@note: there has to be a better way to do this.  Depending on offsets is very error prone
     var newConfig = config;
+    
+    this.assignItemIds( id, newConfig.items );
 
     newConfig.items[6].items[3].items[2].items[0].root = new Ext.tree.TreeNode({text: 'root'});
     newConfig.items[6].items[3].items[2].items[1].root = new Ext.tree.TreeNode({text: 'root'});
 
     return newConfig;
   },
+  
+  assignItemIds: function( id, items ) {
+	for ( var i = 0; i < items.length; i++ ) {
+	  var item = items[i];
+	  if ( item.id ) {
+		if ( ! item.originalId ) {
+	      item.originalId = item.id;
+		}
+		item.id = id + '_' + item.originalId;
+	  }
+	  if ( item.items ) {
+		this.assignItemIds( id, item.items );
+	  }
+	}
+  },
 
   loadWeekdayListHelper : function(arr, srcObj, fpanel){
-    var selectedTree = fpanel.find('id', 'weekdays_tree')[0];
-    var allTree = fpanel.find('id', 'all_weekdays_tree')[0];
+    var selectedTree = fpanel.findById(fpanel.id + '_weekdays_tree');
+    var allTree = fpanel.findById(fpanel.id + '_all_weekdays_tree');
 
     var weekday;
 
@@ -1821,7 +1853,7 @@ Ext.extend(Sonatype.repoServer.SchedulesEditPanel, Ext.Panel, {
     return hours + ':' + minutes;
   },
   exportRecurringDayHelper : function(val, fpanel){
-    var selectedTree = fpanel.find('id', 'weekdays_tree')[0];
+    var selectedTree = fpanel.findById(fpanel.id + '_weekdays_tree');
 
     var outputArr = [];
     var nodes = selectedTree.root.childNodes;
@@ -1853,7 +1885,7 @@ Ext.extend(Sonatype.repoServer.SchedulesEditPanel, Ext.Panel, {
   exportServicePropertiesHelper : function(val, fpanel){
     var outputArr = [];
     
-    var servicePropertiesPanel = fpanel.find('id', 'service-type-config-card-panel')[0];
+    var servicePropertiesPanel = fpanel.findById(fpanel.id + '_service-type-config-card-panel');
     var i = 0;
     //These are dynamic fields here, so some pretty straightforward generic logic below
     servicePropertiesPanel.getLayout().activeItem.items.each(function(item, i, len){
@@ -1955,8 +1987,8 @@ Ext.extend(Sonatype.repoServer.SchedulesEditPanel, Ext.Panel, {
     return importedTime;
   },
   importRecurringDayHelper : function(arr, srcObj, fpanel){
-    var selectedTree = fpanel.find('id', 'weekdays_tree')[0];
-    var allTree = fpanel.find('id', 'all_weekdays_tree')[0];
+    var selectedTree = fpanel.findById(fpanel.id + '_weekdays_tree');
+    var allTree = fpanel.findById(fpanel.id + '_all_weekdays_tree');
 
     //Iterate through the list, and add any selected items to the selected tree
     for(var i=0; i<arr.length; i++){

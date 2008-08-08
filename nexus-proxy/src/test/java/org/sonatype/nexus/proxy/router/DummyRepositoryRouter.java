@@ -28,7 +28,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.io.FilenameUtils;
-import org.sonatype.nexus.configuration.ApplicationConfiguration;
+import org.sonatype.nexus.configuration.application.ApplicationConfiguration;
 import org.sonatype.nexus.configuration.ConfigurationChangeEvent;
 import org.sonatype.nexus.proxy.AccessDeniedException;
 import org.sonatype.nexus.proxy.ItemNotFoundException;
@@ -42,6 +42,7 @@ import org.sonatype.nexus.proxy.item.DefaultStorageCollectionItem;
 import org.sonatype.nexus.proxy.item.StorageItem;
 import org.sonatype.nexus.proxy.registry.ContentClass;
 import org.sonatype.nexus.proxy.repository.Repository;
+import org.sonatype.nexus.proxy.target.TargetSet;
 
 public class DummyRepositoryRouter
     implements RepositoryRouter
@@ -203,7 +204,7 @@ public class DummyRepositoryRouter
     public void setRouterStorage( Repository repository )
     {
         // TODO Auto-generated method stub
-        
+
     }
 
     public ContentClass getHandledContentClass()
@@ -215,14 +216,19 @@ public class DummyRepositoryRouter
         throws IOException
     {
         // TODO Auto-generated method stub
-        
+
     }
 
     public void deleteItem( String path )
         throws IOException
     {
         // TODO Auto-generated method stub
-        
+
+    }
+
+    public TargetSet getTargetsForRequest( ResourceStoreRequest request )
+    {
+        return new TargetSet();
     }
 
 }

@@ -20,9 +20,6 @@
  */
 package org.sonatype.nexus.proxy.access;
 
-import java.util.Collections;
-import java.util.List;
-
 import org.sonatype.nexus.proxy.AccessDeniedException;
 import org.sonatype.nexus.proxy.ResourceStoreRequest;
 import org.sonatype.nexus.proxy.repository.Repository;
@@ -36,17 +33,10 @@ import org.sonatype.nexus.proxy.repository.Repository;
 public class OpenAccessManager
     implements AccessManager
 {
-
     public void decide( ResourceStoreRequest request, Repository repository, RepositoryPermission permission )
         throws AccessDeniedException
     {
         // this access manager is open, everybody has access to everything since
         // it never throws AccessDeniedEx
     }
-
-    public List<AccessDecisionVoter> getVoters()
-    {
-        return Collections.emptyList();
-    }
-
 }

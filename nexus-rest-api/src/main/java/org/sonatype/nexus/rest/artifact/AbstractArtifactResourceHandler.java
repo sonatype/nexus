@@ -23,7 +23,6 @@ package org.sonatype.nexus.rest.artifact;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.Date;
 import java.util.List;
 import java.util.logging.Level;
 
@@ -47,9 +46,7 @@ import org.sonatype.nexus.proxy.ItemNotFoundException;
 import org.sonatype.nexus.proxy.NoSuchResourceStoreException;
 import org.sonatype.nexus.proxy.RepositoryNotAvailableException;
 import org.sonatype.nexus.proxy.StorageException;
-import org.sonatype.nexus.proxy.access.AccessDecisionVoter;
-import org.sonatype.nexus.proxy.access.CertificateBasedAccessDecisionVoter;
-import org.sonatype.nexus.proxy.access.IpAddressAccessDecisionVoter;
+import org.sonatype.nexus.proxy.access.AccessManager;
 import org.sonatype.nexus.proxy.item.StorageFileItem;
 import org.sonatype.nexus.proxy.maven.ArtifactStoreRequest;
 import org.sonatype.nexus.proxy.maven.MavenRepository;
@@ -57,10 +54,7 @@ import org.sonatype.nexus.proxy.maven.RepositoryPolicy;
 import org.sonatype.nexus.proxy.repository.Repository;
 import org.sonatype.nexus.rest.AbstractNexusResourceHandler;
 import org.sonatype.nexus.rest.ApplicationBridge;
-import org.sonatype.nexus.rest.NexusAuthenticationGuard;
 import org.sonatype.nexus.rest.StorageFileItemRepresentation;
-import org.sonatype.nexus.security.User;
-import org.sonatype.plexus.rest.representation.InputStreamRepresentation;
 
 public class AbstractArtifactResourceHandler
     extends AbstractNexusResourceHandler
@@ -95,20 +89,19 @@ public class AbstractArtifactResourceHandler
             getLogger().log( Level.FINE, "Created ResourceStore request for " + result.getRequestPath() );
         }
 
-        result.getRequestContext().put(
-            IpAddressAccessDecisionVoter.REQUEST_REMOTE_ADDRESS,
-            getRequest().getClientInfo().getAddress() );
+        result
+            .getRequestContext().put( AccessManager.REQUEST_REMOTE_ADDRESS, getRequest().getClientInfo().getAddress() );
 
-        if ( getRequest().getAttributes().containsKey( NexusAuthenticationGuard.REST_USER_KEY ) )
+        if ( getRequest().getChallengeResponse() != null && getRequest().getChallengeResponse().getIdentifier() != null )
         {
-            User user = (User) getRequest().getAttributes().get( NexusAuthenticationGuard.REST_USER_KEY );
-
-            result.getRequestContext().put( AccessDecisionVoter.REQUEST_USER, user.getUsername() );
+            result.getRequestContext().put(
+                AccessManager.REQUEST_USER,
+                getRequest().getChallengeResponse().getIdentifier() );
         }
 
         if ( getRequest().isConfidential() )
         {
-            result.getRequestContext().put( CertificateBasedAccessDecisionVoter.REQUEST_SECURE, Boolean.TRUE );
+            result.getRequestContext().put( AccessManager.REQUEST_CONFIDENTIAL, Boolean.TRUE );
 
             // X509Certificate[] certs = (X509Certificate[]) context.getHttpServletRequest().getAttribute(
             // "javax.servlet.request.X509Certificate" );
@@ -527,6 +520,36 @@ public class AbstractArtifactResourceHandler
 
                     getResponse().setStatus( Status.SUCCESS_CREATED );
 
+                }
+                catch ( StorageException e )
+                {
+                    getLogger().log( Level.SEVERE, "StorageException during retrieve:", e );
+
+                    getResponse().setStatus( Status.SERVER_ERROR_INTERNAL );
+                }
+                catch ( NoSuchResourceStoreException e )
+                {
+                    getResponse().setStatus( Status.CLIENT_ERROR_NOT_FOUND, "No repository with id=" + "" );
+                }
+                catch ( RepositoryNotAvailableException e )
+                {
+                    getResponse().setStatus( Status.SERVER_ERROR_SERVICE_UNAVAILABLE );
+                }
+                catch ( AccessDeniedException e )
+                {
+                    getResponse().setStatus( Status.CLIENT_ERROR_FORBIDDEN );
+                }
+                catch ( XmlPullParserException e )
+                {
+                    getLogger().log( Level.SEVERE, "XmlPullParserException during retrieve of POM:", e );
+
+                    getResponse().setStatus( Status.SERVER_ERROR_INTERNAL );
+                }
+                catch ( IOException e )
+                {
+                    getLogger().log( Level.SEVERE, "IOException during retrieve of POM:", e );
+
+                    getResponse().setStatus( Status.SERVER_ERROR_INTERNAL );
                 }
                 catch ( Exception e )
                 {

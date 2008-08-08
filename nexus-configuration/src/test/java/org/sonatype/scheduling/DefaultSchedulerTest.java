@@ -20,10 +20,15 @@
  */
 package org.sonatype.scheduling;
 
+import java.util.Calendar;
 import java.util.Date;
 import java.util.concurrent.Callable;
 
 import org.sonatype.nexus.configuration.AbstractNexusTestCase;
+import org.sonatype.scheduling.iterators.DailySchedulerIterator;
+import org.sonatype.scheduling.iterators.SchedulerIterator;
+import org.sonatype.scheduling.schedules.DailySchedule;
+import org.sonatype.scheduling.schedules.ManualRunSchedule;
 import org.sonatype.scheduling.schedules.Schedule;
 
 public class DefaultSchedulerTest
@@ -96,40 +101,40 @@ public class DefaultSchedulerTest
 
         assertEquals( 0, defaultScheduler.getActiveTasks().size() );
     }
-    
+
     public void testManual()
         throws Exception
     {
         TestCallable tr = new TestCallable();
-        
-        ScheduledTask<Integer> st = defaultScheduler.store( "default", tr, null );
-        
+
+        ScheduledTask<Integer> st = defaultScheduler.schedule( "default", tr, new ManualRunSchedule(), null );
+
         assertEquals( 1, defaultScheduler.getActiveTasks().size() );
 
         // Give the scheduler a chance to start if it would (it shouldn't that's the test)
         Thread.sleep( 100 );
-        
+
         assertEquals( TaskState.SUBMITTED, st.getTaskState() );
-        
+
         st.runNow();
-        
+
         // Give the task a chance to start
         Thread.sleep( 100 );
-        
-        //Now wait for it to finish
+
+        // Now wait for it to finish
         while ( !st.getTaskState().equals( TaskState.SUBMITTED ) )
         {
             Thread.sleep( 100 );
         }
-        
+
         assertEquals( 1, tr.getRunCount() );
-        
+
         assertEquals( TaskState.SUBMITTED, st.getTaskState() );
-        
+
         assertEquals( 1, defaultScheduler.getActiveTasks().size() );
-        
+
         st.cancel();
-        
+
         while ( defaultScheduler.getActiveTasks().size() > 0 )
         {
             Thread.sleep( 100 );
@@ -145,9 +150,9 @@ public class DefaultSchedulerTest
 
         long nearFuture = System.currentTimeMillis() + 500;
 
-        Schedule schedule = new SecondSchedule( new Date( nearFuture ), new Date( nearFuture + 4900 ) );
+        Schedule schedule = getEverySecondSchedule( new Date( nearFuture ), new Date( nearFuture + 4900 ) );
 
-        ScheduledTask<Object> st = defaultScheduler.schedule( "default", tr, schedule, null, true );
+        ScheduledTask<Object> st = defaultScheduler.schedule( "default", tr, schedule, null );
 
         assertEquals( 1, defaultScheduler.getActiveTasks().size() );
 
@@ -172,9 +177,9 @@ public class DefaultSchedulerTest
 
         long nearFuture = System.currentTimeMillis() + 500;
 
-        Schedule schedule = new SecondSchedule( new Date( nearFuture ), new Date( nearFuture + 4900 ) );
+        Schedule schedule = getEverySecondSchedule( new Date( nearFuture ), new Date( nearFuture + 4900 ) );
 
-        ScheduledTask<Integer> st = defaultScheduler.schedule( "default", tr, schedule, null, true );
+        ScheduledTask<Integer> st = defaultScheduler.schedule( "default", tr, schedule, null );
 
         assertEquals( 1, defaultScheduler.getActiveTasks().size() );
 
@@ -211,9 +216,9 @@ public class DefaultSchedulerTest
 
         long nearFuture = System.currentTimeMillis() + 500;
 
-        Schedule schedule = new SecondSchedule( new Date( nearFuture ), new Date( nearFuture + 4900 ) );
+        Schedule schedule = getEverySecondSchedule( new Date( nearFuture ), new Date( nearFuture + 4900 ) );
 
-        ScheduledTask<Object> st = defaultScheduler.schedule( "default", tr, schedule, null, true );
+        ScheduledTask<Object> st = defaultScheduler.schedule( "default", tr, schedule, null );
 
         assertEquals( 1, defaultScheduler.getActiveTasks().size() );
 
@@ -237,9 +242,9 @@ public class DefaultSchedulerTest
 
         long nearFuture = System.currentTimeMillis() + 500;
 
-        Schedule schedule = new SecondSchedule( new Date( nearFuture ), new Date( nearFuture + 4900 ) );
+        Schedule schedule = getEverySecondSchedule( new Date( nearFuture ), new Date( nearFuture + 4900 ) );
 
-        ScheduledTask<Integer> st = defaultScheduler.schedule( "default", tr, schedule, null, true );
+        ScheduledTask<Integer> st = defaultScheduler.schedule( "default", tr, schedule, null );
 
         assertEquals( 1, defaultScheduler.getActiveTasks().size() );
 
@@ -254,7 +259,40 @@ public class DefaultSchedulerTest
         assertEquals( 0, defaultScheduler.getActiveTasks().size() );
     }
 
+    protected Schedule getEverySecondSchedule( Date start, Date stop )
+    {
+        return new SecondScheduler( start, stop );
+    }
+
     // Helper classes
+
+    public class SecondScheduler
+        extends DailySchedule
+    {
+        public SecondScheduler( Date startDate, Date endDate )
+        {
+            super( startDate, endDate );
+        }
+
+        protected SchedulerIterator createIterator()
+        {
+            return new SecondSchedulerIterator( getStartDate(), getEndDate() );
+        }
+    }
+
+    public class SecondSchedulerIterator
+        extends DailySchedulerIterator
+    {
+        public SecondSchedulerIterator( Date startingDate, Date endingDate )
+        {
+            super( startingDate, endingDate );
+        }
+
+        public void stepNext()
+        {
+            getCalendar().add( Calendar.SECOND, 1 );
+        }
+    }
 
     public class TestRunnable
         implements Runnable

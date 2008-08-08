@@ -4,16 +4,29 @@
 <!-- used as default config source -->
 
 <nexusConfiguration>
-	<version>1.0.3</version>
+	<version>1.0.4</version>
 	<workingDirectory>${runtime}/work/nexus</workingDirectory>
 	<applicationLogDirectory>${runtime}/apps/nexus/logs</applicationLogDirectory>
+	
+	<smtpConfiguration>
+	    <host>smtp-host</host>
+	    <port>25</port>
+	    <sslEnabled>false</sslEnabled>
+	    <tlsEnabled>false</tlsEnabled>
+	    <username>smtp-username</username>
+	    <password>smtp-password</password>
+	    <debugMode>false</debugMode>
+	    <systemEmailAddress>system@nexus.org</systemEmailAddress>
+	</smtpConfiguration>
 
 	<security>
 		<enabled>true</enabled>
 		<anonymousAccessEnabled>true</anonymousAccessEnabled>
-		<authenticationSource>
-			<type>simple</type>
-		</authenticationSource>
+		<anonymousUsername>anonymous</anonymousUsername>
+		<anonymousPassword>anonymous</anonymousPassword>
+		<realms>
+			<realm>default</realm>
+		</realms>
 	</security>
 
 	<globalConnectionSettings>
@@ -34,7 +47,6 @@
 
 	<restApi>
 		<accessAllowedFrom>*</accessAllowedFrom>
-		<authTokenExpiration>10080</authTokenExpiration>
 	</restApi>
 
 	<httpProxy>
@@ -170,6 +182,7 @@
 		<pathMappings>
 			<pathMapping>
 				<id>inhouse-stuff</id>
+				<groupId>*</groupId>
 				<routePattern>.*/(com|org)/somecompany/.*</routePattern>
 				<routeType>inclusive</routeType>
 				<repositories>
@@ -179,6 +192,7 @@
 			</pathMapping>
 			<pathMapping>
 				<id>apache-stuff</id>
+				<groupId>*</groupId>
 				<routePattern>.*/org/some-oss/.*</routePattern>
 				<routeType>exclusive</routeType>
 				<repositories>
@@ -189,6 +203,7 @@
 			<!-- 
 				<pathMapping>
 				<id>nasty-stuff</id>
+				<groupId>*</groupId>
 				<routePattern>.*/some/nasty/path/.*</routePattern>
 				<routeType>blocking</routeType>
 				</pathMapping>
@@ -217,5 +232,24 @@
 		</repositoryGroups>
 
 	</repositoryGrouping>
+	
+	<repositoryTargets>
+		<repositoryTarget>
+			<id>1</id>
+			<name>All (Maven2)</name>
+			<contentClass>maven2</contentClass>
+			<patterns>
+				<pattern>.*</pattern>
+			</patterns>
+		</repositoryTarget>
+		<repositoryTarget>
+			<id>2</id>
+			<name>All (Maven1)</name>
+			<contentClass>maven1</contentClass>
+			<patterns>
+				<pattern>.*</pattern>
+			</patterns>
+		</repositoryTarget>
+	</repositoryTargets>
 
 </nexusConfiguration>

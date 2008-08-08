@@ -37,6 +37,7 @@ import org.sonatype.nexus.proxy.item.RepositoryItemUid;
 import org.sonatype.nexus.proxy.item.StorageItem;
 import org.sonatype.nexus.proxy.item.StorageLinkItem;
 import org.sonatype.nexus.proxy.registry.RepositoryRegistry;
+import org.sonatype.nexus.proxy.target.TargetSet;
 
 /**
  * The Class AbstractSearchableBasedRepositoryRouter is the base class for all routers that needs Searchable to produce
@@ -132,8 +133,10 @@ public abstract class AbstractSearchableBasedRepositoryRouter
             {
                 getLogger().debug( "Dereferencing link " + link.getTarget() );
             }
+
             RepositoryItemUid uid = new RepositoryItemUid( getRepositoryRegistry(), link.getTarget() );
-            return uid.getRepository().retrieveItem( false, uid );
+
+            return uid.getRepository().retrieveItem( false, uid, link.getItemContext() );
         }
     }
 
@@ -200,6 +203,12 @@ public abstract class AbstractSearchableBasedRepositoryRouter
             AccessDeniedException
     {
         throw new UnsupportedOperationException( "Operation DELETE not supported on this RepositoryRouter!" );
+    }
+
+    protected TargetSet doGetTargetsForRequest( ResourceStoreRequest request )
+    {
+        // this imple simply returns empty
+        return new TargetSet();
     }
 
     // =====================================================================

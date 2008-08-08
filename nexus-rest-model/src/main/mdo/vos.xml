@@ -166,6 +166,58 @@
 				</field>
 			</fields>
 		</class>
+		
+		<class>
+            <name>SmtpSettings</name>
+            <version>1.0.0+</version>
+            <description>
+                The connections settings for an smtp server.
+            </description>
+            <fields>
+                <field>
+                    <name>host</name>
+                    <version>1.0.0+</version>
+                    <type>String</type>
+                    <required>true</required>
+                </field>
+                <field>
+                    <name>port</name>
+                    <version>1.0.0+</version>
+                    <type>int</type>
+                    <required>true</required>
+                </field>
+                <field>
+                    <name>username</name>
+                    <version>1.0.0+</version>
+                    <type>String</type>
+                    <required>false</required>
+                </field>
+                <field>
+                    <name>password</name>
+                    <version>1.0.0+</version>
+                    <type>String</type>
+                    <required>false</required>
+                </field>
+                <field>
+                    <name>systemEmailAddress</name>
+                    <version>1.0.0+</version>
+                    <type>String</type>
+                    <required>true</required>
+                </field>
+                <field>
+                    <name>sslEnabled</name>
+                    <version>1.0.0+</version>
+                    <type>boolean</type>
+                    <required>false</required>
+                </field>
+                <field>
+                    <name>tlsEnabled</name>
+                    <version>1.0.0+</version>
+                    <type>boolean</type>
+                    <required>false</required>
+                </field>
+            </fields>
+        </class>
 
 		<class>
 			<name>RemoteHttpProxySettings</name>
@@ -253,22 +305,28 @@
 			<version>1.0.0+</version>
 			<fields>
 				<field>
-					<name>securityConfiguration</name>
+					<name>securityEnabled</name>
+					<version>1.0.0+</version>
+					<type>boolean</type>
+					<required>true</required>
+				</field>
+				<field>
+					<name>securityAnonymousAccessEnabled</name>
+					<version>1.0.0+</version>
+					<type>boolean</type>
+					<required>true</required>
+				</field>
+				<field>
+					<name>securityAnonymousUsername</name>
 					<version>1.0.0+</version>
 					<type>String</type>
 					<required>true</required>
 				</field>
 				<field>
-					<name>adminPassword</name>
+					<name>securityAnonymousPassword</name>
 					<version>1.0.0+</version>
 					<type>String</type>
-					<required>false</required>
-				</field>
-				<field>
-					<name>deploymentPassword</name>
-					<version>1.0.0+</version>
-					<type>String</type>
-					<required>false</required>
+					<required>true</required>
 				</field>
 				<field>
 					<name>workingDirectory</name>
@@ -296,6 +354,14 @@
 					</association>
 					<required>true</required>
 				</field>
+				<field>
+                    <name>smtpSettings</name>
+                    <version>1.0.0+</version>
+                    <association>
+                        <type>SmtpSettings</type>
+                    </association>
+                    <required>true</required>
+                </field>
 				<field>
 					<name>globalHttpProxySettings</name>
 					<version>1.0.0+</version>
@@ -489,12 +555,6 @@
 				</field>
 				<field>
 					<name>name</name>
-					<version>1.0.0+</version>
-					<type>String</type>
-					<required>true</required>
-				</field>
-				<field>
-					<name>realmId</name>
 					<version>1.0.0+</version>
 					<type>String</type>
 					<required>true</required>
@@ -1001,6 +1061,12 @@
 					<required>true</required>
 				</field>
 				<field>
+					<name>groupId</name>
+					<version>1.0.0+</version>
+					<type>String</type>
+					<required>true</required>
+				</field>
+				<field>
 					<name>ruleType</name>
 					<version>1.0.0+</version>
 					<type>String</type>
@@ -1046,6 +1112,12 @@
 			<fields>
 				<field>
 					<name>id</name>
+					<version>1.0.0+</version>
+					<type>String</type>
+					<required>true</required>
+				</field>
+				<field>
+					<name>groupId</name>
 					<version>1.0.0+</version>
 					<type>String</type>
 					<required>true</required>
@@ -1508,89 +1580,143 @@
 				</field>
 			</fields>
 		</class>
-		
+
 		<!-- Users -->
-		
+
 		<!-- Response/Request wrapper Data -->
 		<class>
-            <name>UserListResourceResponse</name>
-            <version>1.0.0+</version>
-            <superClass>NexusResponse</superClass>
-            <fields>
-                <field>
-                    <name>data</name>
-                    <version>1.0.0+</version>
-                    <association>
-                        <type>UserStatusResource</type>
-                        <multiplicity>*</multiplicity>
-                    </association>
-                    <required>true</required>
-                </field>
-            </fields>
-        </class>
-        
-        <class>
-            <name>UserResourceStatusResponse</name>
-            <version>1.0.0+</version>
-            <superClass>NexusResponse</superClass>
-            <fields>
-                <field>
-                    <name>data</name>
-                    <version>1.0.0+</version>
-                    <association>
-                        <type>UserStatusResource</type>
-                    </association>
-                    <required>true</required>
-                </field>
-            </fields>
-        </class>
-        
-        <class>
-            <name>UserResourceRequest</name>
-            <version>1.0.0+</version>
-            <superClass>NexusResponse</superClass>
-            <fields>
-                <field>
-                    <name>data</name>
-                    <version>1.0.0+</version>
-                    <association>
-                        <type>UserResource</type>
-                    </association>
-                    <required>true</required>
-                </field>
-            </fields>
-        </class>
-        
-        <!-- Response Data Contents -->
-        
+			<name>UserListResourceResponse</name>
+			<version>1.0.0+</version>
+			<superClass>NexusResponse</superClass>
+			<fields>
+				<field>
+					<name>data</name>
+					<version>1.0.0+</version>
+					<association>
+						<type>UserResource</type>
+						<multiplicity>*</multiplicity>
+					</association>
+					<required>true</required>
+				</field>
+			</fields>
+		</class>
+
 		<class>
-		    <name>UserStatusResource</name>
-		    <version>1.0.0+</version>
-		    <fields>
-		        <field>
-                    <name>resourceURI</name>
-                    <version>1.0.0+</version>
-                    <type>String</type>
-                    <required>true</required>
-                </field>
-		        <field>
-    		        <name>userId</name>
-                    <version>1.0.0+</version>
-                    <type>String</type>
-                    <required>true</required>
-		        </field>
-		        <field>
-                    <name>name</name>
-                    <version>1.0.0+</version>
-                    <type>String</type>
-                    <required>true</required>
-                </field>
+			<name>UserResourceResponse</name>
+			<version>1.0.0+</version>
+			<superClass>NexusResponse</superClass>
+			<fields>
+				<field>
+					<name>data</name>
+					<version>1.0.0+</version>
+					<association>
+						<type>UserResource</type>
+					</association>
+					<required>true</required>
+				</field>
+			</fields>
+		</class>
+
+		<class>
+			<name>UserResourceRequest</name>
+			<version>1.0.0+</version>
+			<superClass>NexusResponse</superClass>
+			<fields>
+				<field>
+					<name>data</name>
+					<version>1.0.0+</version>
+					<association>
+						<type>UserResource</type>
+					</association>
+					<required>true</required>
+				</field>
+			</fields>
+		</class>
+		
+		<class>
+		    <name>UserForgotPasswordRequest</name>
+            <version>1.0.0+</version>
+            <superClass>NexusResponse</superClass>
+            <fields>
                 <field>
-                    <name>status</name>
+                    <name>data</name>
                     <version>1.0.0+</version>
-                    <type>String</type>
+                    <association>
+                        <type>UserForgotPasswordResource</type>
+                    </association>
                     <required>true</required>
                 </field>
+            </fields>
+		</class>
+		
+		<class>
+		    <name>UserChangePasswordRequest</name>
+            <version>1.0.0+</version>
+            <superClass>NexusResponse</superClass>
+            <fields>
+                <field>
+                    <name>data</name>
+                    <version>1.0.0+</version>
+                    <association>
+                        <type>UserChangePasswordResource</type>
+                    </association>
+                    <required>true</required>
+                </field>
+            </fields>
+		</class>
+
+		<!-- Response Data Contents -->
+
+		<class>
+			<name>UserResource</name>
+			<version>1.0.0+</version>
+			<fields>
+				<field>
+					<name>resourceURI</name>
+					<version>1.0.0+</version>
+					<type>String</type>
+					<required>true</required>
+				</field>
+				<field>
+					<name>userId</name>
+					<version>1.0.0+</version>
+					<type>String</type>
+					<required>true</required>
+				</field>
+				<field>
+					<name>name</name>
+					<version>1.0.0+</version>
+					<type>String</type>
+					<required>true</required>
+				</field>
+				<field>
+					<name>status</name>
+					<version>1.0.0+</version>
+					<type>String</type>
+					<required>true</required>
+				</field>
+				<field>
+					<name>email</name>
+					<version>1.0.0+</version>
+					<type>String</type>
+					<required>true</required>
+				</field>
+				<field>
+					<name>roles</name>
+					<version>1.0.0+</version>
+					<association>
+						<type>String</type>
+						<multiplicity>*</multiplicity>
+					</association>
+					<required>true</required>
+				</field>
+			</fields>
+		</class>
+		
+		<class>
+            <name>UserForgotPasswordResource</name>
+            <version>1.0.0+</version>
+            <fields>
                 <field>
                     <name>email</name>
                     <version>1.0.0+</version>
@@ -1598,125 +1724,273 @@
                     <required>true</required>
                 </field>
                 <field>
-                    <name>roles</name>
+                    <name>userId</name>
+                    <version>1.0.0+</version>
+                    <type>String</type>
+                    <required>true</required>
+                </field>
+            </fields>
+        </class>
+        
+        <class>
+            <name>UserChangePasswordResource</name>
+            <version>1.0.0+</version>
+            <fields>
+                <field>
+                    <name>userId</name>
+                    <version>1.0.0+</version>
+                    <type>String</type>
+                    <required>true</required>
+                </field>
+                <field>
+                    <name>oldPassword</name>
+                    <version>1.0.0+</version>
+                    <type>String</type>
+                    <required>true</required>
+                </field>
+                <field>
+                    <name>newPassword</name>
+                    <version>1.0.0+</version>
+                    <type>String</type>
+                    <required>true</required>
+                </field>
+            </fields>
+        </class>
+
+		<!-- Roles -->
+
+		<!-- Response/Request wrapper Data -->
+		<class>
+			<name>RoleListResourceResponse</name>
+			<version>1.0.0+</version>
+			<superClass>NexusResponse</superClass>
+			<fields>
+				<field>
+					<name>data</name>
+					<version>1.0.0+</version>
+					<association>
+						<type>RoleResource</type>
+						<multiplicity>*</multiplicity>
+					</association>
+					<required>true</required>
+				</field>
+			</fields>
+		</class>
+
+		<class>
+			<name>RoleResourceResponse</name>
+			<version>1.0.0+</version>
+			<superClass>NexusResponse</superClass>
+			<fields>
+				<field>
+					<name>data</name>
+					<version>1.0.0+</version>
+					<association>
+						<type>RoleResource</type>
+					</association>
+					<required>true</required>
+				</field>
+			</fields>
+		</class>
+
+		<class>
+			<name>RoleResourceRequest</name>
+			<version>1.0.0+</version>
+			<superClass>NexusResponse</superClass>
+			<fields>
+				<field>
+					<name>data</name>
+					<version>1.0.0+</version>
+					<association>
+						<type>RoleResource</type>
+					</association>
+					<required>true</required>
+				</field>
+			</fields>
+		</class>
+
+		<!-- Response Data Contents -->
+
+		<class>
+			<name>RoleResource</name>
+			<version>1.0.0+</version>
+			<fields>
+				<field>
+					<name>resourceURI</name>
+					<version>1.0.0+</version>
+					<type>String</type>
+					<required>true</required>
+				</field>
+				<field>
+					<name>id</name>
+					<version>1.0.0+</version>
+					<type>String</type>
+					<required>true</required>
+				</field>
+				<field>
+					<name>name</name>
+					<version>1.0.0+</version>
+					<type>String</type>
+					<required>true</required>
+				</field>
+				<field>
+					<name>description</name>
+					<version>1.0.0+</version>
+					<type>String</type>
+					<required>true</required>
+				</field>
+				<field>
+					<name>sessionTimeout</name>
+					<version>1.0.0+</version>
+					<type>int</type>
+					<required>true</required>
+				</field>
+				<field>
+					<name>roles</name>
+					<version>1.0.0+</version>
+					<association>
+						<type>String</type>
+						<multiplicity>*</multiplicity>
+					</association>
+					<required>true</required>
+				</field>
+				<field>
+					<name>privileges</name>
+					<version>1.0.0+</version>
+					<association>
+						<type>String</type>
+						<multiplicity>*</multiplicity>
+					</association>
+					<required>true</required>
+				</field>
+			</fields>
+		</class>
+		
+		<!-- Privileges -->
+		<!-- Response/Request wrapper Data -->
+        <class>
+            <name>PrivilegeListResourceResponse</name>
+            <version>1.0.0+</version>
+            <superClass>NexusResponse</superClass>
+            <fields>
+                <field>
+                    <name>data</name>
                     <version>1.0.0+</version>
                     <association>
-                        <type>UserRoleResource</type>
+                        <type>PrivilegeBaseStatusResource</type>
+                        <multiplicity>*</multiplicity>
+                    </association>
+                    <required>true</required>
+                </field>
+            </fields>
+        </class>
+        
+        <class>
+            <name>PrivilegeStatusResourceResponse</name>
+            <version>1.0.0+</version>
+            <superClass>NexusResponse</superClass>
+            <fields>
+                <field>
+                    <name>data</name>
+                    <version>1.0.0+</version>
+                    <association>
+                        <type>PrivilegeBaseStatusResource</type>
+                    </association>
+                    <required>true</required>
+                </field>
+            </fields>
+        </class>
+
+        <class>
+            <name>PrivilegeResourceRequest</name>
+            <version>1.0.0+</version>
+            <superClass>NexusResponse</superClass>
+            <fields>
+                <field>
+                    <name>data</name>
+                    <version>1.0.0+</version>
+                    <association>
+                        <type>PrivilegeBaseResource</type>
+                    </association>
+                    <required>true</required>
+                </field>
+            </fields>
+        </class>
+        
+		<class>
+		    <name>PrivilegeBaseResource</name>
+		    <version>1.0.0+</version>
+		    <fields>
+		        <field>
+		            <name>name</name>
+                    <version>1.0.0+</version>
+                    <type>String</type>
+                    <required>true</required>
+		        </field>
+		        <field>
+                    <name>type</name>
+                    <version>1.0.0+</version>
+                    <type>String</type>
+                    <required>true</required>
+                </field>
+                <field>
+                    <name>description</name>
+                    <version>1.0.0+</version>
+                    <type>String</type>
+                    <required>false</required>
+                </field>
+                <field>
+                    <name>method</name>
+                    <version>1.0.0+</version>
+                    <association>
+                        <type>String</type>
                         <multiplicity>*</multiplicity>
                     </association>
                     <required>true</required>
                 </field>
 		    </fields>
 		</class>
-        
-        <class>
-            <name>UserResource</name>
+		
+		<class>
+            <name>PrivilegeTargetResource</name>
             <version>1.0.0+</version>
-            <superClass>UserStatusResource</superClass>
+            <superClass>PrivilegeBaseResource</superClass>
             <fields>
                 <field>
-                    <name>password</name>
+                    <name>repositoryTargetId</name>
+                    <version>1.0.0+</version>
+                    <type>String</type>
+                    <required>true</required>
+                </field>
+                <field>
+                    <name>repositoryId</name>
                     <version>1.0.0+</version>
                     <type>String</type>
                     <required>false</required>
                 </field>
                 <field>
-                    <name>roles</name>
-                    <version>1.0.0+</version>
-                    <association>
-                        <type>UserRoleResource</type>
-                        <multiplicity>*</multiplicity>
-                    </association>
-                    <required>true</required>
-                </field>
-            </fields>
-        </class>
-        
-        <class>
-            <name>UserRoleResource</name>
-            <version>1.0.0+</version>
-            <fields>
-                <field>
-                    <name>roleId</name>
+                    <name>repositoryGroupId</name>
                     <version>1.0.0+</version>
                     <type>String</type>
-                    <required>true</required>
-                </field>
-                <field>
-                    <name>roleName</name>
-                    <version>1.0.0+</version>
-                    <type>String</type>
-                    <required>true</required>
+                    <required>false</required>
                 </field>
             </fields>
         </class>
         
-        <!-- Roles -->
-        
-        <!-- Response/Request wrapper Data -->
-        <class>
-            <name>RoleListResourceResponse</name>
-            <version>1.0.0+</version>
-            <superClass>NexusResponse</superClass>
-            <fields>
-                <field>
-                    <name>data</name>
-                    <version>1.0.0+</version>
-                    <association>
-                        <type>RoleResource</type>
-                        <multiplicity>*</multiplicity>
-                    </association>
-                    <required>true</required>
-                </field>
-            </fields>
-        </class>
+        <!-- Purposefully no PrivilegeApplicationResource as that type of resource cannot be created -->
         
         <class>
-            <name>RoleResourceResponse</name>
-            <version>1.0.0+</version>
-            <superClass>NexusResponse</superClass>
-            <fields>
-                <field>
-                    <name>data</name>
-                    <version>1.0.0+</version>
-                    <association>
-                        <type>RoleResource</type>
-                    </association>
-                    <required>true</required>
-                </field>
-            </fields>
-        </class>
-        
-        <class>
-            <name>RoleResourceRequest</name>
-            <version>1.0.0+</version>
-            <superClass>NexusResponse</superClass>
-            <fields>
-                <field>
-                    <name>data</name>
-                    <version>1.0.0+</version>
-                    <association>
-                        <type>RoleResource</type>
-                    </association>
-                    <required>true</required>
-                </field>
-            </fields>
-        </class>
-        
-        <!-- Response Data Contents -->
-        
-        <class>
-            <name>RoleResource</name>
+            <name>PrivilegeBaseStatusResource</name>
             <version>1.0.0+</version>
             <fields>
-                <field>
-                    <name>resourceURI</name>
-                    <version>1.0.0+</version>
-                    <type>String</type>
-                    <required>true</required>
-                </field>
                 <field>
                     <name>id</name>
+                    <version>1.0.0+</version>
+                    <type>String</type>
+                    <required>true</required>
+                </field>
+                <field>
+                    <name>resourceURI</name>
                     <version>1.0.0+</version>
                     <type>String</type>
                     <required>true</required>
@@ -1731,47 +2005,42 @@
                     <name>description</name>
                     <version>1.0.0+</version>
                     <type>String</type>
+                    <required>false</required>
+                </field>
+                <field>
+                    <name>type</name>
+                    <version>1.0.0+</version>
+                    <type>String</type>
                     <required>true</required>
                 </field>
                 <field>
-                    <name>sessionTimeout</name>
+                    <name>method</name>
                     <version>1.0.0+</version>
-                    <type>int</type>
-                    <required>true</required>
-                </field>
-                <field>
-                    <name>roles</name>
-                    <version>1.0.0+</version>
-                    <association>
-                        <type>RoleContainedRoleResource</type>
-                        <multiplicity>*</multiplicity>
-                    </association>
-                    <required>true</required>
-                </field>
-                <field>
-                    <name>privileges</name>
-                    <version>1.0.0+</version>
-                    <association>
-                        <type>RoleContainedPrivilegeResource</type>
-                        <multiplicity>*</multiplicity>
-                    </association>
+                    <type>String</type>
                     <required>true</required>
                 </field>
             </fields>
         </class>
         
         <class>
-            <name>RoleContainedRoleResource</name>
+            <name>PrivilegeTargetStatusResource</name>
             <version>1.0.0+</version>
+            <superClass>PrivilegeBaseStatusResource</superClass>
             <fields>
                 <field>
-                    <name>id</name>
+                    <name>repositoryTargetId</name>
                     <version>1.0.0+</version>
                     <type>String</type>
                     <required>true</required>
                 </field>
                 <field>
-                    <name>name</name>
+                    <name>repositoryId</name>
+                    <version>1.0.0+</version>
+                    <type>String</type>
+                    <required>false</required>
+                </field>
+                <field>
+                    <name>repositoryGroupId</name>
                     <version>1.0.0+</version>
                     <type>String</type>
                     <required>false</required>
@@ -1780,24 +2049,19 @@
         </class>
         
         <class>
-            <name>RoleContainedPrivilegeResource</name>
+            <name>PrivilegeApplicationStatusResource</name>
             <version>1.0.0+</version>
+            <superClass>PrivilegeBaseStatusResource</superClass>
             <fields>
                 <field>
-                    <name>id</name>
+                    <name>permission</name>
                     <version>1.0.0+</version>
                     <type>String</type>
                     <required>true</required>
                 </field>
-                <field>
-                    <name>name</name>
-                    <version>1.0.0+</version>
-                    <type>String</type>
-                    <required>false</required>
-                </field>
             </fields>
         </class>
-        
+
 		<!-- Content -->
 		<class>
 			<name>ContentListResourceResponse</name>
@@ -1821,7 +2085,7 @@
 			<version>1.0.0+</version>
 			<fields>
 				<field>
-					<name>resourceUri</name>
+					<name>resourceURI</name>
 					<version>1.0.0+</version>
 					<type>String</type>
 					<required>true</required>
@@ -2088,12 +2352,6 @@
 			<version>1.0.0+</version>
 			<fields>
 				<field>
-					<name>authToken</name>
-					<version>1.0.0+</version>
-					<type>String</type>
-					<required>true</required>
-				</field>
-				<field>
 					<name>clientPermissions</name>
 					<version>1.0.0+</version>
 					<association>
@@ -2186,17 +2444,95 @@
 					<required>true</required>
 				</field>
 				<field>
-                    <name>configUsers</name>
+					<name>configUsers</name>
+					<version>1.0.0+</version>
+					<type>int</type>
+					<required>true</required>
+				</field>
+				<field>
+					<name>configRoles</name>
+					<version>1.0.0+</version>
+					<type>int</type>
+					<required>true</required>
+				</field>
+				<field>
+                    <name>configPrivileges</name>
                     <version>1.0.0+</version>
                     <type>int</type>
                     <required>true</required>
                 </field>
                 <field>
-                    <name>configRoles</name>
+                    <name>configRepoTargets</name>
                     <version>1.0.0+</version>
                     <type>int</type>
                     <required>true</required>
                 </field>
+                <field>
+                    <name>actionForgotPassword</name>
+                    <version>1.0.0+</version>
+                    <type>int</type>
+                    <required>true</required>
+                </field>
+                <field>
+                    <name>actionForgotUserid</name>
+                    <version>1.0.0+</version>
+                    <type>int</type>
+                    <required>true</required>
+                </field>
+                <field>
+                    <name>actionChangePassword</name>
+                    <version>1.0.0+</version>
+                    <type>int</type>
+                    <required>true</required>
+                </field>
+                <field>
+                    <name>actionResetPassword</name>
+                    <version>1.0.0+</version>
+                    <type>int</type>
+                    <required>true</required>
+                </field>
+                <field>
+                    <name>actionEmptyTrash</name>
+                    <version>1.0.0+</version>
+                    <type>int</type>
+                    <required>true</required>
+                </field>
+                <field>
+                    <name>actionRunTask</name>
+                    <version>1.0.0+</version>
+                    <type>int</type>
+                    <required>true</required>
+                </field>
+                <field>
+                    <name>actionDeleteCache</name>
+                    <version>1.0.0+</version>
+                    <type>int</type>
+                    <required>true</required>
+                </field>
+                <field>
+                    <name>actionRebuildAttribs</name>
+                    <version>1.0.0+</version>
+                    <type>int</type>
+                    <required>true</required>
+                </field>
+                <field>
+                    <name>actionUploadArtifact</name>
+                    <version>1.0.0+</version>
+                    <type>int</type>
+                    <required>true</required>
+                </field>
+                <field>
+                    <name>actionReindex</name>
+                    <version>1.0.0+</version>
+                    <type>int</type>
+                    <required>true</required>
+                </field>
+                <field>
+                    <name>actionChecksumSearch</name>
+                    <version>1.0.0+</version>
+                    <type>int</type>
+                    <required>true</required>
+                </field>                    
 			</fields>
 		</class>
 
@@ -2344,6 +2680,14 @@
 					<type>String</type>
 					<required>false</required>
 				</field>
+				<field>
+					<name>clientPermissions</name>
+					<version>1.0.0+</version>
+					<association>
+						<type>AuthenticationClientPermissions</type>
+					</association>
+					<required>true</required>
+				</field>
 			</fields>
 		</class>
 
@@ -2415,6 +2759,148 @@
 					<name>itemCount</name>
 					<version>1.0.0+</version>
 					<type>long</type>
+					<required>true</required>
+				</field>
+			</fields>
+		</class>
+
+		<!-- Repository Targets -->
+		<class>
+			<name>RepositoryTargetListResourceResponse</name>
+			<version>1.0.0+</version>
+			<superClass>NexusResponse</superClass>
+			<fields>
+				<field>
+					<name>data</name>
+					<version>1.0.0+</version>
+					<association>
+						<type>RepositoryTargetListResource</type>
+						<multiplicity>*</multiplicity>
+					</association>
+					<required>true</required>
+				</field>
+			</fields>
+		</class>
+
+		<class>
+			<name>RepositoryTargetListResource</name>
+			<version>1.0.0+</version>
+			<fields>
+				<field>
+					<name>resourceURI</name>
+					<version>1.0.0+</version>
+					<type>String</type>
+					<required>true</required>
+				</field>
+				<field>
+					<name>id</name>
+					<version>1.0.0+</version>
+					<type>String</type>
+					<required>true</required>
+				</field>
+				<field>
+					<name>name</name>
+					<version>1.0.0+</version>
+					<type>String</type>
+					<required>true</required>
+				</field>
+				<field>
+					<name>contentClass</name>
+					<version>1.0.0+</version>
+					<type>String</type>
+					<required>true</required>
+				</field>
+			</fields>
+		</class>
+
+		<class>
+			<name>RepositoryTargetResourceResponse</name>
+			<version>1.0.0+</version>
+			<superClass>NexusResponse</superClass>
+			<fields>
+				<field>
+					<name>data</name>
+					<version>1.0.0+</version>
+					<association>
+						<type>RepositoryTargetResource</type>
+					</association>
+					<required>true</required>
+				</field>
+			</fields>
+		</class>
+
+		<class>
+			<name>RepositoryTargetResource</name>
+			<version>1.0.0+</version>
+			<fields>
+				<field>
+					<name>resourceURI</name>
+					<version>1.0.0+</version>
+					<type>String</type>
+					<required>true</required>
+				</field>
+				<field>
+					<name>id</name>
+					<version>1.0.0+</version>
+					<type>String</type>
+					<required>true</required>
+				</field>
+				<field>
+					<name>name</name>
+					<version>1.0.0+</version>
+					<type>String</type>
+					<required>true</required>
+				</field>
+				<field>
+					<name>contentClass</name>
+					<version>1.0.0+</version>
+					<type>String</type>
+					<required>true</required>
+				</field>
+				<field>
+					<name>patterns</name>
+					<version>1.0.0+</version>
+					<association>
+						<type>String</type>
+						<multiplicity>*</multiplicity>
+					</association>
+					<required>true</required>
+				</field>
+			</fields>
+		</class>
+
+		<!-- Repository ContentClasses -->
+		<class>
+			<name>RepositoryContentClassListResourceResponse</name>
+			<version>1.0.0+</version>
+			<superClass>NexusResponse</superClass>
+			<fields>
+				<field>
+					<name>data</name>
+					<version>1.0.0+</version>
+					<association>
+						<type>RepositoryContentClassListResource</type>
+						<multiplicity>*</multiplicity>
+					</association>
+					<required>true</required>
+				</field>
+			</fields>
+		</class>
+
+		<class>
+			<name>RepositoryContentClassListResource</name>
+			<version>1.0.0+</version>
+			<fields>
+				<field>
+					<name>contentClass</name>
+					<version>1.0.0+</version>
+					<type>String</type>
+					<required>true</required>
+				</field>
+				<field>
+					<name>name</name>
+					<version>1.0.0+</version>
+					<type>String</type>
 					<required>true</required>
 				</field>
 			</fields>

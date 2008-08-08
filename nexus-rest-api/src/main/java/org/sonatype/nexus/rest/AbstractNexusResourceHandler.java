@@ -42,11 +42,15 @@ import org.restlet.resource.Representation;
 import org.restlet.resource.StringRepresentation;
 import org.restlet.resource.Variant;
 import org.sonatype.nexus.Nexus;
+import org.sonatype.nexus.configuration.ConfigurationException;
+import org.sonatype.nexus.configuration.security.NexusSecurityConfiguration;
+import org.sonatype.nexus.configuration.validator.InvalidConfigurationException;
+import org.sonatype.nexus.configuration.validator.ValidationMessage;
+import org.sonatype.nexus.configuration.validator.ValidationResponse;
 import org.sonatype.nexus.index.ArtifactInfo;
 import org.sonatype.nexus.rest.model.NexusArtifact;
 import org.sonatype.nexus.rest.model.NexusError;
 import org.sonatype.nexus.rest.model.NexusErrorResponse;
-import org.sonatype.nexus.security.User;
 import org.sonatype.plexus.rest.AbstractPlexusAwareResource;
 import org.sonatype.plexus.rest.PlexusRestletUtils;
 import org.sonatype.plexus.rest.representation.XStreamRepresentation;
@@ -79,6 +83,11 @@ public abstract class AbstractNexusResourceHandler
     protected Nexus getNexus()
     {
         return (Nexus) getRequest().getAttributes().get( Nexus.ROLE );
+    }
+
+    protected NexusSecurityConfiguration getNexusSecurityConfiguration()
+    {
+        return (NexusSecurityConfiguration) getRequest().getAttributes().get( NexusSecurityConfiguration.ROLE );
     }
 
     protected Object lookup( String role )
@@ -117,7 +126,8 @@ public abstract class AbstractNexusResourceHandler
         {
             return null;
         }
-
+        
+        // TODO: a big fcken TODO!
         StringBuffer path = new StringBuffer( StringUtils.replace( ai.groupId, ".", "/" ) )
             .append( "/" ).append( ai.artifactId ).append( "/" ).append( ai.version ).append( "/" ).append(
                 ai.artifactId ).append( "-" ).append( ai.version ).append( ".pom" );
@@ -203,25 +213,6 @@ public abstract class AbstractNexusResourceHandler
         ne.setMsg( msg );
         ner.addError( ne );
         return ner;
-    }
-
-    protected boolean isRequestAuthenticated()
-    {
-        return getRequest().getAttributes().containsKey( NexusAuthenticationGuard.REST_USER_KEY );
-    }
-
-    protected boolean isRequestAnonymous()
-    {
-        User user = (User) getRequest().getAttributes().get( NexusAuthenticationGuard.REST_USER_KEY );
-
-        if ( user == null )
-        {
-            return true;
-        }
-        else
-        {
-            return user.isAnonymous();
-        }
     }
 
     /**
@@ -465,7 +456,7 @@ public abstract class AbstractNexusResourceHandler
      */
     protected Reference calculateReference( Reference base, String relPart )
     {
-        Reference ref = new Reference( mangleBase( base ), relPart );
+        Reference ref = new Reference( base, relPart );
 
         if ( !ref.getBaseRef().getPath().endsWith( "/" ) )
         {
@@ -475,44 +466,32 @@ public abstract class AbstractNexusResourceHandler
         return ref.getTargetRef();
     }
 
-    /**
-     * Calculates the service base in respect to user set baseUrl.
-     * 
-     * @return
-     */
-    private Reference mangleBase( Reference reference )
+    protected void handleConfigurationException( ConfigurationException e, Representation representation )
     {
-        if ( getNexus().getBaseUrl() == null )
+        getLogger().log( Level.WARNING, "Configuration error!", e );
+
+        getResponse().setStatus( Status.CLIENT_ERROR_BAD_REQUEST, "Configuration error." );
+
+        if ( InvalidConfigurationException.class.isAssignableFrom( e.getClass() ) )
         {
-            // used did not set it
-            return reference;
+            ValidationResponse vr = ( (InvalidConfigurationException) e ).getValidationResponse();
+            
+            if ( vr != null && vr.getValidationErrors().size() > 0 )
+            {
+                ValidationMessage vm = vr.getValidationErrors().get( 0 );
+                getResponse().setEntity(
+                    serialize( representation, getNexusErrorResponse( vm.getKey(), vm.getShortMessage() ) ) );
+            }
+            else
+            {
+                getResponse().setEntity(
+                    serialize( representation, getNexusErrorResponse( "*", e.getMessage() ) ) );
+            }
         }
-
-        // http://localhost:8081/nexus
-        String root = getRequest().getRootRef().getParentRef().toString();
-
-        // make it not ending with "/"
-        if ( root.endsWith( "/" ) )
+        else
         {
-            root = root.substring( 0, root.length() - 1 );
+            getResponse().setEntity( serialize( representation, getNexusErrorResponse( "*", e.getMessage() ) ) );
         }
-
-        // http://repository.sonatype.org
-        String baseUrl = getNexus().getBaseUrl();
-
-        // make it not ending with "/"
-        if ( baseUrl.endsWith( "/" ) )
-        {
-            baseUrl = baseUrl.substring( 0, baseUrl.length() - 1 );
-        }
-
-        StringBuffer sb = new StringBuffer( reference.toString() );
-
-        sb.delete( 0, root.length() );
-
-        sb.insert( 0, baseUrl );
-
-        return new Reference( sb.toString() );
     }
 
 }

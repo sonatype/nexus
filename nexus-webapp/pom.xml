@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.sonatype.nexus</groupId>
     <artifactId>nexus</artifactId>
-    <version>1.0.0-beta-4-SNAPSHOT</version>
+    <version>1.0.0-beta-5-SNAPSHOT</version>
   </parent>
   <!-- a unique name for this project -->
   <artifactId>nexus-webapp</artifactId>
@@ -24,6 +24,10 @@
       <groupId>org.sonatype.appbooter.plexus-platforms</groupId>
       <artifactId>plexus-platform-jsw</artifactId>
       <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.sonatype.plexus</groupId>
+      <artifactId>plexus-jsecurity</artifactId>
     </dependency>
     <dependency>
       <groupId>org.sonatype.nexus</groupId>
@@ -154,7 +158,7 @@
           <platformArtifact>
             <groupId>org.sonatype.appbooter.plexus-platforms</groupId>
             <artifactId>plexus-platform-base</artifactId>
-            <version>1.2-SNAPSHOT</version>
+            <version>${plexus.appbooter.version}</version>
           </platformArtifact>
           <debugOutput>true</debugOutput>
         </configuration>

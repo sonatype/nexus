@@ -136,7 +136,8 @@ public abstract class LayoutConverterShadowRepository
                 throw new StorageException( "Could not get the content from the ContentLocator!", e );
             }
 
-            StorageFileItem storedFile = (StorageFileItem) retrieveItem( true, item.getRepositoryItemUid() );
+            StorageFileItem storedFile = (StorageFileItem) retrieveItem( true, item.getRepositoryItemUid(), item
+                .getItemContext() );
 
             String sha1Hash = storedFile.getAttributes().get( DigestCalculatingInspector.DIGEST_SHA1_KEY );
 
@@ -168,7 +169,7 @@ public abstract class LayoutConverterShadowRepository
         }
     }
 
-    public void deleteItemWithChecksums( RepositoryItemUid uid )
+    public void deleteItemWithChecksums( RepositoryItemUid uid, Map<String, Object> ctx )
         throws UnsupportedStorageOperationException,
             RepositoryNotAvailableException,
             ItemNotFoundException,
@@ -179,13 +180,13 @@ public abstract class LayoutConverterShadowRepository
             getLogger().debug( "deleteItemWithChecksums() :: " + uid.toString() );
         }
 
-        deleteItem( uid );
+        deleteItem( uid, ctx );
 
         RepositoryItemUid sha1Uid = new RepositoryItemUid( this, uid.getPath() + ".sha1" );
 
         try
         {
-            deleteItem( sha1Uid );
+            deleteItem( sha1Uid, ctx );
         }
         catch ( ItemNotFoundException e )
         {
@@ -196,7 +197,7 @@ public abstract class LayoutConverterShadowRepository
 
         try
         {
-            deleteItem( md5Uid );
+            deleteItem( md5Uid, ctx );
         }
         catch ( ItemNotFoundException e )
         {
@@ -267,7 +268,8 @@ public abstract class LayoutConverterShadowRepository
         getArtifactStoreHelper().storeArtifactWithGeneratedPom( gavRequest, is, attributes );
     }
 
-    public void deleteArtifactPom( ArtifactStoreRequest gavRequest, boolean withAllSubordinates, boolean deleteWholeGav )
+    public void deleteArtifactPom( ArtifactStoreRequest gavRequest, boolean withChecksums, boolean withAllSubordinates,
+        boolean deleteWholeGav )
         throws UnsupportedStorageOperationException,
             NoSuchResourceStoreException,
             RepositoryNotAvailableException,
@@ -275,10 +277,11 @@ public abstract class LayoutConverterShadowRepository
             StorageException,
             AccessDeniedException
     {
-        getArtifactStoreHelper().deleteArtifactPom( gavRequest, withAllSubordinates, deleteWholeGav );
+        getArtifactStoreHelper().deleteArtifactPom( gavRequest, withChecksums, withAllSubordinates, deleteWholeGav );
     }
 
-    public void deleteArtifact( ArtifactStoreRequest gavRequest, boolean withAllSubordinates, boolean deleteWholeGav )
+    public void deleteArtifact( ArtifactStoreRequest gavRequest, boolean withChecksums, boolean withAllSubordinates,
+        boolean deleteWholeGav )
         throws UnsupportedStorageOperationException,
             NoSuchResourceStoreException,
             RepositoryNotAvailableException,
@@ -286,7 +289,7 @@ public abstract class LayoutConverterShadowRepository
             StorageException,
             AccessDeniedException
     {
-        getArtifactStoreHelper().deleteArtifact( gavRequest, withAllSubordinates, deleteWholeGav );
+        getArtifactStoreHelper().deleteArtifact( gavRequest, withChecksums, withAllSubordinates, deleteWholeGav );
     }
 
     public Collection<Gav> listArtifacts( ArtifactStoreRequest gavRequest )

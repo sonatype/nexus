@@ -72,7 +72,7 @@ Sonatype.repoServer.RepoServer = function(){
           fieldLabel:'Username', 
           name:'username',
           tabIndex: 1,
-          width: 150,
+          width: 200,
           allowBlank:false 
         },
         { 
@@ -81,7 +81,7 @@ Sonatype.repoServer.RepoServer = function(){
           name:'password',
           tabIndex: 2, 
           inputType:'password', 
-          width: 150,
+          width: 200,
           allowBlank:false 
         }
       ]
@@ -97,6 +97,43 @@ Sonatype.repoServer.RepoServer = function(){
         },
         this
       );
+    },
+    
+    buildRecoveryText : function(){
+        var htmlString = null;
+        
+        if(sp.checkPermission(Sonatype.user.curr.repoServer.actionForgotUserid, sp.CREATE)){
+          htmlString = 'Forgot your <a id="recover-username" href="#">username</a>'
+        }
+        if(sp.checkPermission(Sonatype.user.curr.repoServer.actionForgotPassword, sp.CREATE)){
+          if (htmlString != null){
+            htmlString += ' or ';
+          }
+          else{
+            htmlString = 'Forgot your ';
+          }
+          htmlString += '<a id="recover-password" href="#">password</a>';
+        }
+        if (htmlString != null){
+          htmlString += '?';
+        }
+        
+        return htmlString;
+    },
+    
+    statusComplete : function( statusResponse ){        
+        this.resetMainTabPanel();
+        
+        this.createSubComponents(); //update left panel
+        
+        var htmlString = this.buildRecoveryText();
+        
+        this.loginForm.add({
+            xtype: 'panel',
+            id: 'recovery-panel',
+            style: 'padding-left: 70px',
+            html: htmlString
+          });
     },
     
     // Each Sonatype server will need one of these 
@@ -115,6 +152,19 @@ Sonatype.repoServer.RepoServer = function(){
       this.createSubComponents();
       
       Sonatype.view.serverTabPanel.add(this.nexusPanel);
+      
+      var htmlString = this.buildRecoveryText();
+      
+      if (htmlString != null){
+    	this.loginFormConfig.items[2] = 
+    	  {
+    		xtype: 'panel',
+    		id: 'recovery-panel',
+    		style: 'padding-left: 70px',
+    		html: htmlString
+    	  };
+      }
+      
       this.loginFormConfig.buttons = [{ 
         id:'loginbutton',
         text:'Log In',
@@ -122,48 +172,9 @@ Sonatype.repoServer.RepoServer = function(){
         formBind: true,
         scope: this,
         handler:function(){
-          this.loginWindow.getEl().mask("Logging you in...");
-
-          Ext.Ajax.request({
-            scope: this,
-            method: 'GET',
-            cbPassThru : {
-              username : this.loginForm.find('name', 'username')[0].getValue()
-            },
-            headers: {'Authorization' : 'Basic ' + Sonatype.utils.base64.encode(this.loginForm.find('name', 'username')[0].getValue() + ':' + this.loginForm.find('name', 'password')[0].getValue())}, //@todo: send HTTP basic auth data
-            url: Sonatype.config.repos.urls.login,
-            success: function(response, options){
-              //get user permissions
-              var respObj = Ext.decode(response.responseText);
-              var newUserPerms = respObj.data.clientPermissions;
-
-              Sonatype.user.curr.username = options.cbPassThru.username;
-              Sonatype.user.curr.authToken = respObj.data.authToken;
-              Sonatype.user.curr.repoServer = newUserPerms;
-              
-              Sonatype.state.CookieProvider.set('authToken', Sonatype.user.curr.authToken);
-              Sonatype.state.CookieProvider.set('username', Sonatype.user.curr.username);
-              
-              Ext.lib.Ajax.defaultHeaders.Authorization = 'NexusAuthToken ' + Sonatype.user.curr.authToken;
-              
-              Sonatype.user.curr.isLoggedIn = true;
-              Sonatype.view.updateLoginLinkText();
-
-              this.resetMainTabPanel();
-              
-              this.loginWindow.hide();
-              this.loginWindow.getEl().unmask();
-              this.loginForm.getForm().reset();
-              
-              this.createSubComponents(); //update left panel
-            },
-            failure: function(response, options){
-              this.loginWindow.getEl().unmask();
-              this.loginForm.find('name', 'password')[0].focus(true);
-            }
-
-          });
-
+          Sonatype.utils.doLogin( this.loginWindow,
+            this.loginForm.find('name', 'username')[0].getValue(),
+            this.loginForm.find('name', 'password')[0].getValue()); 
         } 
       }];
       
@@ -180,7 +191,7 @@ Sonatype.repoServer.RepoServer = function(){
         closable: true,
         closeAction: 'hide',
         autoWidth: false,
-        width: 250,
+        width: 300,
         autoHeight: true,
         modal:true,
         constrain: true,
@@ -190,7 +201,19 @@ Sonatype.repoServer.RepoServer = function(){
       });
       
       this.loginWindow.on('show', function(){
-        this.loginForm.find('name', 'username')[0].focus(true, 100);
+        var panel = this.loginWindow.findById( 'recovery-panel' );
+        if (panel && !panel.clickListenerAdded) {
+          // these listeners only work if added after the window is created
+          panel.body.on('click', Ext.emptyFn, null, {delegate:'a', preventDefault:true});
+          panel.body.on('mousedown', this.recoverLogin, this, {delegate:'a'});
+          panel.clickListenerAdded = true;
+        }
+
+        var field = this.loginForm.find('name', 'username')[0];
+        if ( field.getRawValue() ) {
+          field = this.loginForm.find('name', 'password')[0]
+        }
+        field.focus(true, 100);
       }, this);
       
       this.loginWindow.on('close', function(){
@@ -280,20 +303,41 @@ Sonatype.repoServer.RepoServer = function(){
 
       //Config Group **************************************************
       var cTplData = {links:[]};
-      if(sp.checkPermission(userPerms.configServer, sp.EDIT)){
+      if(sp.checkPermission(userPerms.configServer, sp.READ)
+          && (sp.checkPermission(userPerms.configServer, sp.CREATE)
+              || sp.checkPermission(userPerms.configServer, sp.DELETE)
+              || sp.checkPermission(userPerms.configServer, sp.EDIT))){
         cTplData.links.push( {id:'open-config-server', title:'Server'} );
       }
-      if(sp.checkPermission(userPerms.configRepos, sp.EDIT)){
+      if(sp.checkPermission(userPerms.configRepos, sp.READ)
+          && (sp.checkPermission(userPerms.configRepos, sp.CREATE)
+                  || sp.checkPermission(userPerms.configRepos, sp.DELETE)
+                  || sp.checkPermission(userPerms.configRepos, sp.EDIT))){
         cTplData.links.push( {id:'open-config-repos', title:'Repositories'} );
       }
-      if(sp.checkPermission(userPerms.configGroups, sp.EDIT)){
+      if(sp.checkPermission(userPerms.configGroups, sp.READ)
+          && (sp.checkPermission(userPerms.configGroups, sp.CREATE)
+                  || sp.checkPermission(userPerms.configGroups, sp.DELETE)
+                  || sp.checkPermission(userPerms.configGroups, sp.EDIT))){
         cTplData.links.push( {id:'open-config-groups', title:'Groups'} );
       }
-      if(sp.checkPermission(userPerms.configRules, sp.EDIT)){
+      if(sp.checkPermission(userPerms.configRules, sp.READ)
+          && (sp.checkPermission(userPerms.configRules, sp.CREATE)
+                  || sp.checkPermission(userPerms.configRules, sp.DELETE)
+                  || sp.checkPermission(userPerms.configRules, sp.EDIT))){
         cTplData.links.push( {id:'open-config-rules', title:'Routing'} );
       }
-      if(sp.checkPermission(userPerms.configSchedules, sp.EDIT)){
+      if(sp.checkPermission(userPerms.configSchedules, sp.READ)
+          && (sp.checkPermission(userPerms.configSchedules, sp.CREATE)
+                  || sp.checkPermission(userPerms.configSchedules, sp.DELETE)
+                  || sp.checkPermission(userPerms.configSchedules, sp.EDIT))){
         cTplData.links.push( {id:'open-config-schedules', title:'Scheduled Tasks'} );
+      }
+      if(sp.checkPermission(userPerms.configRepoTargets, sp.READ)
+          && (sp.checkPermission(userPerms.configRepoTargets, sp.CREATE)
+                  || sp.checkPermission(userPerms.configRepoTargets, sp.DELETE)
+                  || sp.checkPermission(userPerms.configRepoTargets, sp.EDIT))){
+        cTplData.links.push( {id:'open-config-repoTargets', title:'Repository Targets'} );
       }
       if(cTplData.links.length > 0){
         panelConf = Ext.apply({}, {title:'Administration', id:'st-nexus-config', html: bodyTpl.apply(cTplData)}, defaultGroupPanel);
@@ -303,11 +347,27 @@ Sonatype.repoServer.RepoServer = function(){
 
       //Security Group **************************************************
       var sTplData = {links:[]};
-      if( sp.checkPermission( userPerms.configUsers, sp.EDIT ) ) {
+      if ( Sonatype.user.curr.isLoggedIn 
+              && sp.checkPermission( userPerms.actionChangePassword, sp.CREATE ) ) {
+        sTplData.links.push( { id: 'open-security-password', title: 'Change Password' } );
+      }
+      if( sp.checkPermission( userPerms.configUsers, sp.READ ) 
+          && (sp.checkPermission(userPerms.configUsers, sp.CREATE)
+                  || sp.checkPermission(userPerms.configUsers, sp.DELETE)
+                  || sp.checkPermission(userPerms.configUsers, sp.EDIT))){
         sTplData.links.push( { id: 'open-security-users', title: 'Users' } );
       }
-      if ( sp.checkPermission( userPerms.configRoles, sp.EDIT ) ) {
+      if ( sp.checkPermission( userPerms.configRoles, sp.READ ) 
+          && (sp.checkPermission(userPerms.configRoles, sp.CREATE)
+                  || sp.checkPermission(userPerms.configRoles, sp.DELETE)
+                  || sp.checkPermission(userPerms.configRoles, sp.EDIT))){
         sTplData.links.push( { id: 'open-security-roles', title: 'Roles' } );
+      }
+      if ( sp.checkPermission( userPerms.configPrivileges, sp.READ ) 
+          && (sp.checkPermission(userPerms.configPrivileges, sp.CREATE)
+                  || sp.checkPermission(userPerms.configPrivileges, sp.DELETE)
+                  || sp.checkPermission(userPerms.configPrivileges, sp.EDIT))){
+        sTplData.links.push( { id: 'open-security-privileges', title: 'Privileges' } );
       }
       if ( sTplData.links.length > 0 ){
         panelConf = Ext.apply( {}, { title:'Security', id: 'st-nexus-security', html: bodyTpl.apply( sTplData ) }, defaultGroupPanel );
@@ -324,7 +384,7 @@ Sonatype.repoServer.RepoServer = function(){
             links: [
               { href: 'http://nexus.sonatype.org/', title: 'Nexus Home' },
               { href: 'http://www.sonatype.com/book/reference/repository-manager.html', title: 'Getting Started' },
-              { href: 'https://docs.sonatype.com/display/Nexus/Home', title: 'Nexus Wiki' },
+              { href: 'https://docs.sonatype.com/display/NX/Home', title: 'Nexus Wiki' },
               { href: 'http://www.sonatype.com/book/reference/public-book.html', title: 'Maven Book' },
               { href: 'http://nexus.sonatype.org/changes.html', title: 'Release Notes' },
               { href: 'http://issues.sonatype.org/browse/NEXUS', title: 'Report Issues' }
@@ -391,6 +451,9 @@ Sonatype.repoServer.RepoServer = function(){
         var id = 'schedules-config';
         Sonatype.view.mainTabPanel.addOrShowTab(id, Sonatype.repoServer.SchedulesEditPanel, {title: 'Scheduled Tasks'});
       },
+      'open-security-password' : function(scope){
+        Sonatype.utils.changePassword();
+      },
       'open-security-users' : function(scope){
         var id = 'security-users';
         Sonatype.view.mainTabPanel.addOrShowTab(id, Sonatype.repoServer.UserEditPanel, {title: 'Users'});
@@ -398,6 +461,14 @@ Sonatype.repoServer.RepoServer = function(){
       'open-security-roles' : function(scope){
         var id = 'security-roles';
         Sonatype.view.mainTabPanel.addOrShowTab(id, Sonatype.repoServer.RoleEditPanel, {title: 'Roles'});
+      },
+      'open-security-privileges' : function(scope){
+        var id = 'security-privileges';
+        Sonatype.view.mainTabPanel.addOrShowTab(id, Sonatype.repoServer.PrivilegeEditPanel, {title: 'Privileges'});
+      },
+      'open-config-repoTargets' : function(scope){
+        var id = 'config-repoTargets';
+        Sonatype.view.mainTabPanel.addOrShowTab(id, Sonatype.repoServer.RepoTargetEditPanel, {title: 'Repository Targets'});
       }
     },
     
@@ -413,8 +484,8 @@ Sonatype.repoServer.RepoServer = function(){
             //      if the token was expired (403), we can still go to anonymous client state
             delete Ext.lib.Ajax.defaultHeaders.Authorization;
 
-            Sonatype.state.CookieProvider.clear('authToken');
-            Sonatype.state.CookieProvider.clear('username');
+//            Sonatype.state.CookieProvider.clear('authToken');
+//            Sonatype.state.CookieProvider.clear('username');
             
             this.resetMainTabPanel();
             
@@ -427,6 +498,11 @@ Sonatype.repoServer.RepoServer = function(){
       }
       else {
         this.loginForm.getForm().clearInvalid();
+        var cp = Sonatype.state.CookieProvider;
+        var username = cp.get('username', null);
+        if ( username ) {
+          this.loginForm.find( 'name', 'username' )[0].setValue( username );
+        }
         this.loginWindow.show();
       }
     },
@@ -439,6 +515,21 @@ Sonatype.repoServer.RepoServer = function(){
       
       Sonatype.view.mainTabPanel.add(Sonatype.view.welcomeTab);
       Sonatype.view.mainTabPanel.setActiveTab(Sonatype.view.welcomeTab);
+    },
+
+    recoverLogin : function(e, target){
+      e.stopEvent();
+      if (this.loginWindow.isVisible()) {
+    	this.loginWindow.hide();
+      }
+      
+      var action = target.id;
+      if (action == 'recover-username') {
+    	  Sonatype.utils.recoverUsername();
+      }
+      else if (action == 'recover-password') {
+      	Sonatype.utils.recoverPassword();
+      }
     }
      
   };

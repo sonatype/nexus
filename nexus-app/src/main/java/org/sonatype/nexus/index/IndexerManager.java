@@ -26,10 +26,8 @@ import org.apache.lucene.search.Query;
 import org.sonatype.nexus.index.context.IndexContextInInconsistentStateException;
 import org.sonatype.nexus.proxy.NoSuchRepositoryException;
 import org.sonatype.nexus.proxy.NoSuchRepositoryGroupException;
-import org.sonatype.nexus.proxy.events.EventListener;
 
 public interface IndexerManager
-    extends EventListener
 {
     String ROLE = IndexerManager.class.getName();
 
@@ -83,14 +81,14 @@ public interface IndexerManager
     // Reindexing related
     // ----------------------------------------------------------------------------
 
-    void reindexAllRepositories()
+    void reindexAllRepositories( String path )
         throws IOException;
 
-    void reindexRepository( String repositoryId )
+    void reindexRepository( String path, String repositoryId )
         throws NoSuchRepositoryException,
             IOException;
 
-    void reindexRepositoryGroup( String repositoryGroupId )
+    void reindexRepositoryGroup( String path, String repositoryGroupId )
         throws NoSuchRepositoryGroupException,
             IOException;
 
@@ -107,6 +105,9 @@ public interface IndexerManager
     // ----------------------------------------------------------------------------
 
     FlatSearchResponse searchArtifactFlat( String term, String repositoryId, String groupId, Integer from, Integer count );
+
+    FlatSearchResponse searchArtifactClassFlat( String term, String repositoryId, String groupId, Integer from,
+        Integer count );
 
     FlatSearchResponse searchArtifactFlat( String gTerm, String aTerm, String vTerm, String cTerm, String repositoryId,
         String groupId, Integer from, Integer count );

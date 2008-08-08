@@ -28,9 +28,11 @@ import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -41,10 +43,11 @@ import org.codehaus.plexus.personality.plexus.lifecycle.phase.Initializable;
 import org.codehaus.plexus.personality.plexus.lifecycle.phase.InitializationException;
 import org.codehaus.plexus.util.FileUtils;
 import org.codehaus.plexus.util.IOUtil;
+import org.codehaus.plexus.util.StringUtils;
 import org.sonatype.nexus.artifact.Gav;
 import org.sonatype.nexus.configuration.ConfigurationChangeEvent;
 import org.sonatype.nexus.configuration.ConfigurationChangeListener;
-import org.sonatype.nexus.configuration.NexusConfiguration;
+import org.sonatype.nexus.configuration.application.NexusConfiguration;
 import org.sonatype.nexus.configuration.model.CRepository;
 import org.sonatype.nexus.index.context.IndexContextInInconsistentStateException;
 import org.sonatype.nexus.index.context.IndexingContext;
@@ -54,6 +57,7 @@ import org.sonatype.nexus.proxy.NoSuchRepositoryException;
 import org.sonatype.nexus.proxy.NoSuchRepositoryGroupException;
 import org.sonatype.nexus.proxy.ResourceStoreRequest;
 import org.sonatype.nexus.proxy.events.AbstractEvent;
+import org.sonatype.nexus.proxy.events.EventListener;
 import org.sonatype.nexus.proxy.events.RepositoryItemEvent;
 import org.sonatype.nexus.proxy.events.RepositoryItemEventCache;
 import org.sonatype.nexus.proxy.events.RepositoryItemEventDelete;
@@ -87,7 +91,8 @@ import org.sonatype.nexus.tasks.ReindexTask;
  */
 public class DefaultIndexerManager
     extends AbstractLogEnabled
-    implements IndexerManager, Initializable, ConfigurationChangeListener
+    implements IndexerManager, Initializable, ConfigurationChangeListener, EventListener
+
 {
     /** Context id local suffix */
     public static final String CTX_LOCAL_SUFIX = "-local";
@@ -178,7 +183,8 @@ public class DefaultIndexerManager
 
         for ( IndexingContext ctx : nexusIndexer.getIndexingContexts().values() )
         {
-            ctx.close( deleteFiles );
+            nexusIndexer.removeIndexingContext( ctx, false );
+            // ctx.close( deleteFiles );
         }
     }
 
@@ -244,16 +250,15 @@ public class DefaultIndexerManager
         throws IOException,
             NoSuchRepositoryException
     {
-        Repository repository = repositoryRegistry.getRepository( repositoryId );
-
         // remove context for repository
-        nexusIndexer.removeIndexingContext( nexusIndexer.getIndexingContexts().get(
-            getLocalContextId( repository.getId() ) ), deleteFiles );
+        nexusIndexer.removeIndexingContext(
+            nexusIndexer.getIndexingContexts().get( getLocalContextId( repositoryId ) ),
+            deleteFiles );
 
-        if ( nexusIndexer.getIndexingContexts().containsKey( getRemoteContextId( repository.getId() ) ) )
+        if ( nexusIndexer.getIndexingContexts().containsKey( getRemoteContextId( repositoryId ) ) )
         {
             nexusIndexer.removeIndexingContext( nexusIndexer.getIndexingContexts().get(
-                getRemoteContextId( repository.getId() ) ), deleteFiles );
+                getRemoteContextId( repositoryId ) ), deleteFiles );
         }
     }
 
@@ -441,6 +446,8 @@ public class DefaultIndexerManager
             // only proxies have remote indexes
             if ( RepositoryType.PROXY.equals( repository.getRepositoryType() ) )
             {
+                Map<String, Object> ctx = new HashMap<String, Object>();
+
                 try
                 {
                     CRepository repoModel = nexusConfiguration.readRepository( repository.getId() );
@@ -468,11 +475,11 @@ public class DefaultIndexerManager
                         propsUid = new RepositoryItemUid( repository, "/.index/" + IndexingContext.INDEX_FILE
                             + ".properties" );
 
-                        StorageFileItem fitem = (StorageFileItem) repository.retrieveItem( false, propsUid );
+                        StorageFileItem fitem = (StorageFileItem) repository.retrieveItem( false, propsUid, ctx );
 
                         zipUid = new RepositoryItemUid( repository, "/.index/" + IndexingContext.INDEX_FILE + ".zip" );
 
-                        fitem = (StorageFileItem) repository.retrieveItem( false, zipUid );
+                        fitem = (StorageFileItem) repository.retrieveItem( false, zipUid, ctx );
 
                         RAMDirectory directory = new RAMDirectory();
 
@@ -511,7 +518,7 @@ public class DefaultIndexerManager
                         {
                             try
                             {
-                                repository.deleteItem( propsUid );
+                                repository.deleteItem( propsUid, ctx );
                             }
                             catch ( ItemNotFoundException ex )
                             {
@@ -528,7 +535,7 @@ public class DefaultIndexerManager
                         {
                             try
                             {
-                                repository.deleteItem( zipUid );
+                                repository.deleteItem( zipUid, ctx );
                             }
                             catch ( ItemNotFoundException ex )
                             {
@@ -749,7 +756,7 @@ public class DefaultIndexerManager
     // Reindexing related
     // ----------------------------------------------------------------------------
 
-    public void reindexAllRepositories()
+    public void reindexAllRepositories( String path )
         throws IOException
     {
         List<Repository> reposes = repositoryRegistry.getRepositories();
@@ -762,7 +769,7 @@ public class DefaultIndexerManager
         publishAllIndex();
     }
 
-    public void reindexRepository( String repositoryId )
+    public void reindexRepository( String path, String repositoryId )
         throws NoSuchRepositoryException,
             IOException
     {
@@ -773,7 +780,7 @@ public class DefaultIndexerManager
         publishRepositoryIndex( repositoryId );
     }
 
-    public void reindexRepositoryGroup( String repositoryGroupId )
+    public void reindexRepositoryGroup( String path, String repositoryGroupId )
         throws NoSuchRepositoryGroupException,
             IOException
     {
@@ -875,6 +882,71 @@ public class DefaultIndexerManager
             else
             {
                 req = new FlatSearchRequest( bq, ArtifactInfo.REPOSITORY_VERSION_COMPARATOR, context );
+            }
+
+            if ( from != null )
+            {
+                req.setStart( from );
+            }
+
+            if ( count != null )
+            {
+                req.setAiCount( count );
+            }
+
+            FlatSearchResponse result = nexusIndexer.searchFlat( req );
+
+            postprocessResults( result.getResults() );
+
+            return result;
+        }
+        catch ( IndexContextInInconsistentStateException e )
+        {
+            getLogger().error( "Inconsistent index context state while searching for query \"" + term + "\"", e );
+        }
+        catch ( IOException e )
+        {
+            getLogger().error( "Got I/O exception while searching for query \"" + term + "\"", e );
+        }
+
+        return new FlatSearchResponse( req.getQuery(), 0, new HashSet<ArtifactInfo>() );
+    }
+
+    public FlatSearchResponse searchArtifactClassFlat( String term, String repositoryId, String groupId, Integer from,
+        Integer count )
+    {
+        IndexingContext context = null;
+
+        if ( groupId != null )
+        {
+            context = nexusIndexer.getIndexingContexts().get( getLocalContextId( groupId ) );
+        }
+
+        if ( repositoryId != null )
+        {
+            context = nexusIndexer.getIndexingContexts().get( getLocalContextId( repositoryId ) );
+        }
+
+        FlatSearchRequest req = null;
+
+        try
+        {
+            if ( term.endsWith( ".class" ) )
+            {
+                term = term.substring( 0, term.length() - 6 );
+            }
+
+            term = StringUtils.replace( term, '.', '/' );
+
+            Query q = nexusIndexer.constructQuery( ArtifactInfo.NAMES, term );
+
+            if ( context == null )
+            {
+                req = new FlatSearchRequest( q, ArtifactInfo.REPOSITORY_VERSION_COMPARATOR );
+            }
+            else
+            {
+                req = new FlatSearchRequest( q, ArtifactInfo.REPOSITORY_VERSION_COMPARATOR, context );
             }
 
             if ( from != null )
@@ -1055,6 +1127,11 @@ public class DefaultIndexerManager
 
     public void onProximityEvent( AbstractEvent evt )
     {
+        if ( getLogger().isDebugEnabled() )
+        {
+            getLogger().debug( "Processing event (" + evt.toString() + ")" );
+        }
+
         if ( RepositoryRegistryEvent.class.isAssignableFrom( evt.getClass() ) )
         {
             try
@@ -1111,6 +1188,11 @@ public class DefaultIndexerManager
                 // from where we get the event is a maven2 repo
                 if ( !MavenRepository.class.isAssignableFrom( ievt.getRepository().getClass() ) )
                 {
+                    if ( getLogger().isDebugEnabled() )
+                    {
+                        getLogger().debug( "This is not a MavenRepository instance, will not process it." );
+                    }
+
                     return;
                 }
 
@@ -1130,9 +1212,11 @@ public class DefaultIndexerManager
                     if ( context != null && gav != null )
                     {
                         // if we have a valid indexing context and have access to a File
-                        if ( ievt.getContext().containsKey( DefaultFSLocalRepositoryStorage.FS_FILE ) )
+                        if ( DefaultFSLocalRepositoryStorage.class.isAssignableFrom( ievt
+                            .getItemUid().getRepository().getLocalStorage().getClass() ) )
                         {
-                            File file = (File) ievt.getContext().get( DefaultFSLocalRepositoryStorage.FS_FILE );
+                            File file = ( (DefaultFSLocalRepositoryStorage) ievt.getRepository().getLocalStorage() )
+                                .getFileFromBase( ievt.getItemUid() );
 
                             if ( file.exists() )
                             {
@@ -1140,6 +1224,12 @@ public class DefaultIndexerManager
 
                                 if ( ac != null )
                                 {
+                                    if ( getLogger().isDebugEnabled() )
+                                    {
+                                        getLogger()
+                                            .debug( "The ArtifactContext created from file is fine, continuing." );
+                                    }
+
                                     ArtifactInfo ai = ac.getArtifactInfo();
 
                                     if ( ievt instanceof RepositoryItemEventCache )

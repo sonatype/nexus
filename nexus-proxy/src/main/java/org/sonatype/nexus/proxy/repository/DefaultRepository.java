@@ -20,7 +20,6 @@
  */
 package org.sonatype.nexus.proxy.repository;
 
-import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
 
@@ -29,11 +28,8 @@ import org.sonatype.nexus.proxy.RepositoryNotAvailableException;
 import org.sonatype.nexus.proxy.StorageException;
 import org.sonatype.nexus.proxy.events.RepositoryItemEventCache;
 import org.sonatype.nexus.proxy.item.AbstractStorageItem;
-import org.sonatype.nexus.proxy.item.DefaultStorageFileItem;
-import org.sonatype.nexus.proxy.item.PreparedContentLocator;
 import org.sonatype.nexus.proxy.item.RepositoryItemUid;
 import org.sonatype.nexus.proxy.item.StorageCollectionItem;
-import org.sonatype.nexus.proxy.item.StorageFileItem;
 import org.sonatype.nexus.proxy.item.StorageItem;
 import org.sonatype.nexus.proxy.storage.UnsupportedStorageOperationException;
 
@@ -150,11 +146,18 @@ public abstract class DefaultRepository
                     if ( shouldGetRemote )
                     {
                         // this will GET it unconditionally
-                        remoteItem = doRetrieveRemoteItem( uid, context );
-
-                        if ( getLogger().isDebugEnabled() )
+                        try
                         {
-                            getLogger().debug( "Item " + uid.toString() + " found in remote storage." );
+                            remoteItem = doRetrieveRemoteItem( uid, context );
+
+                            if ( getLogger().isDebugEnabled() )
+                            {
+                                getLogger().debug( "Item " + uid.toString() + " found in remote storage." );
+                            }
+                        }
+                        catch ( StorageException e )
+                        {
+                            remoteItem  = null;
                         }
                     }
                     else
@@ -168,19 +171,6 @@ public abstract class DefaultRepository
                     {
                         getLogger().debug( "Item " + uid.toString() + " not found in remote storage." );
                     }
-                    remoteItem = null;
-                }
-                catch ( StorageException ex )
-                {
-                    getLogger()
-                        .warn(
-                            "RemoteStorage of repository "
-                                + getId()
-                                + " throws StorageException. Are we online? Is storage properly set up? Setting ProxyMode of this repository to BlockedAuto. MANUAL INTERVENTION NEEDED.",
-                            ex );
-
-                    autoBlockProxying( ex );
-
                     remoteItem = null;
                 }
             }
@@ -254,9 +244,27 @@ public abstract class DefaultRepository
         throws ItemNotFoundException,
             StorageException
     {
-        AbstractStorageItem result = getRemoteStorage().retrieveItem( uid );
+        AbstractStorageItem result = null;
 
-        result.getItemContext().putAll( context );
+        try
+        {
+            result = getRemoteStorage().retrieveItem( uid );
+
+            result.getItemContext().putAll( context );
+        }
+        catch ( StorageException ex )
+        {
+            getLogger()
+                .warn(
+                    "RemoteStorage of repository "
+                        + getId()
+                        + " throws StorageException. Are we online? Is storage properly set up? Setting ProxyMode of this repository to BlockedAuto. MANUAL INTERVENTION NEEDED.",
+                    ex );
+
+            autoBlockProxying( ex );
+
+            throw ex;
+        }
 
         return doCacheItem( result );
     }
@@ -273,11 +281,15 @@ public abstract class DefaultRepository
                 getLogger().debug(
                     "Caching item " + item.getRepositoryItemUid().toString() + " in local storage of repository." );
             }
+
             getLocalStorage().storeItem( item );
+
             removeFromNotFoundCache( item.getRepositoryItemUid().getPath() );
-            notifyProximityEventListeners( new RepositoryItemEventCache( item.getRepositoryItemUid(), item
-                .getItemContext() ) );
+
             result = getLocalStorage().retrieveItem( item.getRepositoryItemUid() );
+
+            notifyProximityEventListeners( new RepositoryItemEventCache( result ) );
+
             result.getItemContext().putAll( item.getItemContext() );
         }
         catch ( ItemNotFoundException ex )
@@ -292,34 +304,6 @@ public abstract class DefaultRepository
         }
 
         return result;
-    }
-
-    protected void doCopyItem( RepositoryItemUid fromUid, RepositoryItemUid toUid )
-        throws UnsupportedStorageOperationException,
-            RepositoryNotAvailableException,
-            ItemNotFoundException,
-            StorageException
-    {
-        AbstractStorageItem item = getLocalStorage().retrieveItem( fromUid );
-
-        if ( StorageFileItem.class.isAssignableFrom( item.getClass() ) )
-        {
-            try
-            {
-                DefaultStorageFileItem target = new DefaultStorageFileItem(
-                    this,
-                    toUid.getPath(),
-                    true,
-                    true,
-                    new PreparedContentLocator( ( (StorageFileItem) item ).getInputStream() ) );
-
-                getLocalStorage().storeItem( target );
-            }
-            catch ( IOException e )
-            {
-                throw new StorageException( "Could not get the content of source file (is it file?)!", e );
-            }
-        }
     }
 
     protected void doDeleteItem( RepositoryItemUid uid )

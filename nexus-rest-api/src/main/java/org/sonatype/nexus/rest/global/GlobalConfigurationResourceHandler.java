@@ -34,13 +34,12 @@ import org.sonatype.nexus.configuration.ConfigurationException;
 import org.sonatype.nexus.configuration.model.CRemoteAuthentication;
 import org.sonatype.nexus.configuration.model.CRemoteConnectionSettings;
 import org.sonatype.nexus.configuration.model.CRemoteHttpProxySettings;
+import org.sonatype.nexus.configuration.model.CSmtpConfiguration;
 import org.sonatype.nexus.rest.model.GlobalConfigurationResource;
 import org.sonatype.nexus.rest.model.GlobalConfigurationResourceResponse;
 import org.sonatype.nexus.rest.model.RemoteConnectionSettings;
 import org.sonatype.nexus.rest.model.RemoteHttpProxySettings;
-import org.sonatype.nexus.security.AuthenticationSource;
-import org.sonatype.nexus.security.MutableAuthenticationSource;
-import org.sonatype.nexus.security.SimpleAuthenticationSource;
+import org.sonatype.nexus.rest.model.SmtpSettings;
 
 /**
  * The GlobalConfiguration resource handler. It simply gets and builds the requested config REST model (DTO) and passes
@@ -61,8 +60,6 @@ public class GlobalConfigurationResourceHandler
     /** Name denoting default Nexus configuration */
     public static final String DEFAULT_CONFIG_NAME = "default";
 
-    private AuthenticationSource authenticationSource;
-
     /**
      * The default Resource constructor.
      * 
@@ -73,15 +70,6 @@ public class GlobalConfigurationResourceHandler
     public GlobalConfigurationResourceHandler( Context context, Request request, Response response )
     {
         super( context, request, response );
-
-        try
-        {
-            authenticationSource = getNexus().getNexusConfiguration().getAuthenticationSource();
-        }
-        catch ( ConfigurationException e )
-        {
-            throw new IllegalStateException( "Cannot get authenticationSource!", e );
-        }
     }
 
     /**
@@ -169,6 +157,29 @@ public class GlobalConfigurationResourceHandler
                     getNexus().updateWorkingDirectory( resource.getWorkingDirectory() );
 
                     getNexus().updateApplicationLogDirectory( resource.getLogDirectory() );
+                    
+                    if ( resource.getSmtpSettings() != null )
+                    {
+                        SmtpSettings settings = resource.getSmtpSettings();
+                        
+                        CSmtpConfiguration config = new CSmtpConfiguration();
+                        
+                        config.setHost( settings.getHost() );
+                        
+                        config.setPassword( settings.getPassword() );
+                        
+                        config.setPort( settings.getPort() );
+                        
+                        config.setSslEnabled( settings.isSslEnabled() );
+                        
+                        config.setTlsEnabled( settings.isTlsEnabled() );
+                        
+                        config.setUsername( settings.getUsername() );
+                        
+                        config.setSystemEmailAddress( settings.getSystemEmailAddress() );
+                        
+                        getNexus().updateSmtpConfiguration( config );
+                    }
 
                     if ( resource.getGlobalConnectionSettings() != null )
                     {
@@ -224,20 +235,15 @@ public class GlobalConfigurationResourceHandler
                         getNexus().updateGlobalRemoteHttpProxySettings( null );
                     }
 
-                    if ( resource.getSecurityConfiguration() != null )
+                    getNexus().setSecurityEnabled( resource.isSecurityEnabled() );
+
+                    getNexus().setAnonymousAccessEnabled( resource.isSecurityAnonymousAccessEnabled() );
+
+                    if ( resource.getSecurityAnonymousUsername() != null )
                     {
-                        if ( "off".equalsIgnoreCase( resource.getSecurityConfiguration() ) )
-                        {
-                            getNexus().setSecurity( false, null );
-                        }
-                        else if ( "simple".equalsIgnoreCase( resource.getSecurityConfiguration() ) )
-                        {
-                            getNexus().setSecurity( true, "simple" );
-                        }
-                        else if ( "custom".equalsIgnoreCase( resource.getSecurityConfiguration() ) )
-                        {
-                            getNexus().setSecurity( true, "properties" );
-                        }
+                        getNexus().setAnonymousUsername( resource.getSecurityAnonymousUsername() );
+
+                        getNexus().setAnonymousPassword( resource.getSecurityAnonymousPassword() );
                     }
 
                     if ( resource.getBaseUrl() != null )
@@ -253,45 +259,6 @@ public class GlobalConfigurationResourceHandler
                             getNexus().setBaseUrl( resource.getBaseUrl() );
                         }
                     }
-
-                    if ( MutableAuthenticationSource.class.isAssignableFrom( authenticationSource.getClass() ) )
-                    {
-                        if ( resource.getAdminPassword() != null )
-                        {
-                            if ( StringUtils.isEmpty( resource.getAdminPassword() ) )
-                            {
-                                // resetting pwd
-                                ( (MutableAuthenticationSource) authenticationSource )
-                                    .unsetPassword( SimpleAuthenticationSource.ADMIN_USERNAME );
-                            }
-                            else
-                            {
-                                // setting pwd
-                                ( (MutableAuthenticationSource) authenticationSource ).setPassword(
-                                    SimpleAuthenticationSource.ADMIN_USERNAME,
-                                    resource.getAdminPassword() );
-                            }
-                        }
-
-                        if ( resource.getDeploymentPassword() != null )
-                        {
-                            if ( StringUtils.isEmpty( resource.getDeploymentPassword() ) )
-                            {
-                                // resetting pwd
-                                ( (MutableAuthenticationSource) authenticationSource )
-                                    .unsetPassword( SimpleAuthenticationSource.DEPLOYMENT_USERNAME );
-                            }
-                            else
-                            {
-                                // setting pwd
-                                ( (MutableAuthenticationSource) authenticationSource ).setPassword(
-                                    SimpleAuthenticationSource.DEPLOYMENT_USERNAME,
-                                    resource.getDeploymentPassword() );
-                            }
-
-                        }
-                    }
-
                 }
                 catch ( ConfigurationException e )
                 {
@@ -324,8 +291,13 @@ public class GlobalConfigurationResourceHandler
      */
     protected void fillDefaultConfiguration( GlobalConfigurationResource resource )
     {
-        resource.setSecurityConfiguration( getSecurityConfiguration( getNexus().isDefaultSecurityEnabled(), getNexus()
-            .getDefaultAuthenticationSourceType() ) );
+        resource.setSecurityEnabled( getNexus().isDefaultSecurityEnabled() );
+
+        resource.setSecurityAnonymousAccessEnabled( getNexus().isDefaultAnonymousAccessEnabled() );
+
+        resource.setSecurityAnonymousUsername( getNexus().getDefaultAnonymousUsername() );
+
+        resource.setSecurityAnonymousPassword( getNexus().getDefaultAnonymousPassword() );
 
         resource.setWorkingDirectory( getNexus().readDefaultWorkingDirectory() );
 
@@ -334,6 +306,8 @@ public class GlobalConfigurationResourceHandler
         resource.setGlobalConnectionSettings( convert( getNexus().readDefaultGlobalRemoteConnectionSettings() ) );
 
         resource.setGlobalHttpProxySettings( convert( getNexus().readDefaultGlobalRemoteHttpProxySettings() ) );
+        
+        resource.setSmtpSettings( convert( getNexus().readDefaultSmtpConfiguration() ) );
     }
 
     /**
@@ -343,8 +317,13 @@ public class GlobalConfigurationResourceHandler
      */
     protected void fillCurrentConfiguration( GlobalConfigurationResource resource )
     {
-        resource.setSecurityConfiguration( getSecurityConfiguration( getNexus().isSecurityEnabled(), getNexus()
-            .getAuthenticationSourceType() ) );
+        resource.setSecurityEnabled( getNexus().isSecurityEnabled() );
+
+        resource.setSecurityAnonymousAccessEnabled( getNexus().isAnonymousAccessEnabled() );
+
+        resource.setSecurityAnonymousUsername( getNexus().getAnonymousUsername() );
+
+        resource.setSecurityAnonymousPassword( getNexus().getAnonymousPassword() );
 
         resource.setWorkingDirectory( getNexus().readWorkingDirectory() );
 
@@ -355,6 +334,8 @@ public class GlobalConfigurationResourceHandler
         resource.setGlobalHttpProxySettings( convert( getNexus().readGlobalRemoteHttpProxySettings() ) );
 
         resource.setBaseUrl( getNexus().getBaseUrl() );
+        
+        resource.setSmtpSettings( convert( getNexus().readSmtpConfiguration() ) );
     }
 
     protected String getSecurityConfiguration( boolean enabled, String authSourceType )

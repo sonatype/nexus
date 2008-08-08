@@ -20,10 +20,6 @@
  */
 package org.sonatype.scheduling;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.ParseException;
 import java.util.ArrayList;
@@ -44,25 +40,20 @@ import org.codehaus.plexus.logging.AbstractLogEnabled;
 import org.codehaus.plexus.personality.plexus.lifecycle.phase.Contextualizable;
 import org.codehaus.plexus.personality.plexus.lifecycle.phase.Initializable;
 import org.codehaus.plexus.personality.plexus.lifecycle.phase.InitializationException;
-import org.codehaus.plexus.util.IOUtil;
-import org.sonatype.nexus.configuration.model.CAdvancedSchedule;
-import org.sonatype.nexus.configuration.model.CDailySchedule;
-import org.sonatype.nexus.configuration.model.CMonthlySchedule;
-import org.sonatype.nexus.configuration.model.COnceSchedule;
+import org.sonatype.nexus.configuration.ConfigurationChangeEvent;
+import org.sonatype.nexus.configuration.ConfigurationChangeListener;
+import org.sonatype.nexus.configuration.application.ApplicationConfiguration;
 import org.sonatype.nexus.configuration.model.CProps;
-import org.sonatype.nexus.configuration.model.CSchedule;
+import org.sonatype.nexus.configuration.model.CScheduleConfig;
 import org.sonatype.nexus.configuration.model.CScheduledTask;
-import org.sonatype.nexus.configuration.model.CTaskConfiguration;
-import org.sonatype.nexus.configuration.model.CWeeklySchedule;
 import org.sonatype.scheduling.schedules.CronSchedule;
 import org.sonatype.scheduling.schedules.DailySchedule;
+import org.sonatype.scheduling.schedules.ManualRunSchedule;
 import org.sonatype.scheduling.schedules.MonthlySchedule;
 import org.sonatype.scheduling.schedules.OnceSchedule;
+import org.sonatype.scheduling.schedules.RunNowSchedule;
 import org.sonatype.scheduling.schedules.Schedule;
 import org.sonatype.scheduling.schedules.WeeklySchedule;
-
-import com.thoughtworks.xstream.XStream;
-import com.thoughtworks.xstream.io.xml.DomDriver;
 
 /**
  * The default implementation of the Task Configuration manager. Will handle writing to and loading from the tasks.xml
@@ -72,18 +63,19 @@ import com.thoughtworks.xstream.io.xml.DomDriver;
  */
 public class DefaultTaskConfigManager
     extends AbstractLogEnabled
-    implements TaskConfigManager, Initializable, Contextualizable
+    implements TaskConfigManager, Initializable, Contextualizable, ConfigurationChangeListener
 {
-    private PlexusContainer plexusContainer;
-
-    private CTaskConfiguration config;
+    /**
+     * The app config holding tasks.
+     * 
+     * @plexus.requirement
+     */
+    private ApplicationConfiguration applicationConfiguration;
 
     /**
-     * The configuration file.
-     * 
-     * @plexus.configuration default-value="${apps}/nexus/conf/tasks.xml"
+     * Plexus.
      */
-    private File configurationFile;
+    private PlexusContainer plexusContainer;
 
     public void contextualize( Context ctx )
         throws ContextException
@@ -91,110 +83,122 @@ public class DefaultTaskConfigManager
         this.plexusContainer = (PlexusContainer) ctx.get( PlexusConstants.PLEXUS_KEY );
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see org.codehaus.plexus.personality.plexus.lifecycle.phase.Initializable#initialize()
-     */
     public void initialize()
         throws InitializationException
     {
-        loadConfig();
+        applicationConfiguration.addConfigurationChangeListener( this );
+    }
+
+    public void onConfigurationChange( ConfigurationChangeEvent e )
+    {
+        // TODO
     }
 
     public void initializeTasks( Scheduler scheduler )
     {
-        // TODO: this code needs to be synchronized because of access to config
-        // object
-        List<CScheduledTask> tempList = new ArrayList<CScheduledTask>( config.getTasks() );
+        List<CScheduledTask> tasks = new ArrayList<CScheduledTask>( applicationConfiguration
+            .getConfiguration().getTasks() );
 
-        getLogger().info( tempList.size() + " task(s) to load." );
-
-        for ( CScheduledTask task : tempList )
+        if ( tasks != null )
         {
-            getLogger().info( "Loading task - " + task.getName() );
-            try
-            {
-                SchedulerTask<?> nexusTask = (SchedulerTask<?>) plexusContainer.lookup( SchedulerTask.ROLE, task
-                    .getType() );
+            List<CScheduledTask> tempList = new ArrayList<CScheduledTask>( tasks );
 
-                for ( Iterator iter = task.getProperties().iterator(); iter.hasNext(); )
+            getLogger().info( tempList.size() + " task(s) to load." );
+
+            for ( CScheduledTask task : tempList )
+            {
+                getLogger().info( "Loading task - " + task.getName() );
+
+                try
                 {
-                    CProps prop = (CProps) iter.next();
-                    nexusTask.addParameter( prop.getKey(), prop.getValue() );
-                }
-                
-                if ( task.getSchedule() == null )
-                {
-                    scheduler.store(
+                    SchedulerTask<?> nexusTask = (SchedulerTask<?>) plexusContainer.lookup( SchedulerTask.ROLE, task
+                        .getType() );
+
+                    for ( Iterator iter = task.getProperties().iterator(); iter.hasNext(); )
+                    {
+                        CProps prop = (CProps) iter.next();
+                        nexusTask.addParameter( prop.getKey(), prop.getValue() );
+                    }
+
+                    scheduler.initialize(
+                        task.getId(),
                         task.getName(),
-                        nexusTask,
-                        translateFrom( task.getProperties() ))
-                            .setEnabled( task.isEnabled() );
-                }
-                else
-                {
-                    scheduler.schedule(
-                        task.getName(),
+                        nexusTask.getClass(),
                         nexusTask,
                         translateFrom( task.getSchedule(), task.getNextRun() ),
-                        translateFrom( task.getProperties() ),
-                        true )
-                            .setEnabled( task.isEnabled() );
+                        translateFrom( task.getProperties() ) ).setEnabled( task.isEnabled() );
+                }
+                catch ( ComponentLookupException e )
+                {
+                    // this is bad, Plexus did not find the component, possibly the task.getType() contains bad class
+                    // name
+                    getLogger()
+                        .error(
+                            "Unable to initialize task " + task.getName() + ", couldn't load service class "
+                                + task.getId() );
                 }
             }
-            catch ( ComponentLookupException e )
-            {
-                // this is bad, Plexus did not find the component, possibly the task.getType() contains bad class name
-                getLogger().error(
-                    "Unable to initialize task " + task.getName() + ", couldn't load service class " + task.getId() );
-            }
         }
+
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see org.sonatype.scheduling.TaskConfigManager#addTask(org.sonatype.scheduling.ScheduledTask)
-     */
     public <T> void addTask( ScheduledTask<T> task )
     {
-        if ( !task.isStoreConfig() )
+        // RunNowSchedules are not saved
+        if ( RunNowSchedule.class.isAssignableFrom( task.getSchedule().getClass()) )
         {
             return;
         }
 
-        synchronized ( config )
+        synchronized ( applicationConfiguration )
         {
+            List<CScheduledTask> tasks = applicationConfiguration.getConfiguration().getTasks();
+
             CScheduledTask foundTask = findTask( task.getId() );
+
             CScheduledTask storeableTask = translateFrom( task );
 
             if ( storeableTask != null )
             {
                 if ( foundTask != null )
                 {
-                    config.removeTask( foundTask );
+                    tasks.remove( foundTask );
                 }
-                config.addTask( storeableTask );
-                storeConfig();
+
+                tasks.add( storeableTask );
+
+                try
+                {
+                    applicationConfiguration.saveConfiguration();
+                }
+                catch ( IOException e )
+                {
+                    getLogger().warn( "Could not save task changes!", e );
+                }
             }
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see org.sonatype.scheduling.TaskConfigManager#removeTask(org.sonatype.scheduling.ScheduledTask)
-     */
     public <T> void removeTask( ScheduledTask<T> task )
     {
-        synchronized ( config )
+        synchronized ( applicationConfiguration )
         {
+            List<CScheduledTask> tasks = applicationConfiguration.getConfiguration().getTasks();
+
             CScheduledTask foundTask = findTask( task.getId() );
+
             if ( foundTask != null )
             {
-                config.removeTask( foundTask );
-                storeConfig();
+                tasks.remove( foundTask );
+
+                try
+                {
+                    applicationConfiguration.saveConfiguration();
+                }
+                catch ( IOException e )
+                {
+                    getLogger().warn( "Could not save task changes!", e );
+                }
             }
         }
         // TODO: need to also add task to a history file
@@ -202,11 +206,13 @@ public class DefaultTaskConfigManager
 
     private CScheduledTask findTask( String id )
     {
-        synchronized ( config )
+        synchronized ( applicationConfiguration )
         {
-            for ( Iterator iter = config.getTasks().iterator(); iter.hasNext(); )
+            List<CScheduledTask> tasks = applicationConfiguration.getConfiguration().getTasks();
+
+            for ( Iterator<CScheduledTask> iter = tasks.iterator(); iter.hasNext(); )
             {
-                CScheduledTask storedTask = (CScheduledTask) iter.next();
+                CScheduledTask storedTask = iter.next();
 
                 if ( storedTask.getId().equals( id ) )
                 {
@@ -225,32 +231,33 @@ public class DefaultTaskConfigManager
         for ( Iterator iter = list.iterator(); iter.hasNext(); )
         {
             CProps prop = (CProps) iter.next();
+
             map.put( prop.getKey(), prop.getValue() );
         }
 
         return map;
     }
 
-    private Schedule translateFrom( CSchedule modelSchedule, Date lastRun )
+    private Schedule translateFrom( CScheduleConfig modelSchedule, Date lastRun )
     {
         Schedule schedule = null;
 
-        if ( CAdvancedSchedule.class.isAssignableFrom( modelSchedule.getClass() ) )
+        if ( CScheduleConfig.TYPE_ADVANCED.equals( modelSchedule.getType() ) )
         {
             try
             {
-                schedule = new CronSchedule( ( (CAdvancedSchedule) modelSchedule ).getCronCommand() );
+                schedule = new CronSchedule( modelSchedule.getCronCommand() );
             }
             catch ( ParseException e )
             {
-                // this will not happen, since it was persisted, hence already sublitted
+                // this will not happen, since it was persisted, hence already submitted
             }
         }
-        else if ( CMonthlySchedule.class.isAssignableFrom( modelSchedule.getClass() ) )
+        else if ( CScheduleConfig.TYPE_MONTHLY.equals( modelSchedule.getType() ) )
         {
             Set<Integer> daysToRun = new HashSet<Integer>();
 
-            for ( Iterator iter = ( (CMonthlySchedule) modelSchedule ).getDaysOfMonth().iterator(); iter.hasNext(); )
+            for ( Iterator iter = modelSchedule.getDaysOfMonth().iterator(); iter.hasNext(); )
             {
                 String day = (String) iter.next();
 
@@ -264,16 +271,13 @@ public class DefaultTaskConfigManager
                 }
             }
 
-            schedule = new MonthlySchedule(
-                ( (CMonthlySchedule) modelSchedule ).getStartDate(),
-                ( (CMonthlySchedule) modelSchedule ).getEndDate(),
-                daysToRun );
+            schedule = new MonthlySchedule( modelSchedule.getStartDate(), modelSchedule.getEndDate(), daysToRun );
         }
-        else if ( CWeeklySchedule.class.isAssignableFrom( modelSchedule.getClass() ) )
+        else if ( CScheduleConfig.TYPE_WEEKLY.equals( modelSchedule.getType() ) )
         {
             Set<Integer> daysToRun = new HashSet<Integer>();
 
-            for ( Iterator iter = ( (CWeeklySchedule) modelSchedule ).getDaysOfWeek().iterator(); iter.hasNext(); )
+            for ( Iterator iter = modelSchedule.getDaysOfWeek().iterator(); iter.hasNext(); )
             {
                 String day = (String) iter.next();
 
@@ -287,20 +291,27 @@ public class DefaultTaskConfigManager
                 }
             }
 
-            schedule = new WeeklySchedule(
-                ( (CWeeklySchedule) modelSchedule ).getStartDate(),
-                ( (CWeeklySchedule) modelSchedule ).getEndDate(),
-                daysToRun );
+            schedule = new WeeklySchedule( modelSchedule.getStartDate(), modelSchedule.getEndDate(), daysToRun );
         }
-        else if ( CDailySchedule.class.isAssignableFrom( modelSchedule.getClass() ) )
+        else if ( CScheduleConfig.TYPE_DAILY.equals( modelSchedule.getType() ) )
         {
-            schedule = new DailySchedule(
-                ( (CDailySchedule) modelSchedule ).getStartDate(),
-                ( (CDailySchedule) modelSchedule ).getEndDate() );
+            schedule = new DailySchedule( modelSchedule.getStartDate(), modelSchedule.getEndDate() );
         }
-        else if ( COnceSchedule.class.isAssignableFrom( modelSchedule.getClass() ) )
+        else if ( CScheduleConfig.TYPE_ONCE.equals( modelSchedule.getType() ) )
         {
-            schedule = new OnceSchedule( ( (COnceSchedule) modelSchedule ).getStartDate() );
+            schedule = new OnceSchedule( modelSchedule.getStartDate() );
+        }
+        else if ( CScheduleConfig.TYPE_RUN_NOW.equals( modelSchedule.getType() ) )
+        {
+            schedule = new RunNowSchedule();
+        }
+        else if ( CScheduleConfig.TYPE_MANUAL.equals( modelSchedule.getType() ) )
+        {
+            schedule = new ManualRunSchedule();
+        }
+        else
+        {
+            throw new IllegalArgumentException( "Unknown Schedule type: " + modelSchedule.getClass().getName() );
         }
 
         if ( lastRun != null )
@@ -333,159 +344,79 @@ public class DefaultTaskConfigManager
         }
 
         Schedule schedule = task.getSchedule();
-        CSchedule storeableSchedule = null;
-        
+        CScheduleConfig storeableSchedule = new CScheduleConfig();
+
         if ( schedule != null )
         {
             if ( CronSchedule.class.isAssignableFrom( schedule.getClass() ) )
             {
-                storeableSchedule = new CAdvancedSchedule();
-                ( (CAdvancedSchedule) storeableSchedule ).setCronCommand( ( (CronSchedule) schedule ).getCronString() );
-            }
-            else if ( DailySchedule.class.isAssignableFrom( schedule.getClass() ) )
-            {
-                storeableSchedule = new CDailySchedule();
-                ( (CDailySchedule) storeableSchedule ).setStartDate( ( (DailySchedule) schedule ).getStartDate() );
-                ( (CDailySchedule) storeableSchedule ).setEndDate( ( (DailySchedule) schedule ).getEndDate() );
+                storeableSchedule.setType( CScheduleConfig.TYPE_ADVANCED );
+
+                storeableSchedule.setCronCommand( ( (CronSchedule) schedule ).getCronString() );
             }
             else if ( MonthlySchedule.class.isAssignableFrom( schedule.getClass() ) )
             {
-                storeableSchedule = new CMonthlySchedule();
-                ( (CMonthlySchedule) storeableSchedule ).setStartDate( ( (MonthlySchedule) schedule ).getStartDate() );
-                ( (CMonthlySchedule) storeableSchedule ).setEndDate( ( (MonthlySchedule) schedule ).getEndDate() );
-    
+                storeableSchedule.setType( CScheduleConfig.TYPE_MONTHLY );
+
+                storeableSchedule.setStartDate( ( (MonthlySchedule) schedule ).getStartDate() );
+
+                storeableSchedule.setEndDate( ( (MonthlySchedule) schedule ).getEndDate() );
+
                 for ( Iterator iter = ( (MonthlySchedule) schedule ).getDaysToRun().iterator(); iter.hasNext(); )
                 {
-                    // TODO: String.valueOf is used because currently the days to run are integers in the monthly schedule
+                    // TODO: String.valueOf is used because currently the days to run are integers in the monthly
+                    // schedule
                     // needs to be string
-                    ( (CMonthlySchedule) storeableSchedule ).addDaysOfMonth( String.valueOf( iter.next() ) );
+                    storeableSchedule.addDaysOfMonth( String.valueOf( iter.next() ) );
                 }
-            }
-            else if ( OnceSchedule.class.isAssignableFrom( schedule.getClass() ) )
-            {
-                storeableSchedule = new COnceSchedule();
-                ( (COnceSchedule) storeableSchedule ).setStartDate( ( (OnceSchedule) schedule ).getStartDate() );
             }
             else if ( WeeklySchedule.class.isAssignableFrom( schedule.getClass() ) )
             {
-                storeableSchedule = new CWeeklySchedule();
-                ( (CWeeklySchedule) storeableSchedule ).setStartDate( ( (WeeklySchedule) schedule ).getStartDate() );
-                ( (CWeeklySchedule) storeableSchedule ).setEndDate( ( (WeeklySchedule) schedule ).getEndDate() );
-    
+                storeableSchedule.setType( CScheduleConfig.TYPE_MONTHLY );
+
+                storeableSchedule.setStartDate( ( (WeeklySchedule) schedule ).getStartDate() );
+
+                storeableSchedule.setEndDate( ( (WeeklySchedule) schedule ).getEndDate() );
+
                 for ( Iterator iter = ( (WeeklySchedule) schedule ).getDaysToRun().iterator(); iter.hasNext(); )
                 {
-                    // TODO: String.valueOf is used because currently the days to run are integers in the weekly schedule
+                    // TODO: String.valueOf is used because currently the days to run are integers in the weekly
+                    // schedule
                     // needs to be string
-                    ( (CWeeklySchedule) storeableSchedule ).addDaysOfWeek( String.valueOf( iter.next() ) );
+                    storeableSchedule.addDaysOfWeek( String.valueOf( iter.next() ) );
                 }
             }
+            else if ( DailySchedule.class.isAssignableFrom( schedule.getClass() ) )
+            {
+                storeableSchedule.setType( CScheduleConfig.TYPE_DAILY );
+
+                storeableSchedule.setStartDate( ( (DailySchedule) schedule ).getStartDate() );
+
+                storeableSchedule.setEndDate( ( (DailySchedule) schedule ).getEndDate() );
+            }
+            else if ( OnceSchedule.class.isAssignableFrom( schedule.getClass() ) )
+            {
+                storeableSchedule.setType( CScheduleConfig.TYPE_ONCE );
+
+                storeableSchedule.setStartDate( ( (OnceSchedule) schedule ).getStartDate() );
+            }
+            else if ( RunNowSchedule.class.isAssignableFrom( schedule.getClass() ) )
+            {
+                storeableSchedule.setType( CScheduleConfig.TYPE_RUN_NOW );
+            }
+            else if ( ManualRunSchedule.class.isAssignableFrom( schedule.getClass() ) )
+            {
+                storeableSchedule.setType( CScheduleConfig.TYPE_MANUAL );
+            }
+            else
+            {
+                throw new IllegalArgumentException( "Unknown Schedule type: " + schedule.getClass().getName() );
+            }
         }
-        
+
         storeableTask.setSchedule( storeableSchedule );
 
         return storeableTask;
     }
 
-    private void storeConfig()
-    {
-        XStream xstream = configureXStream( new XStream() );
-
-        FileOutputStream fos = null;
-        try
-        {
-            fos = new FileOutputStream( configurationFile );
-            xstream.toXML( config, fos );
-            fos.flush();
-        }
-        catch ( FileNotFoundException e )
-        {
-            getLogger().error( "Unable to write to " + configurationFile.getAbsolutePath(), e );
-        }
-        catch ( IOException e )
-        {
-            getLogger().error( "Unable to write to " + configurationFile.getAbsolutePath(), e );
-        }
-        finally
-        {
-            if ( fos != null )
-            {
-                try
-                {
-                    fos.close();
-                }
-                catch ( IOException e )
-                {
-                }
-            }
-        }
-    }
-
-    private void loadConfig()
-    {
-        XStream xstream = configureXStream( new XStream( new DomDriver() ) );
-
-        config = new CTaskConfiguration();
-
-        if ( !configurationFile.exists() )
-        {
-            loadDefaultConfig();
-        }
-
-        FileInputStream fis = null;
-        try
-        {
-            fis = new FileInputStream( configurationFile );
-            xstream.fromXML( fis, config );
-        }
-        catch ( FileNotFoundException e )
-        {
-            getLogger().error( "Unable to read from " + configurationFile.getAbsolutePath(), e );
-        }
-        finally
-        {
-            if ( fis != null )
-            {
-                try
-                {
-                    fis.close();
-                }
-                catch ( IOException e )
-                {
-                }
-            }
-        }
-    }
-
-    private void loadDefaultConfig()
-    {
-        try
-        {
-            configurationFile.getParentFile().mkdirs();
-            IOUtil.copy( getClass().getResourceAsStream( "/META-INF/nexus/tasks.xml" ), new FileOutputStream(
-                configurationFile ) );
-        }
-        catch ( FileNotFoundException e )
-        {
-            getLogger().error( "Unable to write default configuration to " + configurationFile.getAbsolutePath(), e );
-        }
-        catch ( IOException e )
-        {
-            getLogger().error( "Unable to write default configuration to " + configurationFile.getAbsolutePath(), e );
-        }
-    }
-
-    private XStream configureXStream( XStream xstream )
-    {
-        xstream.omitField( CTaskConfiguration.class, "modelEncoding" );
-        xstream.omitField( CScheduledTask.class, "modelEncoding" );
-        xstream.omitField( CSchedule.class, "modelEncoding" );
-        xstream.omitField( CAdvancedSchedule.class, "modelEncoding" );
-        xstream.omitField( CDailySchedule.class, "modelEncoding" );
-        xstream.omitField( CMonthlySchedule.class, "modelEncoding" );
-        xstream.omitField( COnceSchedule.class, "modelEncoding" );
-        xstream.omitField( CWeeklySchedule.class, "modelEncoding" );
-        xstream.omitField( CProps.class, "modelEncoding" );
-
-        return xstream;
-    }
 }

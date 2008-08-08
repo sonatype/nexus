@@ -23,6 +23,8 @@ package org.sonatype.nexus.proxy.item;
 import java.io.IOException;
 import java.io.InputStream;
 
+import org.sonatype.nexus.proxy.StorageException;
+
 /**
  * A content locator that gets file content based on it's UID, hence this locator is usable only with non-virtual file
  * items coming from a repository.
@@ -32,7 +34,6 @@ import java.io.InputStream;
 public class RepositoryContentLocator
     implements ContentLocator
 {
-
     private RepositoryItemUid uid;
 
     public RepositoryContentLocator( RepositoryItemUid uid )
@@ -50,7 +51,7 @@ public class RepositoryContentLocator
         }
         catch ( Exception ex )
         {
-            return null;
+            throw new StorageException( "Cannot retrieve item content for " + uid.toString(), ex );
         }
     }
 
@@ -58,5 +59,4 @@ public class RepositoryContentLocator
     {
         return true;
     }
-
 }

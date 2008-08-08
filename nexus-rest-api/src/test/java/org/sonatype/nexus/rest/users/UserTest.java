@@ -24,9 +24,6 @@ import junit.framework.TestCase;
 
 import org.restlet.data.MediaType;
 import org.sonatype.nexus.rest.model.UserResourceRequest;
-import org.sonatype.nexus.rest.model.UserResourceStatusResponse;
-import org.sonatype.nexus.rest.model.UserRoleResource;
-import org.sonatype.nexus.rest.model.UserStatusResource;
 import org.sonatype.nexus.rest.xstream.XStreamInitializer;
 import org.sonatype.plexus.rest.representation.XStreamRepresentation;
 import org.sonatype.plexus.rest.xstream.json.JsonOrgHierarchicalStreamDriver;
@@ -54,58 +51,22 @@ public class UserTest
         super.tearDown();
     }
     
-    public void testResponse()
-    throws Exception
-{
-    XStreamRepresentation representation = new XStreamRepresentation( xstream , "", MediaType.APPLICATION_JSON );
-    
-    UserResourceStatusResponse response = new UserResourceStatusResponse();
-    
-    UserStatusResource resource = new UserStatusResource();
-    
-    resource.setUserId( "testuser" );
-    resource.setName( "johnny test" );
-    resource.setEmail( "test@email.com" );
-    resource.setStatus( "active" );
-
-    UserRoleResource role = new UserRoleResource();
-    role.setRoleId( "roleid" );
-    role.setRoleName( "rolename" );
-    
-    resource.addRole( role );
-    
-    response.setData( resource );
-    
-    representation.setPayload( response );
-    
-    assertEquals( "{\"data\":{\"userId\":\"testuser\",\"name\":\"johnny test\",\"status\":\"active\",\"email\":\"test@email.com\"," +
-            "\"roles\":[{\"roleId\":\"roleid\",\"roleName\":\"rolename\"}]}}", 
-            representation.getText() );
-}
-
     public void testRequest()
         throws Exception
     {
         String jsonString =
-            "{\"data\":{\"userId\":null,\"name\":\"johnny test\",\"email\":\"test@email.com\",\"status\":\"active\"," +
-            "\"password\":\"mypassword\",\"roles\":[{\"roleId\":\"roleid\",\"roleName\":\"rolename\",\"@class\":\"org.sonatype.nexus.rest.model.UserRoleResource\"}]}}}";
+            "{\"data\":{\"userId\":\"myuser\",\"name\":\"johnny test\",\"email\":\"test@email.com\",\"status\":\"active\"," +
+            "\"roles\":[\"roleId\"]}}}";
         XStreamRepresentation representation =
             new XStreamRepresentation( xstream, jsonString, MediaType.APPLICATION_JSON );
         
         UserResourceRequest request = ( UserResourceRequest ) representation.getPayload( new UserResourceRequest() );
 
-        assert request.getData().getUserId() == null;
+        assert request.getData().getUserId().equals( "myuser" );
         assert request.getData().getName().equals( "johnny test" );
         assert request.getData().getEmail().equals( "test@email.com" );
-        assert request.getData().getPassword().equals( "mypassword" );
         assert request.getData().getStatus().equals( "active" );
         assert request.getData().getRoles().size() == 1;
-        
-        UserRoleResource role = ( UserRoleResource ) request.getData().getRoles().get( 0 );
-        
-        assert role != null;
-        
-        assert role.getRoleId().equals( "roleid" );
-        assert role.getRoleName().equals( "rolename" );
+        assert request.getData().getRoles().get( 0 ).equals( "roleId" );
     }
 }

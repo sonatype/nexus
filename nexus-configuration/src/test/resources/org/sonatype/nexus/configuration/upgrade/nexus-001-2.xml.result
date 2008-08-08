@@ -1,13 +1,14 @@
-<?xml version="1.0" encoding="UTF-8"?><nexusConfiguration>
-  <version>1.0.3</version>
+<?xml version="1.0" encoding="UTF-8"?>
+<nexusConfiguration>
+  <version>1.0.4</version>
   <workingDirectory>/dat/maven/mvnrepos</workingDirectory>
   <applicationLogDirectory>${basedir}/logs/</applicationLogDirectory>
   <security>
     <enabled>true</enabled>
     <anonymousAccessEnabled>true</anonymousAccessEnabled>
-    <authenticationSource>
-      <type>simple</type>
-    </authenticationSource>
+    <realms>
+      <realm>default</realm>
+    </realms>
   </security>
   <globalConnectionSettings />
   <globalHttpProxySettings>
@@ -144,6 +145,7 @@
     <pathMappings>
       <pathMapping>
         <id>migrated-I1</id>
+        <groupId>*</groupId>
         <routePattern>.*/org/apache/.*</routePattern>
         <routeType>inclusive</routeType>
         <repositories>
@@ -155,6 +157,7 @@
       </pathMapping>
       <pathMapping>
         <id>migrated-I2</id>
+        <groupId>*</groupId>
         <routePattern>.*/org/codehaus/.*</routePattern>
         <routeType>inclusive</routeType>
         <repositories>
@@ -165,6 +168,7 @@
       </pathMapping>
       <pathMapping>
         <id>migrated-E1</id>
+        <groupId>*</groupId>
         <routePattern>.*/com/dec/.*</routePattern>
         <routeType>exclusive</routeType>
         <repositories>
@@ -205,4 +209,29 @@
       </repositoryGroup>
     </repositoryGroups>
   </repositoryGrouping>
+  <repositoryTargets>
+    <repositoryTarget>
+      <id>1</id>
+      <name>All (Maven2)</name>
+      <contentClass>maven2</contentClass>
+      <patterns>
+        <pattern>.*</pattern>
+      </patterns>
+    </repositoryTarget>
+    <repositoryTarget>
+      <id>2</id>
+      <name>All (Maven1)</name>
+      <contentClass>maven1</contentClass>
+      <patterns>
+        <pattern>.*</pattern>
+      </patterns>
+    </repositoryTarget>
+  </repositoryTargets>
+  <smtpConfiguration>
+    <host>smtp-host</host>
+    <port>25</port>
+    <username>smtp-username</username>
+    <password>smtp-password</password>
+    <systemEmailAddress>system@nexus.org</systemEmailAddress>
+  </smtpConfiguration>
 </nexusConfiguration>

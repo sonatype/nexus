@@ -49,9 +49,10 @@ Sonatype.repoServer.resources.help = {
 
   // Server Config help text
   server : {
-    adminPassword : 'Field to set the new Admin user password.',
-    deploymentPassword : 'Field to set the new Deployment password.',
-    securityConfiguration : 'The Security Model to use.  Options include Simple, Custom and Off.', 
+    anonUsername : 'The username that will be applied to anonymous users.',
+    anonPassword : 'The password that will be applied to anonymous users.',
+    anonymous : 'Allow anonymous access into the system, will be treated with the credentials of the user below.',
+    security : 'Whether to enable security or not.', 
     workingDirectory : 'The base folder where Nexus will store all of its data. For easier upgrades, it is recommended that this be in a folder outside your Nexus binary installation. Nexus must be restarted after changing this value.',
     logDirectory : 'This is the location of your log files. It must correspond to the location specified by - runtime/apps/nexus/conf/log4j.properties.',
     baseUrl : 'This is the Base URL of the Nexus web application.  i.e. http://localhost:8081/nexus',
@@ -70,7 +71,15 @@ Sonatype.repoServer.resources.help = {
     privateKey : privateKey,
     passphrase : passphrase,
     ntlmHost : ntlmHost,
-    ntlmDomain : ntlmDomain
+    ntlmDomain : ntlmDomain,
+    
+    smtphost : 'The host name of an SMTP server.',
+    smtpport : 'The port the SMTP server is listening on.',
+    smtpuser : 'The username used to access the SMTP server.',
+    smtppass : 'The password used to access the SMTP server.',
+    smtpssl : 'Enable SSL.',
+    smtptls : 'Enable TLS.',
+    smtpsysemail : 'Default System email address.  This is who the "From" address will be.'
   },
 
   // Groups Config help text
@@ -82,7 +91,8 @@ Sonatype.repoServer.resources.help = {
   // Routes Config help text
   routes : {
     pattern : 'A regular expression used to match the artifact path. The path is everything after /nexus/content/ so it will include the group or repository name. .* is used to specify all paths. \'.*/com/some/company/.*\' will match any artifact with \'com.some.company\' as the group id or artifact id.',
-    ruleType: 'There are three types of rules: Inclusive (if the pattern matches, only use the repositories listed below), Exclusive (exclude the repositories listed below) and Blocking (block URLs matching the pattern).'
+    ruleType: 'There are three types of rules: Inclusive (if the pattern matches, only use the repositories listed below), Exclusive (exclude the repositories listed below) and Blocking (block URLs matching the pattern).',
+    group: 'A repository group this route applies to.'
   },
   
   // Scheduled Services Config help text
@@ -110,11 +120,19 @@ Sonatype.repoServer.resources.help = {
   
   // Roles help
   roles: {
-    id : 'The ID assigned to this role.',
     name : 'The name of this role.',
     description : 'The description of this role.',
     sessionTimeout : 'The number of minutes to wait before timing out a user session.',
     rolesAndPrivileges : 'Roles and privileges contained in this Role.'
+  },
+  
+  // Privileges help
+  privileges: {
+    name : 'The name of this privilege.',
+    description : 'The description of this privilege.',
+    type : 'The type of privilege.  Only "Repository Target" type privileges can be managed by the user.',
+    repositoryOrGroup : 'The repository or repository group this privilege will be associated with.',
+    repositoryTarget : 'The Repository Target that will be applied with this privilege.'
   },
 
   // Repositories Config help text
@@ -125,7 +143,7 @@ Sonatype.repoServer.resources.help = {
     repoType : 'Nexus supports 3 repository types: Hosted = Normal repository owned by this Nexus instance, Proxy = Retrieve artifacts from the remote repository and store them locally, Virtual = A logical view of another repository configured in Nexus (For example, to provide a Maven 1 view of an existing Maven 2 repository)',
     repoPolicy : 'Repositories can store either all Release artifacts or all Snapshot artifacts.',
     defaultLocalStorageUrl : 'This is the location on the file system used to host the artifacts. It is contained by the Working Directory set in the Server configuration.',
-    overrideLocalStorageUrl : 'This is used to override the default local storage. Leave it blank to use the default. Note, only file:// urls are supported.',
+    overrideLocalStorageUrl : 'This is used to override the default local storage. Leave it blank to use the default. Note, file:/{drive-letter}:/ urls are supported in windows.  All other operating systems will use file:// .',
     allowWrite : 'This controls if users are allowed to deploy artifacts to this repository. (Hosted repositories only)',
     browseable : 'This controls if users can browse the contents of the repository via their web browser.',
     indexable : 'This controls if the artifacts contained by this repository are indexed and thus searchable.',
@@ -178,6 +196,12 @@ Sonatype.repoServer.resources.help = {
   
   cronBigHelp: {
     text: '<br>Provides a parser and evaluator for unix-like cron expressions. Cron expressions provide the ability to specify complex time combinations such as - At 8:00am every Monday through Friday - or - At 1:30am every last Friday of the month.<br><br>Cron expressions are comprised of 6 required fields and one optional field separated by white space. The fields respectively are described as follows: <table cellspacing=&quot;8&quot;><tr><th align=&quot;left&quot;>Field Name</th><th align=&quot;left&quot;>&nbsp;</th><th align=&quot;left&quot;>Allowed Values</th><th align=&quot;left&quot;>&nbsp;</th><th align=&quot;left&quot;>Allowed Special Characters</th></tr><tr><td align=&quot;left&quot;><code>Seconds</code></td><td align=&quot;left&quot;>&nbsp;</th><td align=&quot;left&quot;><code>0-59</code></td><td align=&quot;left&quot;>&nbsp;</th><td align=&quot;left&quot;><code>, - * /</code></td></tr><tr><td align=&quot;left&quot;><code>Minutes</code></td><td align=&quot;left&quot;>&nbsp;</th><td align=&quot;left&quot;><code>0-59</code></td><td align=&quot;left&quot;>&nbsp;</th><td align=&quot;left&quot;><code>, - * /</code></td></tr><tr><td align=&quot;left&quot;><code>Hours</code></td><td align=&quot;left&quot;>&nbsp;</th><td align=&quot;left&quot;><code>0-23</code></td><td align=&quot;left&quot;>&nbsp;</th><td align=&quot;left&quot;><code>, - * /</code></td></tr><tr><td align=&quot;left&quot;><code>Day-of-month</code></td><td align=&quot;left&quot;>&nbsp;</th><td align=&quot;left&quot;><code>1-31</code></td><td align=&quot;left&quot;>&nbsp;</th><td align=&quot;left&quot;><code>, - * ? / L W</code></td></tr><tr><td align=&quot;left&quot;><code>Month</code></td><td align=&quot;left&quot;>&nbsp;</th><td align=&quot;left&quot;><code>1-12 or JAN-DEC</code></td><td align=&quot;left&quot;>&nbsp;</th><td align=&quot;left&quot;><code>, - * /</code></td></tr><tr><td align=&quot;left&quot;><code>Day-of-Week</code></td><td align=&quot;left&quot;>&nbsp;</th><td align=&quot;left&quot;><code>1-7 or SUN-SAT</code></td><td align=&quot;left&quot;>&nbsp;</th><td align=&quot;left&quot;><code>, - * ? / L #</code></td></tr><tr><td align=&quot;left&quot;><code>Year (Optional)</code></td><td align=&quot;left&quot;>&nbsp;</th><td align=&quot;left&quot;><code>empty, 1970-2099</code></td><td align=&quot;left&quot;>&nbsp;</th><td align=&quot;left&quot;><code>, - * /</code></td></tr></table><br><br>The * character is used to specify all values. For example, * in the minute field means every minute.<br><br>The ? character is allowed for the day-of-month and day-of-week fields. It is used to specify no specific value.This is useful when you need to specify something in one of the two fields, but not the other.<br><br>The - character is used to specify ranges For example &quot;10-12&quot; in the hour field means &quot;the hours 10,11 and 12&quot;.<br><br>The , character is used to specify additional values. For example &quot;MON,WED,FRI&quot; in the day-of-week field means &quot;the days Monday, Wednesday, and Friday&quot;.<br><br>The / character is used to specify increments. For example &quot;0/15&quot; in the seconds field means &quot;the seconds 0, 15, 30, and 45&quot;. And &quot;5/15&quot; in the seconds field means &quot;the seconds 5, 20, 35, and 50&quot;. Specifying * before the / is equivalent to specifying 0 is the value to start with. Essentially, for each field in the expression, there is a set of numbers that can be turned on or off. For seconds and minutes, the numbers range from 0 to 59. For hours 0 to 23, for days of the month 0 to 31, and for months 1 to 12. The &quot;/&quot; character simply helps you turn on every &quot;nth&quot; value in the given set. Thus &quot;7/6&quot; in the month field only turns on month &quot;7&quot;, it does NOT mean every 6th month, please note that subtlety.<br><br>The L character is allowed for the day-of-month and day-of-week fields. This character is short-hand for &quot;last&quot;, but it has different meaning in each of the two fields. For example, the value &quot;L&quot; in the day-of-month field means &quot;the last day of the month&quot; - day 31 for January, day 28 for February on non-leap years. If used in the day-of-week field by itself, it simply means &quot;7&quot; or &quot;SAT&quot;. But if used in the day-of-week field after another value, it means &quot;the last xxx day of the month&quot; - for example &quot;6L&quot; means &quot;the last friday of the month&quot;. When using the L option, it is important not to specify lists, or ranges of values, as you will get confusing results.<br><br>The W character is allowed for the day-of-month field. This character is used to specify the weekday (Monday-Friday) nearest the given day. As an example, if you were to specify &quot;15W&quot; as the value for the day-of-month field, the meaning is: &quot;the nearest weekday to the 15th of the month&quot;. So if the 15th is a Saturday, the trigger will fire on Friday the 14th. If the 15th is a Sunday, the trigger will fire on Monday the 16th. If the 15th is a Tuesday, then it will fire on Tuesday the 15th. However if you specify &quot;1W&quot; as the value for day-of-month, and the 1st is a Saturday, the trigger will fire on Monday the 3rd, as it will not jump over the boundary of a months days. The W character can only be specified when the day-of-month is a single day, not a range or list of days.<br><br>The L and W characters can also be combined for the day-of-month expression to yield LW, which translates to &quot;last weekday of the month&quot;.<br><br>The # character is allowed for the day-of-week field. This character is used to specify &quot;the nth&quot; XXX day of the month. For example, the value of &quot;6#3&quot; in the day-of-week field means the third Friday of the month (day 6 = Friday and &quot;#3&quot; = the 3rd one in the month). Other examples: &quot;2#1&quot; = the first Monday of the month and &quot;4#5&quot; = the fifth Wednesday of the month. Note that if you specify &quot;#5&quot; and there is not 5 of the given day-of-week in the month, then no firing will occur that month.<br><br>The legal characters and the names of months and days of the week are not case sensitive.<br><br><b>NOTES:</b><ul><li>Support for specifying both a day-of-week and a day-of-month value is not complete (you will need to use the ? character in one of these fields). </li><li>Overflowing ranges is supported - that is, having a larger number on the left hand side than the right. You might do 22-2 to catch 10 o clock at night until 2 o clock in the morning, or you might have NOV-FEB. It is very important to note that overuse of overflowing ranges creates ranges that do not make sense and no effort has been made to determine which interpretation CronExpression chooses. An example would be 0 0 14-6 ? * FRI-MON. </li></ul></p>'
+  },
+  
+  repoTargets: {
+    name : 'The name of the repository target.',
+    contentClass : 'The content class of the repository target. It will be matched only against repositories with same content classes.',
+    pattern : 'Enter a pattern expression and click "Add" to add it to the list. Regular expressions are used to match the artifact path. The path is everything after /nexus/content/ so it will include the group or repository name. .* is used to specify all paths. \'.*/com/some/company/.*\' will match any artifact with \'com.some.company\' as the group id or artifact id.'
   }
   
 };

@@ -48,6 +48,7 @@ import org.sonatype.nexus.proxy.item.StorageLinkItem;
 import org.sonatype.nexus.proxy.registry.RepositoryRegistry;
 import org.sonatype.nexus.proxy.repository.Repository;
 import org.sonatype.nexus.proxy.storage.UnsupportedStorageOperationException;
+import org.sonatype.nexus.proxy.target.TargetSet;
 import org.sonatype.nexus.proxy.utils.ResourceStoreUtils;
 
 /**
@@ -142,7 +143,7 @@ public abstract class AbstractRegistryDrivenRepositoryRouter
 
             RepositoryItemUid uid = new RepositoryItemUid( getRepositoryRegistry(), link.getTarget() );
 
-            return uid.getRepository().retrieveItem( false, uid );
+            return uid.getRepository().retrieveItem( false, uid, link.getItemContext() );
         }
     }
 
@@ -549,6 +550,71 @@ public abstract class AbstractRegistryDrivenRepositoryRouter
         repository.deleteItem( request );
 
         request.popRequestPath();
+    }
+
+    protected TargetSet doGetTargetsForRequest( ResourceStoreRequest request )
+    {
+        TargetSet result = new TargetSet();
+
+        List<ResourceStore> stores = null;
+
+        try
+        {
+            stores = resolveResourceStoreByRequest( request );
+        }
+        catch ( ItemNotFoundException e )
+        {
+            // thrown when route mapping simply excludes all processable Stores
+            // will handle below
+
+            stores = null;
+        }
+        catch ( NoSuchResourceStoreException e )
+        {
+            // nothing here
+            return result;
+        }
+
+        if ( stores == null )
+        {
+            // we handle "virtual" paths, not backed by real Reposes since no repos found to serve this request
+            if ( getLogger().isDebugEnabled() )
+            {
+                getLogger().debug( "Request path is not backed by Stores, no targets for: " + request.getRequestPath() );
+            }
+        }
+        else
+        {
+            // we handle "real" paths, we have reposes found for it
+            if ( getLogger().isDebugEnabled() )
+            {
+                getLogger().debug(
+                    "Request path is backed by " + stores.size() + " Store(s), looking up targets for: "
+                        + request.getRequestPath() );
+            }
+
+            request.pushRequestPath( router2substore( request.getRequestPath() ) );
+
+            // going round-robin the gotten reposes in order we got them
+            for ( ResourceStore store : stores )
+            {
+                try
+                {
+                    TargetSet rsTargets = store.getTargetsForRequest( request );
+
+                    result.addTargetSet( rsTargets );
+                }
+                catch ( Exception ex )
+                {
+                    getLogger().warn(
+                        "Got exception during retrieval of " + request.getRequestPath() + " in repositoryId="
+                            + store.getId(),
+                        ex );
+                }
+            }
+        }
+
+        return result;
     }
 
     // =====================================================================

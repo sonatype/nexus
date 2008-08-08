@@ -27,8 +27,8 @@ import java.util.List;
 import org.restlet.data.MediaType;
 import org.sonatype.nexus.feeds.FeedRecorder;
 import org.sonatype.nexus.feeds.SystemEvent;
-import org.sonatype.nexus.proxy.access.AccessDecisionVoter;
-import org.sonatype.nexus.proxy.access.IpAddressAccessDecisionVoter;
+import org.sonatype.nexus.maven.tasks.SnapshotRemoverTask;
+import org.sonatype.nexus.proxy.access.AccessManager;
 
 import com.sun.syndication.feed.synd.SyndContent;
 import com.sun.syndication.feed.synd.SyndContentImpl;
@@ -57,7 +57,7 @@ public abstract class AbstractSystemFeedSource
 
         feed.setDescription( getDescription() );
 
-        feed.setAuthor( "Nexus " + getNexus().getSystemState().getVersion() );
+        feed.setAuthor( "Nexus " + getNexus().getSystemStatus().getVersion() );
 
         feed.setPublishedDate( new Date() );
 
@@ -79,18 +79,18 @@ public abstract class AbstractSystemFeedSource
         {
             i++;
 
-            if ( item.getEventContext().containsKey( AccessDecisionVoter.REQUEST_USER ) )
+            if ( item.getEventContext().containsKey( AccessManager.REQUEST_USER ) )
             {
-                username = (String) item.getEventContext().get( AccessDecisionVoter.REQUEST_USER );
+                username = (String) item.getEventContext().get( AccessManager.REQUEST_USER );
             }
             else
             {
                 username = null;
             }
 
-            if ( item.getEventContext().containsKey( IpAddressAccessDecisionVoter.REQUEST_REMOTE_ADDRESS ) )
+            if ( item.getEventContext().containsKey( AccessManager.REQUEST_REMOTE_ADDRESS ) )
             {
-                ipAddress = (String) item.getEventContext().get( IpAddressAccessDecisionVoter.REQUEST_REMOTE_ADDRESS );
+                ipAddress = (String) item.getEventContext().get( AccessManager.REQUEST_REMOTE_ADDRESS );
             }
             else
             {
@@ -155,6 +155,10 @@ public abstract class AbstractSystemFeedSource
             else if ( FeedRecorder.SYSTEM_EVICT_UNUSED_PROXIED_ITEMS.equals( item.getAction() ) )
             {
                 entry.setTitle( "Evicting unused proxied items" );
+            }
+            else if ( SnapshotRemoverTask.SYSTEM_REMOVE_SNAPSHOTS_ACTION.equals( item.getAction() ) )
+            {
+                entry.setTitle( "Removing snapshots" );
             }
             else
             {

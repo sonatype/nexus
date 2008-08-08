@@ -33,7 +33,7 @@ import java.util.Map;
 
 import org.codehaus.plexus.personality.plexus.lifecycle.phase.Initializable;
 import org.codehaus.plexus.util.IOUtil;
-import org.sonatype.nexus.configuration.ApplicationConfiguration;
+import org.sonatype.nexus.configuration.application.ApplicationConfiguration;
 import org.sonatype.nexus.configuration.ConfigurationChangeEvent;
 import org.sonatype.nexus.proxy.AccessDeniedException;
 import org.sonatype.nexus.proxy.EventMulticasterComponent;
@@ -51,6 +51,7 @@ import org.sonatype.nexus.proxy.item.StorageFileItem;
 import org.sonatype.nexus.proxy.item.StorageItem;
 import org.sonatype.nexus.proxy.item.StorageLinkItem;
 import org.sonatype.nexus.proxy.storage.UnsupportedStorageOperationException;
+import org.sonatype.nexus.proxy.target.TargetSet;
 
 /**
  * <p>
@@ -129,15 +130,19 @@ public abstract class AbstractRepositoryRouter
         {
             try
             {
-                DefaultStorageFileItem result = new DefaultStorageFileItem( this, request.getRequestPath(), true, true, new FileInputStream(
-                    fileItem ) );
-                
+                DefaultStorageFileItem result = new DefaultStorageFileItem(
+                    this,
+                    request.getRequestPath(),
+                    true,
+                    true,
+                    new FileInputStream( fileItem ) );
+
                 result.setCreated( fileItem.lastModified() );
-                
+
                 result.setModified( fileItem.lastModified() );
-                
+
                 result.setLength( fileItem.length() );
-                
+
                 return result;
             }
             catch ( FileNotFoundException e )
@@ -293,6 +298,17 @@ public abstract class AbstractRepositoryRouter
         doDeleteItem( request );
     }
 
+    public TargetSet getTargetsForRequest( ResourceStoreRequest request )
+    {
+        if ( getLogger().isDebugEnabled() )
+        {
+            getLogger().debug( "getTargetsForRequest() " + request.getRequestPath() );
+        }
+
+        // do it
+        return doGetTargetsForRequest( request );
+    }
+
     public void storeItem( String path, InputStream is )
         throws IOException
     {
@@ -316,7 +332,7 @@ public abstract class AbstractRepositoryRouter
 
                 fos.close();
             }
-            
+
             IOUtil.close( is );
         }
     }
@@ -639,4 +655,11 @@ public abstract class AbstractRepositoryRouter
             StorageException,
             AccessDeniedException;
 
+    /**
+     * Do get the targets.
+     * 
+     * @param request
+     * @return
+     */
+    protected abstract TargetSet doGetTargetsForRequest( ResourceStoreRequest request );
 }

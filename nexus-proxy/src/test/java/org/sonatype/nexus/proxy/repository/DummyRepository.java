@@ -54,6 +54,7 @@ import org.sonatype.nexus.proxy.storage.UnsupportedStorageOperationException;
 import org.sonatype.nexus.proxy.storage.local.LocalRepositoryStorage;
 import org.sonatype.nexus.proxy.storage.remote.RemoteRepositoryStorage;
 import org.sonatype.nexus.proxy.storage.remote.RemoteStorageContext;
+import org.sonatype.nexus.proxy.target.TargetSet;
 
 public class DummyRepository
     implements Repository
@@ -62,6 +63,8 @@ public class DummyRepository
     private String id = "dummy";
 
     private String groupId;
+
+    private ContentClass contentClass = new DefaultContentClass();
 
     public DummyRepository()
     {
@@ -217,7 +220,7 @@ public class DummyRepository
             StorageException,
             AccessDeniedException
     {
-        return list( new RepositoryItemUid(this, request.getRequestPath()), null );
+        return list( new RepositoryItemUid( this, request.getRequestPath() ), null );
     }
 
     public StorageItem retrieveItem( ResourceStoreRequest request )
@@ -300,7 +303,7 @@ public class DummyRepository
         throw new UnsupportedOperationException( "This is dummy!" );
     }
 
-    public boolean recreateAttributes( Map<String, String> initialData )
+    public boolean recreateAttributes( String path, Map<String, String> initialData )
     {
         throw new UnsupportedOperationException( "This is dummy!" );
     }
@@ -558,8 +561,12 @@ public class DummyRepository
 
     public ContentClass getRepositoryContentClass()
     {
-        // TODO Auto-generated method stub
-        return new DefaultContentClass();
+        return contentClass;
+    }
+
+    public void setRepositoryContentClass( ContentClass cclass )
+    {
+        this.contentClass = cclass;
     }
 
     public void addToNotFoundCache( String path )
@@ -616,7 +623,62 @@ public class DummyRepository
             ItemNotFoundException,
             StorageException
     {
-        return list(item.getRepositoryItemUid(), item.getItemContext());
+        return list( item.getRepositoryItemUid(), item.getItemContext() );
+    }
+
+    public TargetSet getTargetsForRequest( ResourceStoreRequest request )
+    {
+        return new TargetSet();
+    }
+
+    public TargetSet getTargetsForRequest( RepositoryItemUid uid )
+    {
+        return new TargetSet();
+    }
+
+    public void copyItem( RepositoryItemUid from, RepositoryItemUid to, Map<String, Object> context )
+        throws UnsupportedStorageOperationException,
+            RepositoryNotAvailableException,
+            ItemNotFoundException,
+            StorageException
+    {
+        // TODO Auto-generated method stub
+
+    }
+
+    public void deleteItem( RepositoryItemUid uid, Map<String, Object> context )
+        throws UnsupportedStorageOperationException,
+            RepositoryNotAvailableException,
+            ItemNotFoundException,
+            StorageException
+    {
+        // TODO Auto-generated method stub
+
+    }
+
+    public TargetSet getTargetsForRequest( RepositoryItemUid uid, Map<String, Object> context )
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    public void moveItem( RepositoryItemUid from, RepositoryItemUid to, Map<String, Object> context )
+        throws UnsupportedStorageOperationException,
+            RepositoryNotAvailableException,
+            ItemNotFoundException,
+            StorageException
+    {
+        // TODO Auto-generated method stub
+
+    }
+
+    public StorageItem retrieveItem( boolean localOnly, RepositoryItemUid uid, Map<String, Object> context )
+        throws RepositoryNotAvailableException,
+            ItemNotFoundException,
+            StorageException
+    {
+        // TODO Auto-generated method stub
+        return null;
     }
 
 }

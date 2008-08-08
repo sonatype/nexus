@@ -20,7 +20,6 @@
  */
 package org.sonatype.nexus.configuration.validator;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -28,140 +27,37 @@ import java.util.List;
  * 
  * @author cstamas
  */
-public class ValidationResponse
+public interface ValidationResponse
 {
-    /**
-     * A simple counter to enumerate messages.
-     */
-    private int key = 1;
+    boolean isValid();
 
-    /**
-     * A flag to mark is the config valid (usable) or not.
-     */
-    private boolean valid = true;
+    void setValid( boolean valid );
 
-    /**
-     * A flag to mark is the config modified during validation or not.
-     */
-    private boolean modified = false;
+    boolean isModified();
 
-    /**
-     * List of validation errors.
-     */
-    private List<ValidationMessage> validationErrors;
+    void setModified( boolean modified );
 
-    /**
-     * List of valiation warnings.
-     */
-    private List<ValidationMessage> validationWarnings;
+    List<ValidationMessage> getValidationErrors();
 
-    public boolean isValid()
-    {
-        return valid;
-    }
+    void setValidationErrors( List<ValidationMessage> validationErrors );
 
-    public void setValid( boolean valid )
-    {
-        this.valid = valid;
-    }
+    void addValidationError( ValidationMessage message );
 
-    public boolean isModified()
-    {
-        return modified;
-    }
+    void addValidationError( String message );
 
-    public void setModified( boolean modified )
-    {
-        this.modified = modified;
-    }
+    void addValidationError( String message, Throwable t );
 
-    public List<ValidationMessage> getValidationErrors()
-    {
-        if ( validationErrors == null )
-        {
-            validationErrors = new ArrayList<ValidationMessage>();
-        }
-        return validationErrors;
-    }
+    List<ValidationMessage> getValidationWarnings();
 
-    public void setValidationErrors( List<ValidationMessage> validationErrors )
-    {
-        this.validationErrors = validationErrors;
+    void setValidationWarnings( List<ValidationMessage> validationWarnings );
 
-        valid = validationErrors == null || validationErrors.size() == 0;
-    }
+    void addValidationWarning( ValidationMessage message );
 
-    public void addValidationError( ValidationMessage message )
-    {
-        getValidationErrors().add( message );
+    void addValidationWarning( String message );
 
-        this.valid = false;
-    }
+    void append( ValidationResponse response );
+    
+    void setContext( ValidationContext ctx );
 
-    public void addValidationError( String message )
-    {
-        ValidationMessage e = new ValidationMessage( String.valueOf( key++ ), message );
-
-        addValidationError( e );
-    }
-
-    public void addValidationError( String message, Throwable t )
-    {
-        ValidationMessage e = new ValidationMessage( String.valueOf( key++ ), message, t );
-
-        addValidationError( e );
-    }
-
-    public List<ValidationMessage> getValidationWarnings()
-    {
-        if ( validationWarnings == null )
-        {
-            validationWarnings = new ArrayList<ValidationMessage>();
-        }
-        return validationWarnings;
-    }
-
-    public void setValidationWarnings( List<ValidationMessage> validationWarnings )
-    {
-        this.validationWarnings = validationWarnings;
-    }
-
-    public void addValidationWarning( ValidationMessage message )
-    {
-        getValidationWarnings().add( message );
-    }
-
-    public void addValidationWarning( String message )
-    {
-        ValidationMessage e = new ValidationMessage( String.valueOf( key++ ), message );
-
-        addValidationWarning( e );
-    }
-
-    /**
-     * A method to append a validation response to this validation response. The errors list and warnings list are
-     * simply appended, and the isValid is logically AND-ed and isModified is logically OR-ed.
-     * 
-     * @param response
-     */
-    public void append( ValidationResponse response )
-    {
-        for ( ValidationMessage msg : response.getValidationErrors() )
-        {
-            msg.setKey( String.valueOf( key++ ) );
-
-            addValidationError( msg );
-        }
-
-        for ( ValidationMessage msg : response.getValidationWarnings() )
-        {
-            msg.setKey( String.valueOf( key++ ) );
-
-            addValidationWarning( msg );
-        }
-
-        setValid( isValid() && response.isValid() );
-
-        setModified( isModified() || response.isModified() );
-    }
+    ValidationContext getContext();
 }

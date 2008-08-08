@@ -20,14 +20,9 @@
  */
 package org.sonatype.nexus.rest;
 
-import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.restlet.Context;
 import org.restlet.Restlet;
 import org.restlet.Router;
-import org.sonatype.nexus.Nexus;
-import org.sonatype.nexus.configuration.ConfigurationException;
-import org.sonatype.nexus.security.SimpleAuthenticationSource;
-import org.sonatype.plexus.rest.PlexusRestletUtils;
 
 /**
  * Nexus REST content bridge.
@@ -52,49 +47,20 @@ public class ApplicationContentBridge
     /**
      * Creating restlet application root.
      */
-    public Restlet createRoot()
+    protected Restlet doCreateRoot( boolean isStarted )
     {
-        configure();
+        if ( !isStarted )
+        {
+            return null;
+        }
 
         // instance filter, that injects proper Nexus instance into request attributes
         LocalNexusInstanceFilter nif = new LocalNexusInstanceFilter( getContext() );
 
-        // simple guard
-        NexusAuthenticationGuard nexusGuard = null;
-
-        try
-        {
-            Nexus nexus = (Nexus) PlexusRestletUtils.plexusLookup( getContext(), Nexus.ROLE );
-
-            if ( nexus.isSimpleSecurityModel() )
-            {
-                // with "simple" we offer RO public access, but pwd is needed (if set) for deployment
-                nexusGuard = new NexusWriteAccessAuthenticationGuard( getContext(), getNexus()
-                    .getNexusConfiguration().getAuthenticationSource(), SimpleAuthenticationSource.DEPLOYMENT_USERNAME );
-            }
-            else
-            {
-                nexusGuard = new NexusAuthenticationGuard( getContext(), getNexus()
-                    .getNexusConfiguration().getAuthenticationSource() );
-            }
-
-        }
-        catch ( ComponentLookupException e )
-        {
-            throw new IllegalStateException( "Cannot lookup sessionStore or authenticationSource!", e );
-        }
-        catch ( ConfigurationException e )
-        {
-            throw new IllegalStateException( "Cannot lookup authenticationSource!", e );
-        }
-
-        // attaching it after nif
-        nif.setNext( nexusGuard );
-
         BrowserSensingFilter browserFilter = new BrowserSensingFilter( getContext() );
 
-        // next is filter
-        nexusGuard.setNext( browserFilter );
+        // attaching it after nif
+        nif.setNext( browserFilter );
 
         // creating _another_ router, that will be next isntance called after filtering
         Router router = new Router( getContext() );

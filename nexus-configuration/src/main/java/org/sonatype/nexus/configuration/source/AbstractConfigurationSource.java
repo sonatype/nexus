@@ -20,23 +20,8 @@
  */
 package org.sonatype.nexus.configuration.source;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.Reader;
-import java.io.Writer;
-
 import org.codehaus.plexus.logging.AbstractLogEnabled;
-import org.codehaus.plexus.util.interpolation.InterpolatorFilterReader;
-import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
-import org.sonatype.nexus.configuration.model.Configuration;
-import org.sonatype.nexus.configuration.model.io.xpp3.NexusConfigurationXpp3Reader;
-import org.sonatype.nexus.configuration.model.io.xpp3.NexusConfigurationXpp3Writer;
 import org.sonatype.nexus.configuration.validator.ValidationResponse;
-import org.sonatype.nexus.util.ApplicationInterpolatorProvider;
 
 /**
  * Abstract class that encapsulates Modello model loading and saving with interpolation.
@@ -47,33 +32,12 @@ public abstract class AbstractConfigurationSource
     extends AbstractLogEnabled
     implements ConfigurationSource
 {
-
-    /**
-     * The application interpolation provider.
-     * 
-     * @plexus.requirement
-     */
-    private ApplicationInterpolatorProvider interpolatorProvider;
-
     /** Flag to mark update. */
     private boolean configurationUpgraded;
 
-    /** The configuration. */
-    private Configuration configuration;
-    
     /** The validation response */
     private ValidationResponse validationResponse;
-
-    public Configuration getConfiguration()
-    {
-        return configuration;
-    }
-
-    public void setConfiguration( Configuration configuration )
-    {
-        this.configuration = configuration;
-    }
-
+    
     public ValidationResponse getValidationResponse()
     {
         return validationResponse;
@@ -82,90 +46,6 @@ public abstract class AbstractConfigurationSource
     protected void setValidationResponse( ValidationResponse validationResponse )
     {
         this.validationResponse = validationResponse;
-    }
-
-    /**
-     * Called by subclasses when loaded configuration is rejected for some reason.
-     */
-    protected void rejectConfiguration()
-    {
-        this.configuration = null;
-    }
-
-    /**
-     * Load configuration.
-     * 
-     * @param file the file
-     * @return the configuration
-     * @throws IOException Signals that an I/O exception has occurred.
-     */
-    @SuppressWarnings( "unchecked" )
-    protected void loadConfiguration( InputStream is )
-        throws IOException
-    {
-        setConfigurationUpgraded( false );
-
-        Reader fr = null;
-
-        try
-        {
-            NexusConfigurationXpp3Reader reader = new NexusConfigurationXpp3Reader();
-
-            fr = new InputStreamReader( is );
-
-            InterpolatorFilterReader ip = new InterpolatorFilterReader( fr, interpolatorProvider );
-
-            // read again with interpolation
-            configuration = reader.read( ip );
-        }
-        catch ( XmlPullParserException e )
-        {
-            getLogger().warn( "Nexus configuration file was not loaded, it has the wrong structure." );
-
-            configuration = null;
-        }
-        finally
-        {
-            if ( fr != null )
-            {
-                fr.close();
-            }
-        }
-        if ( configuration != null && !Configuration.MODEL_VERSION.equals( configuration.getVersion() ) )
-        {
-            getLogger().warn( "Nexus configuration file was loaded but discarded, it has the wrong version." );
-
-            configuration = null;
-        }
-    }
-
-    /**
-     * Save configuration.
-     * 
-     * @param file the file
-     * @throws IOException Signals that an I/O exception has occurred.
-     */
-    protected void saveConfiguration( OutputStream os, Configuration configuration )
-        throws IOException
-    {
-        Writer fw = null;
-        try
-        {
-            fw = new OutputStreamWriter( os );
-
-            NexusConfigurationXpp3Writer writer = new NexusConfigurationXpp3Writer();
-
-            writer.write( fw, configuration );
-        }
-        finally
-        {
-            if ( fw != null )
-            {
-                fw.flush();
-
-                fw.close();
-            }
-        }
     }
 
     /**
@@ -193,5 +73,4 @@ public abstract class AbstractConfigurationSource
     {
         return null;
     }
-
 }

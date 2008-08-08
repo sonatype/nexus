@@ -29,12 +29,11 @@ import org.codehaus.plexus.context.Context;
 import org.codehaus.plexus.context.ContextException;
 import org.codehaus.plexus.util.FileUtils;
 import org.codehaus.plexus.util.IOUtil;
-import org.sonatype.nexus.configuration.NexusConfiguration;
+import org.sonatype.nexus.configuration.application.NexusConfiguration;
 
 public abstract class AbstractNexusTestCase
     extends PlexusTestCase
 {
-
     public static final String NEXUS_CONFIGURATION_KEY = "nexus.configuration";
     public static final String APPS_CONFIGURATION_KEY = "apps";
 
@@ -45,8 +44,10 @@ public abstract class AbstractNexusTestCase
     protected void customizeContext( Context ctx )
     {
         File nexusConfigFile = new File( PLEXUS_HOME, "/conf/nexus.xml" );
+        File nexusSecurityConfigFile = new File( PLEXUS_HOME, "/conf/security.xml" );
 
         nexusConfigFile.getParentFile().mkdirs();
+        nexusSecurityConfigFile.getParentFile().mkdirs();
 
         ctx.put( NEXUS_CONFIGURATION_KEY, nexusConfigFile.getAbsolutePath() );
         ctx.put( APPS_CONFIGURATION_KEY, PLEXUS_HOME.getAbsolutePath() );
@@ -67,12 +68,24 @@ public abstract class AbstractNexusTestCase
             return null;
         }
     }
+    
+    protected String getNexusSecurityConfiguration()
+    {
+        return PLEXUS_HOME + "/work/nexus/conf/security.xml";
+    }
 
     protected void copyDefaultConfigToPlace()
         throws IOException
     {
         IOUtil.copy( getClass().getResourceAsStream( "/META-INF/nexus/nexus.xml" ), new FileOutputStream(
             getNexusConfiguration() ) );
+    }
+    
+    protected void copyDefaultSecurityConfigToPlace()
+        throws IOException
+    {
+        IOUtil.copy( getClass().getResourceAsStream( "/META-INF/nexus/security.xml" ), new FileOutputStream(
+            getNexusSecurityConfiguration() ) );
     }
 
     protected boolean loadConfigurationAtSetUp()

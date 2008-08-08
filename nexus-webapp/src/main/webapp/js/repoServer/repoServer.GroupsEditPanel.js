@@ -116,7 +116,6 @@ Sonatype.repoServer.GroupsEditPanel = function(config){
             bodyBorder: true, //note: this seem to have no effect w/in form panel
             //note: this style matches the expected behavior
             bodyStyle: 'background-color:#FFFFFF; border: 1px solid #B5B8C8',
-            style: 'padding: 0 20px 0 0',
             width: 225,
             height: 300,
             animate:true,
@@ -183,6 +182,9 @@ Sonatype.repoServer.GroupsEditPanel = function(config){
             
           },
           {
+          	xtype: 'twinpanelcontroller'
+          },
+          {
             xtype: 'treepanel',
             id: id + '_group-all-repos-tree', //note: unique ID is assinged before instantiation
             title: 'Available Repositories',
@@ -223,7 +225,8 @@ Sonatype.repoServer.GroupsEditPanel = function(config){
     buttons: [
       {
         id: 'savebutton',
-        text: 'Save'
+        text: 'Save',
+        disabled: true
       },
       {
         id: 'cancelbutton',
@@ -263,6 +266,8 @@ Sonatype.repoServer.GroupsEditPanel = function(config){
     sortInfo: {field: 'name', direction: 'ASC'},
     autoLoad: true
   });
+  
+  this.sp = Sonatype.lib.Permissions;
 
   this.groupsGridPanel = new Ext.grid.GridPanel({
     title: 'Repository Groups',
@@ -292,7 +297,8 @@ Sonatype.repoServer.GroupsEditPanel = function(config){
         icon: Sonatype.config.resourcePath + '/images/icons/add.png',
         cls: 'x-btn-text-icon',
         scope: this,
-        handler: this.addResourceHandler
+        handler: this.addResourceHandler,
+        disabled: !this.sp.checkPermission(Sonatype.user.curr.repoServer.configGroups, this.sp.CREATE)
       },
       {
         id: 'group-delete-btn',
@@ -300,7 +306,8 @@ Sonatype.repoServer.GroupsEditPanel = function(config){
         icon: Sonatype.config.resourcePath + '/images/icons/delete.png',
         cls: 'x-btn-text-icon',
         scope:this,
-        handler: this.deleteResourceHandler
+        handler: this.deleteResourceHandler,
+        disabled: !this.sp.checkPermission(Sonatype.user.curr.repoServer.configGroups, this.sp.DELETE)
       }
     ],
 
@@ -312,7 +319,7 @@ Sonatype.repoServer.GroupsEditPanel = function(config){
     columns: [
       {header: 'Group', dataIndex: 'name', width:175},
       {header: 'Repositories', dataIndex: 'sRepositories', width:300},
-      {header: 'Group Path', dataIndex: 'contentUri', id: 'groups-config-url-col', width:300,renderer: function(s){return '<a href="' + s + '" target="_blank">' + s + '</a>';},menuDisabled:true}
+      {header: 'Group Path', dataIndex: 'contentUri', id: 'groups-config-url-col', width:300,renderer: function(s){return '<a href="' + s + ((s != null && (s.charAt(s.length)) == '/') ? '' : '/') +'" target="_blank">' + s + '</a>';},menuDisabled:true}
     ],
     autoExpandColumn: 'groups-config-url-col',
     disableSelection: false,
@@ -399,7 +406,7 @@ Ext.extend(Sonatype.repoServer.GroupsEditPanel, Ext.Panel, {
     
   },
   
-  // formInfoObj : {formPanel, isNew, [resourceUri]}
+  // formInfoObj : {formPanel, isNew, [resourceURI]}
   saveHandler : function(formInfoObj){
     var allValid = false;
     allValid = formInfoObj.formPanel.form.isValid();
@@ -416,7 +423,7 @@ Ext.extend(Sonatype.repoServer.GroupsEditPanel, Ext.Panel, {
     
     if (allValid) {
       var isNew = formInfoObj.isNew;
-      var uri = (isNew) ? Sonatype.config.repos.urls.groups : formInfoObj.resourceUri;
+      var uri = (isNew) ? Sonatype.config.repos.urls.groups : formInfoObj.resourceURI;
       var form = formInfoObj.formPanel.form;
 
       form.doAction('sonatypeSubmit', {
@@ -431,7 +438,7 @@ Ext.extend(Sonatype.repoServer.GroupsEditPanel, Ext.Panel, {
     }
   },
 
-  // formInfoObj : {formPanel, isNew, [resourceUri]}
+  // formInfoObj : {formPanel, isNew, [resourceURI]}
   cancelHandler : function(formInfoObj) {
     var formLayout = this.formCards.getLayout();
     var gridSelectModel = this.groupsGridPanel.getSelectionModel();
@@ -697,7 +704,7 @@ Ext.extend(Sonatype.repoServer.GroupsEditPanel, Ext.Panel, {
         var buttonInfoObj = {
             formPanel : action.options.fpanel,
             isNew : false,
-            resourceUri : sentData.resourceURI
+            resourceURI : sentData.resourceURI
           };
 
         //save button event handler
@@ -760,8 +767,8 @@ Ext.extend(Sonatype.repoServer.GroupsEditPanel, Ext.Panel, {
     }
   },
 
-  formDataLoader : function(formPanel, resourceUri, modFuncs){
-    formPanel.getForm().doAction('sonatypeLoad', {url:resourceUri, method:'GET', fpanel:formPanel, dataModifiers: modFuncs, scope: this});
+  formDataLoader : function(formPanel, resourceURI, modFuncs){
+    formPanel.getForm().doAction('sonatypeLoad', {url:resourceURI, method:'GET', fpanel:formPanel, dataModifiers: modFuncs, scope: this});
   },
 
   rowClick : function(grid, rowIndex, e){
@@ -783,7 +790,7 @@ Ext.extend(Sonatype.repoServer.GroupsEditPanel, Ext.Panel, {
       var buttonInfoObj = {
         formPanel : formPanel,
         isNew : false, //not a new group form, see assumption
-        resourceUri : rec.data.resourceURI
+        resourceURI : rec.data.resourceURI
       };
 
       //save button event handler
@@ -826,7 +833,7 @@ Ext.extend(Sonatype.repoServer.GroupsEditPanel, Ext.Panel, {
 
     var trees = [
       {obj : newConfig.items[2].items[0], postpend : '_group-repos-tree'},
-      {obj : newConfig.items[2].items[1], postpend : '_group-all-repos-tree'}
+      {obj : newConfig.items[2].items[2], postpend : '_group-all-repos-tree'}
     ];
 
     for (var i = 0; i<trees.length; i++) {

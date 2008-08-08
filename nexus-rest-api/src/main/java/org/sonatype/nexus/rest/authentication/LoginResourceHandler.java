@@ -27,14 +27,8 @@ import org.restlet.data.Request;
 import org.restlet.data.Response;
 import org.restlet.resource.Representation;
 import org.restlet.resource.Variant;
-import org.sonatype.nexus.rest.AbstractNexusResourceHandler;
-import org.sonatype.nexus.rest.NexusAuthenticationGuard;
-import org.sonatype.nexus.rest.model.AuthenticationClientPermissions;
 import org.sonatype.nexus.rest.model.AuthenticationLoginResource;
 import org.sonatype.nexus.rest.model.AuthenticationLoginResourceResponse;
-import org.sonatype.nexus.security.User;
-import org.sonatype.nexus.session.Session;
-import org.sonatype.nexus.session.SessionStore;
 
 /**
  * The login resource handler. It creates a user token.
@@ -42,76 +36,19 @@ import org.sonatype.nexus.session.SessionStore;
  * @author cstamas
  */
 public class LoginResourceHandler
-    extends AbstractNexusResourceHandler
+    extends AbstractUIPermissionCalculatingResource
 {
-
-    private static final int READ = 1;
-
-    private static final int EDIT = 2;
-
-    private static final int DELETE = 4;
-
-    private SessionStore sessionStore;
-
     public LoginResourceHandler( Context context, Request request, Response response )
     {
         super( context, request, response );
-
-        sessionStore = (SessionStore) lookup( SessionStore.ROLE );
     }
 
     public Representation getRepresentationHandler( Variant variant )
         throws IOException
     {
-        String token = (String) getRequest().getAttributes().get( NexusAuthenticationGuard.NEXUS_AUTH_TOKEN_KEY );
-
-        if ( token != null )
-        {
-            // invalidate it
-            sessionStore.removeSession( token );
-        }
-
-        User user = (User) getRequest().getAttributes().get( NexusAuthenticationGuard.REST_USER_KEY );
-
-        token = sessionStore.addSession( new Session( user, getRequest().getClientInfo().getAddress() ) );
-
         AuthenticationLoginResource resource = new AuthenticationLoginResource();
 
-        resource.setAuthToken( token );
-
-        AuthenticationClientPermissions perms = new AuthenticationClientPermissions();
-
-        perms.setViewSearch( READ );
-
-        perms.setViewUpdatedArtifacts( 0 );
-
-        perms.setViewCachedArtifacts( READ );
-
-        perms.setViewDeployedArtifacts( READ );
-
-        perms.setViewSystemChanges( READ );
-
-        perms.setMaintLogs( READ );
-
-        perms.setMaintConfig( READ );
-
-        perms.setMaintRepos( READ | EDIT );
-
-        perms.setConfigServer( READ | EDIT );
-
-        perms.setConfigGroups( READ | EDIT | DELETE );
-
-        perms.setConfigRules( READ | EDIT | DELETE );
-
-        perms.setConfigRepos( READ | EDIT | DELETE );
-        
-        perms.setConfigSchedules( READ | EDIT | DELETE );
-        
-        perms.setConfigUsers( READ | EDIT | DELETE );
-        
-        perms.setConfigRoles( READ | EDIT | DELETE );
-
-        resource.setClientPermissions( perms );
+        resource.setClientPermissions( getClientPermissionsForCurrentUser() );
 
         AuthenticationLoginResourceResponse response = new AuthenticationLoginResourceResponse();
 

@@ -20,8 +20,6 @@
  */
 package org.sonatype.nexus.configuration.validator;
 
-import org.sonatype.nexus.configuration.model.CRepository;
-import org.sonatype.nexus.configuration.model.CRepositoryShadow;
 
 /**
  * The validator used to validate current configuration in boot-up sequence.
@@ -30,7 +28,6 @@ import org.sonatype.nexus.configuration.model.CRepositoryShadow;
  */
 public interface ConfigurationValidator
 {
-
     String ROLE = ConfigurationValidator.class.getName();
 
     /**
@@ -40,20 +37,4 @@ public interface ConfigurationValidator
      * @returns response
      */
     ValidationResponse validateModel( ValidationRequest request );
-
-    /**
-     * Validates a repository configuration.
-     * 
-     * @param repository
-     * @return
-     */
-    ValidationResponse validateRepository( CRepository repository );
-
-    /**
-     * Validates a repository configuration.
-     * 
-     * @param repository
-     * @return
-     */
-    ValidationResponse validateRepository( CRepositoryShadow repository );
 }

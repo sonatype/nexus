@@ -50,6 +50,34 @@ Sonatype.repoServer.RoutesEditPanel = function(config){
   this.BLOCKING_TYPE_INDEX = 0;
   this.BLOCKING = 'Blocking';
   this.TREE_PANEL_ID_SUFFIX = '_route-tree-panel';
+
+  //A record to hold the name and id of a repository group
+  this.repositoryGroupRecordConstructor = Ext.data.Record.create([
+    {name:'id'},
+    {name:'name', sortType:Ext.data.SortTypes.asUCString}
+  ]);
+  
+  //Reader and datastore that queries the server for the list of repository groups
+  this.repositoryGroupReader = new Ext.data.JsonReader({root: 'data', id: 'id'}, this.repositoryGroupRecordConstructor );  
+  this.repositoryGroupDataStore = new Ext.data.Store({
+    url: Sonatype.config.repos.urls.groups,
+    reader: this.repositoryGroupReader,
+    sortInfo: {field: 'name', direction: 'ASC'},
+    autoLoad: true,
+    listeners: {
+      'load' : {
+        fn: function() {
+          var allRec = new this.repositoryGroupRecordConstructor({
+              id : '*',
+              name : 'All Repositories'
+            },
+            '*');
+          this.repositoryGroupDataStore.insert(0, allRec);
+        },
+        scope: this
+      }
+    }
+  });
   
   var ht = Sonatype.repoServer.resources.help.routes;
   
@@ -124,6 +152,25 @@ Sonatype.repoServer.RoutesEditPanel = function(config){
         }       
       },
       {
+          xtype: 'combo',
+          fieldLabel: 'Repository Group',
+          itemCls: 'required-field',
+          helpText: ht.group,
+          name: 'groupId',
+          width: 200,
+          minWidth: 200,
+          store: this.repositoryGroupDataStore,
+          displayField:'name',
+          valueField:'id',
+          editable: false,
+          forceSelection: true,
+          mode: 'local',
+          triggerAction: 'all',
+          emptyText:'Select...',
+          selectOnFocus:true,
+          allowBlank: false
+        },
+      {
         xtype: 'panel',
         id: this.TREE_PANEL_ID_SUFFIX,
         layout: 'column',
@@ -140,7 +187,6 @@ Sonatype.repoServer.RoutesEditPanel = function(config){
             bodyBorder: true, //note: this seem to have no effect w/in form panel
             //note: this style matches the expected behavior
             bodyStyle: 'background-color:#FFFFFF; border: 1px solid #B5B8C8',
-            style: 'padding: 0 20px 0 0',
             width: 225,
             height: 300,
             animate:true,
@@ -197,6 +243,9 @@ Sonatype.repoServer.RoutesEditPanel = function(config){
             }
           },
           {
+        	xtype: 'twinpanelcontroller'
+          },
+          {
             xtype: 'treepanel',
             id: id + '_route_all-repos-tree', //note: unique ID is assinged before instantiation
             title: 'Available Repositories',
@@ -211,7 +260,7 @@ Sonatype.repoServer.RoutesEditPanel = function(config){
             autoScroll:true,
             containerScroll: true,
             //@note: root node must be instantiated uniquely for each instance of treepanel
-            //@ext: can TreeNode be registerd as a component with an xtype so this new root node
+             //@ext: can TreeNode be registerd as a component with an xtype so this new root node
             //      may be instantiated uniquely for each form panel that uses this config?
             rootVisible: false,
 
@@ -236,7 +285,8 @@ Sonatype.repoServer.RoutesEditPanel = function(config){
     buttons: [
       {
         id: 'savebutton',
-        text: 'Save'
+        text: 'Save',
+        disabled: true
       },
       {
         id: 'cancelbutton',
@@ -254,6 +304,7 @@ Sonatype.repoServer.RoutesEditPanel = function(config){
     {name:'resourceURI'},
     {name:'pattern', sortType:Ext.data.SortTypes.asUCString},
     {name:'ruleType'},
+    {name:'groupId'},
     {name:'repositories'},
     {name:'sRepositories', mapping:'repositories', convert: this.nameConcatinator}
   ]);
@@ -268,6 +319,8 @@ Sonatype.repoServer.RoutesEditPanel = function(config){
     autoLoad: true
   });
 
+  this.sp = Sonatype.lib.Permissions;
+  
   this.routesGridPanel = new Ext.grid.GridPanel({
     title: 'Repository Routes',
     id: 'st-routes-grid',
@@ -296,7 +349,8 @@ Sonatype.repoServer.RoutesEditPanel = function(config){
         icon: Sonatype.config.resourcePath + '/images/icons/add.png',
         cls: 'x-btn-text-icon',
         scope: this,
-        handler: this.addResourceHandler
+        handler: this.addResourceHandler,
+        disabled: !this.sp.checkPermission(Sonatype.user.curr.repoServer.configRules, this.sp.CREATE)
       },
       {
         id: 'route-delete-btn',
@@ -304,7 +358,8 @@ Sonatype.repoServer.RoutesEditPanel = function(config){
         icon: Sonatype.config.resourcePath + '/images/icons/delete.png',
         cls: 'x-btn-text-icon',
         scope:this,
-        handler: this.deleteResourceHandler
+        handler: this.deleteResourceHandler,
+        disabled: !this.sp.checkPermission(Sonatype.user.curr.repoServer.configRules, this.sp.DELETE)
       }
     ],
 
@@ -315,7 +370,8 @@ Sonatype.repoServer.RoutesEditPanel = function(config){
     deferredRender: false,
     columns: [
       {header: 'Route', dataIndex: 'pattern', width:200},
-      {header: 'Rule Type', dataIndex: 'ruleType', width:65},
+      {header: 'Rule Type', dataIndex: 'ruleType', width:100},
+      {header: 'Group', dataIndex: 'groupId', width:100},
       {header: 'Repositories', dataIndex: 'sRepositories', id:'routes-config-repos-col', width:300}
     ],
     autoExpandColumn: 'routes-config-repos-col',
@@ -394,7 +450,7 @@ Ext.extend(Sonatype.repoServer.RoutesEditPanel, Ext.Panel, {
     Ext.form.Field.msgFx['normal'].show(tree.errorEl, tree);  
   },
   
-  // formInfoObj : {formPanel, isNew, [resourceUri]}
+  // formInfoObj : {formPanel, isNew, [resourceURI]}
   saveHandler : function(formInfoObj){
     var allValid = false;
     allValid = formInfoObj.formPanel.form.isValid()
@@ -411,7 +467,7 @@ Ext.extend(Sonatype.repoServer.RoutesEditPanel, Ext.Panel, {
     
     if (allValid) {
       var isNew = formInfoObj.isNew;
-      var uri = (isNew) ? Sonatype.config.repos.urls.routes : formInfoObj.resourceUri;
+      var uri = (isNew) ? Sonatype.config.repos.urls.routes : formInfoObj.resourceURI;
       var form = formInfoObj.formPanel.form;
 
       form.doAction('sonatypeSubmit', {
@@ -426,7 +482,7 @@ Ext.extend(Sonatype.repoServer.RoutesEditPanel, Ext.Panel, {
     }
   },
 
-  // formInfoObj : {formPanel, isNew, [resourceUri]}
+  // formInfoObj : {formPanel, isNew, [resourceURI]}
   cancelHandler : function(formInfoObj) {
     var formLayout = this.formCards.getLayout();
     var gridSelectModel = this.routesGridPanel.getSelectionModel();
@@ -676,7 +732,7 @@ Ext.extend(Sonatype.repoServer.RoutesEditPanel, Ext.Panel, {
         var buttonInfoObj = {
             formPanel : action.options.fpanel,
             isNew : false,
-            resourceUri : respData.resourceURI
+            resourceURI : respData.resourceURI
           };
 
         //save button event handler
@@ -729,13 +785,13 @@ Ext.extend(Sonatype.repoServer.RoutesEditPanel, Ext.Panel, {
 
   beforeFormRenderHandler : function(component){
     var sp = Sonatype.lib.Permissions;
-    if(sp.checkPermission(Sonatype.user.curr.repoServer.configRoutes, sp.EDIT)){
+    if(sp.checkPermission(Sonatype.user.curr.repoServer.configRules, sp.EDIT)){
       component.buttons[0].disabled = false;
     }
   },
 
-  formDataLoader : function(formPanel, resourceUri, modFuncs){
-    formPanel.getForm().doAction('sonatypeLoad', {url:resourceUri, method:'GET', fpanel:formPanel, dataModifiers: modFuncs, scope: this});
+  formDataLoader : function(formPanel, resourceURI, modFuncs){
+    formPanel.getForm().doAction('sonatypeLoad', {url:resourceURI, method:'GET', fpanel:formPanel, dataModifiers: modFuncs, scope: this});
   },
 
   rowClick : function(grid, rowIndex, e){
@@ -757,7 +813,7 @@ Ext.extend(Sonatype.repoServer.RoutesEditPanel, Ext.Panel, {
       var buttonInfoObj = {
         formPanel : formPanel,
         isNew : false, //not a new route form, see assumption
-        resourceUri : rec.data.resourceURI
+        resourceURI : rec.data.resourceURI
       };
 
       //save button event handler
@@ -781,11 +837,11 @@ Ext.extend(Sonatype.repoServer.RoutesEditPanel, Ext.Panel, {
     var newConfig = config;
 
     var trees = [
-      {obj : newConfig.items[3].items[0], postpend : '_route-repos-tree'},
-      {obj : newConfig.items[3].items[1], postpend : '_route-all-repos-tree'}
+      {obj : newConfig.items[4].items[0], postpend : '_route-repos-tree'},
+      {obj : newConfig.items[4].items[2], postpend : '_route-all-repos-tree'}
     ];
 
-    newConfig.items[3].id = id + this.TREE_PANEL_ID_SUFFIX;
+    newConfig.items[4].id = id + this.TREE_PANEL_ID_SUFFIX;
     for (var i = 0; i<trees.length; i++) {
       trees[i].obj.id = id + trees[i].postpend;
       trees[i].obj.root = new Ext.tree.TreeNode({text: 'root'});

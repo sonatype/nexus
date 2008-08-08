@@ -23,6 +23,7 @@ package org.sonatype.nexus.configuration;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 
 import org.codehaus.plexus.PlexusTestCase;
 import org.codehaus.plexus.context.Context;
@@ -65,12 +66,30 @@ public abstract class AbstractNexusTestCase
             return null;
         }
     }
+    
+    protected String getSecurityConfiguration()
+    {
+        return PLEXUS_HOME + "/security.xml";
+    }
 
     protected void copyDefaultConfigToPlace()
         throws IOException
     {
         IOUtil.copy( getClass().getResourceAsStream( "/META-INF/nexus/nexus.xml" ), new FileOutputStream(
             getNexusConfiguration() ) );
+    }
+    
+    protected void copyDefaultSecurityConfigToPlace()
+    throws IOException
+    {
+        File file = new File ( getSecurityConfiguration() );
+        
+        file.getParentFile().mkdirs();
+        
+        file.createNewFile();
+        
+        IOUtil.copy( getClass().getResourceAsStream( "/META-INF/nexus/security.xml" ), new FileOutputStream(
+            getSecurityConfiguration() ) );
     }
 
 }

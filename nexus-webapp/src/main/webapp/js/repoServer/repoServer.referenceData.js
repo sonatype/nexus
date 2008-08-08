@@ -29,12 +29,22 @@
 
 Sonatype.repoServer.referenceData = {
   globalSettingsState : {
-    adminPassword: "",
-    deploymentPassword: "",
-    securityConfiguration: "Simple",
+    securityAnonymousUsername: "",
+    securityAnonymousPassword: "",
+    securityEnabled: false,
+    securityAnonymousAccessEnabled: false, 
     workingDirectory: "",
     logDirectory: "",
     baseUrl: "",
+    smtpSettings: {
+      host: "",
+      port: 25,
+      username: "",
+      password: "",
+      systemEmailAddress: "",
+      sslEnabled: "",
+      tlsEnabled: ""
+    },
     globalConnectionSettings: {
       connectionTimeout: 0,
       retrievalRetryCount: 0,
@@ -146,6 +156,7 @@ Sonatype.repoServer.referenceData = {
   route : {
     id : "",
     ruleType : "",
+    groupId : "",
     pattern : "",
     repositories : []
       //@todo: there's a discrepancy between routes list and state representation of
@@ -246,7 +257,6 @@ Sonatype.repoServer.referenceData = {
     name : "",
     email : "",
     status : "",
-    password : "",
     roles : []
   },
   
@@ -257,6 +267,30 @@ Sonatype.repoServer.referenceData = {
     sessionTimeout : 0,
     roles : [],
     privileges : []
+  },
+  
+  privileges : {
+    repositoryTarget : {
+      name: "",
+      description: "",
+      type: "",
+      repositoryTargetId: "",
+      repositoryId: "",
+      repositoryGroupId: "",
+      method: []
+    }
+  },
+
+  repoTargets : {
+    id : "",
+    name : "",
+    contentClass : "",
+    patterns : []
+  },
+  
+  contentClasses : {
+    contentClass : "",
+    name : ""
   }
   
 };

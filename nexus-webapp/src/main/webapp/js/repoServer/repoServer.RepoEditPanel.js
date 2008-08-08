@@ -231,7 +231,7 @@ Sonatype.repoServer.RepoEditPanel = function(config){
         allowBlank:true,
         validator: function(v){
           if(v.match(/^(?:file):\//i)){ return true; }
-          else{ return 'Protocol must be file://'; }
+          else{ return 'Protocol must be file:// ( or file:/X:/ if running in Windows, where X is the drive letter)'; }
         }
       },
       {
@@ -316,7 +316,8 @@ Sonatype.repoServer.RepoEditPanel = function(config){
     buttons: [
       {
         id: 'savebutton',
-        text: 'Save'
+        text: 'Save',
+        disabled: true
       },
       {
         id: 'cancelbutton',
@@ -821,7 +822,8 @@ Sonatype.repoServer.RepoEditPanel = function(config){
     ],
     buttons: [
       {
-        text: 'Save'
+        text: 'Save',
+        disabled: true
       },
       {
         text: 'Cancel'
@@ -944,6 +946,8 @@ Sonatype.repoServer.RepoEditPanel = function(config){
     sortInfo: {field: 'name', direction: 'ASC'},
     autoLoad: true
   });
+  
+  this.sp = Sonatype.lib.Permissions;
 
   this.reposGridPanel = new Ext.grid.GridPanel({
     title: 'Repositories',
@@ -991,7 +995,8 @@ Sonatype.repoServer.RepoEditPanel = function(config){
               handler: this.addRepoHandler.createDelegate(this, ['virtual'])
             }
           ]
-        }
+        },
+        disabled: !this.sp.checkPermission(Sonatype.user.curr.repoServer.configRepos, this.sp.CREATE)
       },
       {
         id: 'repo-delete-btn',
@@ -999,7 +1004,8 @@ Sonatype.repoServer.RepoEditPanel = function(config){
         icon: Sonatype.config.resourcePath + '/images/icons/delete.png',
         cls: 'x-btn-text-icon',
         scope:this,
-        handler: this.deleteRepoHandler
+        handler: this.deleteRepoHandler,
+        disabled: !this.sp.checkPermission(Sonatype.user.curr.repoServer.configRepos, this.sp.DELETE)
       },
       {
         id: 'repo-trash-btn',
@@ -1015,7 +1021,8 @@ Sonatype.repoServer.RepoEditPanel = function(config){
               handler: this.deleteTrashHandler.createDelegate(this)
             }
           ]
-        }
+        },
+        disabled: !this.sp.checkPermission(Sonatype.user.curr.repoServer.actionEmptyTrash, this.sp.DELETE)
       }
     ],
 
@@ -1028,7 +1035,7 @@ Sonatype.repoServer.RepoEditPanel = function(config){
       {header: 'Repository', dataIndex: 'name', width:175},
       {header: 'Type', dataIndex: 'repoType', width:50},
       {header: 'Policy', dataIndex: 'repoPolicy', width:60},
-      {header: 'Repository Path', dataIndex: 'contentUri', id: 'repo-config-url-col', width:300,renderer: function(s){return '<a href="' + s + '" target="_blank">' + s + '</a>';},menuDisabled:true}
+      {header: 'Repository Path', dataIndex: 'contentUri', id: 'repo-config-url-col', width:300,renderer: function(s){return '<a href="' + s + ((s != null && (s.charAt(s.length)) == '/') ? '' : '/') +'" target="_blank">' + s + '</a>';},menuDisabled:true}
     ],
     autoExpandColumn: 'repo-config-url-col',
     disableSelection: false,
@@ -1113,7 +1120,16 @@ Ext.extend(Sonatype.repoServer.RepoEditPanel, Sonatype.repoServer.AbstractRepoPa
   onContextClickHandler : function(grid, index, e){
     this.onContextHideHandler();
     
-    if ( e.target.nodeName == 'A' ) return; // no menu on links
+    var clearcachPriv = this.sp.checkPermission(Sonatype.user.curr.repoServer.actionDeleteCache, this.sp.DELETE);
+    var reindexPriv = this.sp.checkPermission(Sonatype.user.curr.repoServer.actionReindex, this.sp.DELETE);
+    var attributesPriv = this.sp.checkPermission(Sonatype.user.curr.repoServer.actionRebuildAttribs, this.sp.DELETE);
+    var uploadPriv = this.sp.checkPermission(Sonatype.user.curr.repoServer.actionUploadArtifact, this.sp.CREATE);
+    
+    if ( e.target.nodeName == 'A' ||
+            ( !clearcachPriv &&
+              !reindexPriv &&
+              !attributesPriv &&
+              !uploadPriv ) ) return; // no menu on links or no privs
     
     this.ctxRow = this.reposGridPanel.view.getRow(index);
     this.ctxRecord = this.reposGridPanel.store.getAt(index);
@@ -1125,15 +1141,22 @@ Ext.extend(Sonatype.repoServer.RepoEditPanel, Sonatype.repoServer.AbstractRepoPa
       items: []
     });
     
-    if(this.ctxRecord.get('repoType') != 'virtual'){
+    if( clearcachPriv
+        && this.ctxRecord.get('repoType') != 'virtual'){
       menu.add(this.actions.clearCache);
     }
     
-    menu.add(this.actions.reIndex);
-    menu.add(this.actions.rebuildAttributes);
-
-    if (this.ctxRecord.get('repoType') == 'hosted'
-    && this.ctxRecord.get('repoPolicy') == 'release'){
+    if (reindexPriv){
+        menu.add(this.actions.reIndex);
+    }
+    
+    if (attributesPriv){
+        menu.add(this.actions.rebuildAttributes);
+    }
+    
+    if (uploadPriv
+        && this.ctxRecord.get('repoType') == 'hosted'
+        && this.ctxRecord.get('repoPolicy') == 'release'){
       menu.add(this.actions.uploadArtifact);
     }
     
@@ -1150,13 +1173,13 @@ Ext.extend(Sonatype.repoServer.RepoEditPanel, Sonatype.repoServer.AbstractRepoPa
     }
   },
   
-  // formInfoObj : {formPanel, isNew, repoType, [resourceUri]}
+  // formInfoObj : {formPanel, isNew, repoType, [resourceURI]}
   saveHandler : function(formInfoObj){
     if (formInfoObj.formPanel.form.isValid()) {
       var isNew = formInfoObj.isNew;
       var repoType = formInfoObj.repoType;
       var createUri = Sonatype.config.repos.urls.repositories;
-      var updateUri = (formInfoObj.resourceUri) ? formInfoObj.resourceUri : '';
+      var updateUri = (formInfoObj.resourceURI) ? formInfoObj.resourceURI : '';
       var form = formInfoObj.formPanel.form;
     
       form.doAction('sonatypeSubmit', {
@@ -1171,7 +1194,7 @@ Ext.extend(Sonatype.repoServer.RepoEditPanel, Sonatype.repoServer.AbstractRepoPa
     }
   },
   
-  // formInfoObj : {formPanel, isNew, repoType, [resourceUri]}
+  // formInfoObj : {formPanel, isNew, repoType, [resourceURI]}
   cancelHandler : function(formInfoObj) {
     var formLayout = this.formCards.getLayout();
     var gridSelectModel = this.reposGridPanel.getSelectionModel();
@@ -1420,7 +1443,7 @@ Ext.extend(Sonatype.repoServer.RepoEditPanel, Sonatype.repoServer.AbstractRepoPa
             formPanel : action.options.fpanel,
             isNew : false,
             repoType : sentData.repoType,
-            resourceUri : sentData.resourceURI
+            resourceURI : sentData.resourceURI
           };
       
         //save button event handler
@@ -1593,8 +1616,8 @@ Ext.extend(Sonatype.repoServer.RepoEditPanel, Sonatype.repoServer.AbstractRepoPa
     }
   },
   
-  formDataLoader : function(formPanel, resourceUri, modFuncs){
-    formPanel.getForm().doAction('sonatypeLoad', {url:resourceUri, method:'GET', fpanel:formPanel, dataModifiers: modFuncs, scope: this});
+  formDataLoader : function(formPanel, resourceURI, modFuncs){
+    formPanel.getForm().doAction('sonatypeLoad', {url:resourceURI, method:'GET', fpanel:formPanel, dataModifiers: modFuncs, scope: this});
   },
   
   repoRowClick : function(grid, rowIndex, e){
@@ -1620,7 +1643,7 @@ Ext.extend(Sonatype.repoServer.RepoEditPanel, Sonatype.repoServer.AbstractRepoPa
           formPanel : formPanel,
           isNew : false, //not a new repo form, see assumption
           repoType : rec.data.repoType,
-          resourceUri : rec.data.resourceURI
+          resourceURI : rec.data.resourceURI
         };
       
       //save button event handler

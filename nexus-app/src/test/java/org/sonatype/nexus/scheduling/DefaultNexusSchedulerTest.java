@@ -12,7 +12,8 @@ public class DefaultNexusSchedulerTest
 
     protected boolean loadConfigurationAtSetUp()
     {
-        return false;
+        // IT IS NEEDED FROM NOW ON!
+        return true;
     }
 
     protected void setUp()
@@ -85,6 +86,11 @@ public class DefaultNexusSchedulerTest
         {
             fail( "Concurrent submission should succeed." );
         }
+    }
+
+    public void testConcurrentExecutionOfRepositoriesTask()
+        throws Exception
+    {
     }
 
 }

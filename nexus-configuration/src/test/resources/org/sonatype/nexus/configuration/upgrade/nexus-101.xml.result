@@ -1,13 +1,14 @@
-<?xml version="1.0" encoding="UTF-8"?><nexusConfiguration>
-  <version>1.0.3</version>
+<?xml version="1.0" encoding="UTF-8"?>
+<nexusConfiguration>
+  <version>1.0.4</version>
   <workingDirectory>${nexus.home}/nexus-work</workingDirectory>
   <applicationLogDirectory>${nexus.home}/logs</applicationLogDirectory>
   <security>
     <enabled>true</enabled>
     <anonymousAccessEnabled>true</anonymousAccessEnabled>
-    <authenticationSource>
-      <type>simple</type>
-    </authenticationSource>
+    <realms>
+      <realm>default</realm>
+    </realms>
   </security>
   <globalConnectionSettings />
   <restApi />
@@ -146,6 +147,7 @@
     <pathMappings>
       <pathMapping>
         <id>inhouse-stuff</id>
+        <groupId>*</groupId>
         <routePattern>.*/(com|org)/sonatype/.*</routePattern>
         <routeType>inclusive</routeType>
         <repositories>
@@ -156,6 +158,7 @@
       </pathMapping>
       <pathMapping>
         <id>maven-stuff</id>
+        <groupId>*</groupId>
         <routePattern>.*/org/apache/maven/.*</routePattern>
         <routeType>inclusive</routeType>
         <repositories>
@@ -168,6 +171,7 @@
       </pathMapping>
       <pathMapping>
         <id>plexus-stuff</id>
+        <groupId>*</groupId>
         <routePattern>.*/org/codehaus/plexus/.*</routePattern>
         <routeType>inclusive</routeType>
         <repositories>
@@ -180,6 +184,7 @@
       </pathMapping>
       <pathMapping>
         <id>apache-stuff</id>
+        <groupId>*</groupId>
         <routePattern>.*/org/apache/.*</routePattern>
         <routeType>exclusive</routeType>
         <repositories>
@@ -234,4 +239,29 @@
       </repositoryGroup>
     </repositoryGroups>
   </repositoryGrouping>
+  <repositoryTargets>
+    <repositoryTarget>
+      <id>1</id>
+      <name>All (Maven2)</name>
+      <contentClass>maven2</contentClass>
+      <patterns>
+        <pattern>.*</pattern>
+      </patterns>
+    </repositoryTarget>
+    <repositoryTarget>
+      <id>2</id>
+      <name>All (Maven1)</name>
+      <contentClass>maven1</contentClass>
+      <patterns>
+        <pattern>.*</pattern>
+      </patterns>
+    </repositoryTarget>
+  </repositoryTargets>
+  <smtpConfiguration>
+    <host>smtp-host</host>
+    <port>25</port>
+    <username>smtp-username</username>
+    <password>smtp-password</password>
+    <systemEmailAddress>system@nexus.org</systemEmailAddress>
+  </smtpConfiguration>
 </nexusConfiguration>

@@ -26,6 +26,7 @@ import java.util.Map;
 
 import org.sonatype.nexus.proxy.item.StorageItem;
 import org.sonatype.nexus.proxy.storage.UnsupportedStorageOperationException;
+import org.sonatype.nexus.proxy.target.TargetSet;
 
 /**
  * The base abstraction of Proximity. This interface is implemented by Repositories and also by Routers.
@@ -61,8 +62,8 @@ public interface ResourceStore
             AccessDeniedException;
 
     /**
-     * Copies the item from <code>from</code> to <code>to</code>. Retrieval may involve remote access unless
-     * request forbids it, the storing involves local storage only.
+     * Copies the item from <code>from</code> to <code>to</code>. Retrieval may involve remote access unless request
+     * forbids it, the storing involves local storage only.
      * 
      * @param from the from
      * @param to the to
@@ -177,4 +178,11 @@ public interface ResourceStore
             StorageException,
             AccessDeniedException;
 
+    /**
+     * Returns the target set belonging to ResourceStoreRequest.
+     * 
+     * @param request
+     * @return
+     */
+    TargetSet getTargetsForRequest( ResourceStoreRequest request );
 }

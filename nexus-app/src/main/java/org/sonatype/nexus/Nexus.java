@@ -27,13 +27,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.RejectedExecutionException;
 
-import org.sonatype.nexus.configuration.MutableConfiguration;
-import org.sonatype.nexus.configuration.NexusConfiguration;
+import org.sonatype.nexus.configuration.application.MutableConfiguration;
+import org.sonatype.nexus.configuration.application.NexusConfiguration;
 import org.sonatype.nexus.configuration.model.CRemoteConnectionSettings;
 import org.sonatype.nexus.configuration.model.CRemoteHttpProxySettings;
 import org.sonatype.nexus.configuration.model.CRepository;
 import org.sonatype.nexus.configuration.model.CRepositoryShadow;
 import org.sonatype.nexus.configuration.model.CRouting;
+import org.sonatype.nexus.configuration.model.CSmtpConfiguration;
 import org.sonatype.nexus.feeds.NexusArtifactEvent;
 import org.sonatype.nexus.feeds.SystemEvent;
 import org.sonatype.nexus.feeds.SystemProcess;
@@ -49,6 +50,7 @@ import org.sonatype.nexus.proxy.RepositoryNotAvailableException;
 import org.sonatype.nexus.proxy.StorageException;
 import org.sonatype.nexus.proxy.item.StorageItem;
 import org.sonatype.nexus.proxy.repository.Repository;
+import org.sonatype.nexus.proxy.router.RepositoryRouter;
 import org.sonatype.scheduling.NoSuchTaskException;
 import org.sonatype.scheduling.ScheduledTask;
 import org.sonatype.scheduling.SchedulerTask;
@@ -68,7 +70,9 @@ public interface Nexus
     // ------------------------------------------------------------------
     // Status
 
-    SystemStatus getSystemState();
+    SystemStatus getSystemStatus();
+
+    boolean setState( SystemState state );
 
     // ------------------------------------------------------------------
     // Configuration
@@ -96,6 +100,8 @@ public interface Nexus
             AccessDeniedException,
             RepositoryNotAvailableException,
             StorageException;
+
+    RepositoryRouter getRootRouter();
 
     // ----------------------------------------------------------------------------
     // Wastebasket
@@ -131,14 +137,14 @@ public interface Nexus
     void clearRepositoryGroupCaches( String path, String repositoryGroupId )
         throws NoSuchRepositoryGroupException;
 
-    void reindexAllRepositories()
+    void reindexAllRepositories( String path )
         throws IOException;
 
-    void reindexRepository( String repositoryId )
+    void reindexRepository( String path, String repositoryId )
         throws NoSuchRepositoryException,
             IOException;
 
-    void reindexRepositoryGroup( String repositoryGroupId )
+    void reindexRepositoryGroup( String path, String repositoryGroupId )
         throws NoSuchRepositoryGroupException,
             IOException;
 
@@ -153,14 +159,14 @@ public interface Nexus
         throws IOException,
             NoSuchRepositoryGroupException;
 
-    void rebuildAttributesAllRepositories()
+    void rebuildAttributesAllRepositories( String path )
         throws IOException;
 
-    void rebuildAttributesRepository( String repositoryId )
+    void rebuildAttributesRepository( String path, String repositoryId )
         throws NoSuchRepositoryException,
             IOException;
 
-    void rebuildAttributesRepositoryGroup( String repositoryGroupId )
+    void rebuildAttributesRepositoryGroup( String path, String repositoryGroupId )
         throws NoSuchRepositoryGroupException,
             IOException;
 
@@ -216,10 +222,6 @@ public interface Nexus
     // Scheduler
     // ----------------------------------------------------------------------------
 
-    <T> ScheduledTask<T> store( String name, SchedulerTask<T> task)
-        throws RejectedExecutionException,
-            NullPointerException;
-    
     <T> void submit( String name, SchedulerTask<T> task )
         throws RejectedExecutionException,
             NullPointerException;
@@ -253,7 +255,11 @@ public interface Nexus
 
     boolean isDefaultAnonymousAccessEnabled();
 
-    String getDefaultAuthenticationSourceType();
+    String getDefaultAnonymousUsername();
+
+    String getDefaultAnonymousPassword();
+
+    List<String> getDefaultRealms();
 
     InputStream getDefaultConfigurationAsStream()
         throws IOException;
@@ -265,6 +271,8 @@ public interface Nexus
     CRemoteConnectionSettings readDefaultGlobalRemoteConnectionSettings();
 
     CRemoteHttpProxySettings readDefaultGlobalRemoteHttpProxySettings();
+
+    CSmtpConfiguration readDefaultSmtpConfiguration();
 
     CRouting readDefaultRouting();
 
@@ -311,7 +319,8 @@ public interface Nexus
 
     FlatSearchResponse searchArtifactFlat( String term, String repositoryId, String groupId, Integer from, Integer count );
 
+    FlatSearchResponse searchArtifactClassFlat( String term, String repositoryId, String groupId, Integer from, Integer count );
+
     FlatSearchResponse searchArtifactFlat( String gTerm, String aTerm, String vTerm, String cTerm, String repositoryId,
         String groupId, Integer from, Integer count );
-
 }

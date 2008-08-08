@@ -30,10 +30,23 @@ Sonatype.repoServer.UserEditPanel = function(config){
   var ht = Sonatype.repoServer.resources.help.users;
   
   //List of user statuses
-  this.statusStore = new Ext.data.SimpleStore({fields:['value','display'], data:[['active','Active'],['locked','Locked'],['disabled','Disabled']]});
+  this.statusStore = new Ext.data.SimpleStore({fields:['value','display'], data:[['active','Active'],['disabled','Disabled']]});
     
   this.roleCombiner = function(val, parent) {
-    return Sonatype.utils.joinArrayObject(val, 'roleName');
+    var s = '';
+    if ( val ) {
+      for ( var i = 0; i < val.length; i++ ) {
+        var rec = this.roleDataStore.getAt( this.roleDataStore.find( 'id', val[i] ) );
+        if ( rec ) {
+          if ( s ) {
+            s += ', ';
+          }
+          s += rec.get( 'name' );
+        }
+      }
+    }
+
+    return s;
   };
   
   this.actions = {
@@ -62,7 +75,6 @@ Sonatype.repoServer.UserEditPanel = function(config){
   
   //Methods that will take the data from the ui controls and map over to json
   this.submitDataModFunc = {
-    "password" : Sonatype.utils.convert.passwordToString,
     "roles" : this.saveTreeHelper.createDelegate(this)
   };
   
@@ -74,7 +86,7 @@ Sonatype.repoServer.UserEditPanel = function(config){
     {name:'email'},
     {name:'status'},
     {name:'roles'},
-    {name:'displayRoles', mapping:'roles', convert: this.roleCombiner}
+    {name:'displayRoles', mapping:'roles', convert: this.roleCombiner.createDelegate(this)}
   ]);
   
   //A record to hold the name and id of a role
@@ -90,7 +102,7 @@ Sonatype.repoServer.UserEditPanel = function(config){
     url: Sonatype.config.repos.urls.users,
     reader: this.usersReader,
     sortInfo: {field: 'userId', direction: 'ASC'},
-    autoLoad: true
+    autoLoad: false
   });
   
   this.roleReader = new Ext.data.JsonReader({root: 'data', id: 'id'}, this.roleRecordConstructor );  
@@ -98,7 +110,15 @@ Sonatype.repoServer.UserEditPanel = function(config){
     url: Sonatype.config.repos.urls.roles,
     reader: this.roleReader,
     sortInfo: {field: 'name', direction: 'ASC'},
-    autoLoad: true
+    autoLoad: true,
+    listeners: {
+      'load': {
+        fn: function() {
+          this.usersDataStore.reload(); 
+        },
+        scope: this
+      }
+    }
   });
   
   this.COMBO_WIDTH = 300;
@@ -169,40 +189,6 @@ Sonatype.repoServer.UserEditPanel = function(config){
         width: this.COMBO_WIDTH
       },
       {
-        xtype: 'textfield',
-        inputType:'password',
-        fieldLabel: 'Password',
-        itemCls: 'required-field',
-        labelStyle: 'margin-left: 15px; width: 185px;',
-        helpText: ht.password,
-        name: 'password',
-        allowBlank: false,
-        width: this.COMBO_WIDTH,
-        minLength: 4,
-        minLengthText : "Password must be 4 characters or more",
-        maxLength: 25,
-        maxLengthText : "Password must be 25 characters or less",
-        value: Sonatype.utils.passwordPlaceholder
-      },
-      {
-        xtype: 'textfield',
-        inputType:'password',
-        fieldLabel: 'Re-enter Password',
-        itemCls: 'required-field',
-        labelStyle: 'margin-left: 15px; width: 185px;',
-        helpText: ht.reenterPassword,
-        name: 'reenterPassword',
-        allowBlank: false,
-        width: this.COMBO_WIDTH,
-        minLength: 4,
-        minLengthText : "Password must be 4 characters or more",
-        maxLength: 25,
-        maxLengthText : "Password must be 25 characters or less",
-        vtype: 'password',
-        value: Sonatype.utils.passwordPlaceholder,
-        initialPasswordField: 'password'
-      },
-      {
         xtype: 'panel',
         id: 'roles_tree_panel',
         layout: 'column',
@@ -219,7 +205,6 @@ Sonatype.repoServer.UserEditPanel = function(config){
             bodyBorder: true, //note: this seem to have no effect w/in form panel
             //note: this style matches the expected behavior
             bodyStyle: 'background-color:#FFFFFF; border: 1px solid #B5B8C8',
-            style: 'padding: 0 20px 0 0',
             width: 225,
             height: 300,
             animate:true,
@@ -276,6 +261,9 @@ Sonatype.repoServer.UserEditPanel = function(config){
             }
           },
           {
+          	xtype: 'twinpanelcontroller'
+          },
+          {
             xtype: 'treepanel',
             id: 'all_roles_tree', //note: unique ID is assinged before instantiation
             title: 'Available Roles',
@@ -315,7 +303,8 @@ Sonatype.repoServer.UserEditPanel = function(config){
     buttons: [
       {
         id: 'savebutton',
-        text: 'Save'
+        text: 'Save',
+        disabled: true
       },
       {
         id: 'cancelbutton',
@@ -323,6 +312,8 @@ Sonatype.repoServer.UserEditPanel = function(config){
       }
     ]
   };
+  
+  this.sp = Sonatype.lib.Permissions;
 
   this.usersGridPanel = new Ext.grid.GridPanel({
     title: 'Users',
@@ -352,7 +343,8 @@ Sonatype.repoServer.UserEditPanel = function(config){
         icon: Sonatype.config.resourcePath + '/images/icons/add.png',
         cls: 'x-btn-text-icon',
         scope: this,
-        handler: this.addResourceHandler
+        handler: this.addResourceHandler,
+        disabled: !this.sp.checkPermission(Sonatype.user.curr.repoServer.configUsers, this.sp.CREATE)
       },
       {
         id: 'user-delete-btn',
@@ -360,7 +352,8 @@ Sonatype.repoServer.UserEditPanel = function(config){
         icon: Sonatype.config.resourcePath + '/images/icons/delete.png',
         cls: 'x-btn-text-icon',
         scope:this,
-        handler: this.deleteHandler
+        handler: this.deleteHandler,
+        disabled: !this.sp.checkPermission(Sonatype.user.curr.repoServer.configUsers, this.sp.DELETE)
       }
     ],
 
@@ -370,10 +363,10 @@ Sonatype.repoServer.UserEditPanel = function(config){
     loadMask: true,
     deferredRender: false,
     columns: [
-      {header: 'User ID', dataIndex: 'userId', width:175, id: 'user-config-userid-col'},
+      {header: 'User ID', dataIndex: 'userId', width:120, id: 'user-config-userid-col'},
       {header: 'Name', dataIndex: 'name', width:175, id: 'user-config-name-col'},
       {header: 'Email', dataIndex: 'email', width:175, id: 'user-config-email-col'},
-      {header: 'Status', dataIndex: 'status', width:175, id: 'user-config-status-col'},
+      {header: 'Status', dataIndex: 'status', width:75, id: 'user-config-status-col'},
       {header: 'Roles', dataIndex: 'displayRoles', width:175, id: 'user-config-roles-col'}
     ],
     autoExpandColumn: 'user-config-roles-col',
@@ -420,9 +413,8 @@ Sonatype.repoServer.UserEditPanel = function(config){
 Ext.extend(Sonatype.repoServer.UserEditPanel, Ext.Panel, {
   //Dump the currently stored data and requery for everything
   reloadAll : function(){
-    this.usersDataStore.removeAll();
-    this.usersDataStore.reload();
     this.roleDataStore.removeAll();
+    this.usersDataStore.removeAll();
     this.roleDataStore.reload();
     this.formCards.items.each(function(item, i, len){
       if(i>0){this.remove(item, true);}
@@ -432,15 +424,25 @@ Ext.extend(Sonatype.repoServer.UserEditPanel, Ext.Panel, {
   },
   
   saveHandler : function(formInfoObj){
-    if (formInfoObj.formPanel.form.isValid()) {
-      var isNew = formInfoObj.isNew;
-      var createUri = Sonatype.config.repos.urls.users;
-      var updateUri = (formInfoObj.resourceUri) ? formInfoObj.resourceUri : '';
-      var form = formInfoObj.formPanel.form;
+    var allValid = false;
+    allValid = formInfoObj.formPanel.form.isValid()
     
-      form.doAction('sonatypeSubmit', {
+    //form validation of repository treepanel
+    var selectedTree = formInfoObj.formPanel.find('id', 'roles_tree')[0];
+    var treeValid = selectedTree.validate.call(selectedTree);
+    
+    if (!treeValid) {
+      this.markTreeInvalid(selectedTree);
+    }
+    
+    allValid = (allValid && treeValid);
+    
+    if (allValid) {
+      var isNew = formInfoObj.isNew;
+    
+      formInfoObj.formPanel.form.doAction('sonatypeSubmit', {
         method: (isNew) ? 'POST' : 'PUT',
-        url: isNew ? createUri : updateUri,
+        url: isNew ? Sonatype.config.repos.urls.users : formInfoObj.resourceURI,
         waitMsg: isNew ? 'Creating User...' : 'Updating User...',
         fpanel: formInfoObj.formPanel,
         dataModifiers: this.submitDataModFunc,
@@ -665,9 +667,7 @@ Ext.extend(Sonatype.repoServer.UserEditPanel, Ext.Panel, {
       var isNew = action.options.isNew;
       var receivedData = action.handleResponse(action.response).data;
       if (isNew) {
-        //successful create
-        var sentData = action.output.data;
-        
+        //successful create        
         var dataObj = {
           userId : receivedData.userId,
           name : receivedData.name,
@@ -684,18 +684,18 @@ Ext.extend(Sonatype.repoServer.UserEditPanel, Ext.Panel, {
         
         this.usersDataStore.remove(this.usersDataStore.getById(action.options.fpanel.id)); //remove old one
         this.usersDataStore.addSorted(newRec);
-        this.usersDataStore.getSelectionModel().selectRecords([newRec], false);
+        this.usersGridPanel.getSelectionModel().selectRecords([newRec], false);
 
-        //set the hidden id field in the form for subsequent updates
-        action.options.fpanel.find('name', 'id')[0].setValue(receivedData.resourceURI);
         //remove button click listeners
         action.options.fpanel.buttons[0].purgeListeners();
         action.options.fpanel.buttons[1].purgeListeners();
+        
+        action.options.fpanel.find('name', 'status')[0].setValue(receivedData.status);
 
         var buttonInfoObj = {
             formPanel : action.options.fpanel,
             isNew : false,
-            resourceUri : dataObj.resourceURI
+            resourceURI : dataObj.resourceURI
           };
 
         //save button event handler
@@ -705,8 +705,6 @@ Ext.extend(Sonatype.repoServer.UserEditPanel, Ext.Panel, {
         action.options.fpanel.buttons[1].on('click', this.cancelHandler.createDelegate(this, [buttonInfoObj]));
       }
       else {
-        var sentData = action.output.data;
-
         var i = this.usersDataStore.indexOfId(action.options.fpanel.id);
         var rec = this.usersDataStore.getAt(i);
 
@@ -715,6 +713,9 @@ Ext.extend(Sonatype.repoServer.UserEditPanel, Ext.Panel, {
         var sortState = this.usersDataStore.getSortState();
         this.usersDataStore.sort(sortState.field, sortState.direction);
       }
+    }
+    //Load
+    else{
     }
   },
   
@@ -756,8 +757,8 @@ Ext.extend(Sonatype.repoServer.UserEditPanel, Ext.Panel, {
     }
   },
 
-  formDataLoader : function(formPanel, resourceUri, modFuncs){
-    formPanel.getForm().doAction('sonatypeLoad', {url:resourceUri, method:'GET', fpanel:formPanel, dataModifiers: modFuncs, scope: this});
+  formDataLoader : function(formPanel, resourceURI, modFuncs){
+    formPanel.getForm().doAction('sonatypeLoad', {url:resourceURI, method:'GET', fpanel:formPanel, dataModifiers: modFuncs, scope: this});
   },
 
   rowClick : function(grid, rowIndex, e){
@@ -780,7 +781,7 @@ Ext.extend(Sonatype.repoServer.UserEditPanel, Ext.Panel, {
       var buttonInfoObj = {
         formPanel : formPanel,
         isNew : false, //not a new route form, see assumption
-        resourceUri : rec.data.resourceURI
+        resourceURI : rec.data.resourceURI
       };
       
       formPanel.buttons[0].on('click', this.saveHandler.createDelegate(this, [buttonInfoObj]));
@@ -811,11 +812,17 @@ Ext.extend(Sonatype.repoServer.UserEditPanel, Ext.Panel, {
     var menu = new Ext.menu.Menu({
       id:'users-grid-ctx',
       items: [
-        this.actions.refresh,
-        this.actions.deleteAction,
-        this.actions.resetPasswordAction
+        this.actions.refresh
       ]
     });
+    
+    if (this.sp.checkPermission(Sonatype.user.curr.repoServer.configUsers, this.sp.DELETE)){
+        menu.add(this.actions.deleteAction);
+    }
+    
+    if (this.sp.checkPermission(Sonatype.user.curr.repoServer.actionResetPassword, this.sp.DELETE)){
+        menu.add(this.actions.resetPasswordAction);
+    }
     
     //TODO: Add additional menu items
     
@@ -852,8 +859,8 @@ Ext.extend(Sonatype.repoServer.UserEditPanel, Ext.Panel, {
     //@note: there has to be a better way to do this.  Depending on offsets is very error prone
     var newConfig = config;
 
-    newConfig.items[6].items[0].root = new Ext.tree.TreeNode({text: 'root'});
-    newConfig.items[6].items[1].root = new Ext.tree.TreeNode({text: 'root'});
+    newConfig.items[4].items[0].root = new Ext.tree.TreeNode({text: 'root'});
+    newConfig.items[4].items[2].root = new Ext.tree.TreeNode({text: 'root'});
 
     return newConfig;
   },
@@ -865,12 +872,17 @@ Ext.extend(Sonatype.repoServer.UserEditPanel, Ext.Panel, {
     var role;
 
     for(var i=0; i<arr.length; i++){
-      role = arr[i];
+	role = this.roleDataStore.getAt(this.roleDataStore.findBy(function(record, id){
+        if (record.data.id == arr[i]){
+          return true;
+        }
+        return false;
+      }));
       selectedTree.root.appendChild(
         new Ext.tree.TreeNode({
-          id: role.roleId,
-          text: role.roleName,
-          payload: role.roleId, //sonatype added attribute
+          id: role.data.id,
+          text: role.data.name,
+          payload: role.data.id, //sonatype added attribute
           allowChildren: false,
           draggable: true,
           leaf: true
@@ -904,8 +916,7 @@ Ext.extend(Sonatype.repoServer.UserEditPanel, Ext.Panel, {
     var nodes = tree.root.childNodes;
 
     for(var i = 0; i < nodes.length; i++){
-      outputArr[i] = {roleId : nodes[i].attributes.payload};
-      Ext.apply(outputArr[i], {'@class':'org.sonatype.nexus.rest.model.UserRoleResource'});
+      outputArr[i] = nodes[i].attributes.payload;
     }
 
     return outputArr;
