@@ -296,7 +296,7 @@
 			<plugin>
 				<groupId>org.sonatype.maven.plugin</groupId>
 				<artifactId>emma4it-maven-plugin</artifactId>
-				<version>1.0-SNAPSHOT</version>
+				<version>1.0</version>
 				<configuration>
 
 					<searchPath>${basedir}</searchPath>
