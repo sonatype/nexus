@@ -179,11 +179,13 @@ public class IndexResourceHandler
 
             result.setData( new ArrayList<NexusArtifact>() );
         }
+        // filtering
+
 
         return serialize( variant, result );
     }
 
-    public void handleDelete()
+    public void delete()
     {
         ReindexTask task = (ReindexTask) getNexus().createTaskInstance( ReindexTask.class );
 
