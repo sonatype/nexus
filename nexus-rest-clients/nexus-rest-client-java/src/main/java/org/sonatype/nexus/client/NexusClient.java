@@ -8,6 +8,7 @@ import org.sonatype.nexus.rest.model.RepositoryResource;
 
 public interface NexusClient
 {
+    public static final String ROLE = "NexusClient";
 
     public void connect( String baseUrl, String username, String password ) throws NexusClientException, NexusConnectionException;
     
