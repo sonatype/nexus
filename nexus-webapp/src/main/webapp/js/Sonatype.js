@@ -23,6 +23,8 @@
 window.Sonatype = function(){
   return {    
     init : function() {
+      Ext.isGecko3=!Ext.isSafari&&navigator.userAgent.toLowerCase().indexOf("rv:1.9")>-1;
+
       Ext.get('header').hide();
       Ext.get('welcome-tab').hide();
       
