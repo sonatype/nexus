@@ -1,8 +1,6 @@
 package org.sonatype.nexus.security.filter.authz;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -10,12 +8,14 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 
-import org.jsecurity.subject.Subject;
+import org.codehaus.plexus.PlexusConstants;
+import org.codehaus.plexus.PlexusContainer;
+import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.jsecurity.web.WebUtils;
 import org.sonatype.nexus.proxy.ItemNotFoundException;
 import org.sonatype.nexus.proxy.ResourceStoreRequest;
-import org.sonatype.nexus.proxy.target.TargetMatch;
-import org.sonatype.nexus.proxy.target.TargetSet;
+import org.sonatype.nexus.proxy.access.Action;
+import org.sonatype.nexus.proxy.access.NexusItemAuthorizer;
 
 /**
  * A filter that maps the targetId from the Request.
@@ -30,6 +30,8 @@ public class NexusTargetMappingAuthorizationFilter
     private String pathPrefix;
 
     private String pathReplacement;
+
+    private NexusItemAuthorizer authorizer = null;
 
     public String getPathPrefix()
     {
@@ -95,24 +97,7 @@ public class NexusTargetMappingAuthorizationFilter
         return path;
     }
 
-    public String[] getTargetPerms( TargetSet matched )
-    {
-        String[] result = null;
-
-        List<String> perms = new ArrayList<String>( matched.getMatches().size() );
-
-        // nexus : 'target' + targetId : repoId
-        for ( TargetMatch match : matched.getMatches() )
-        {
-            perms.add( "nexus:target:" + match.getTarget().getId() + ":" + match.getRepository().getId() );
-        }
-
-        result = perms.toArray( new String[perms.size()] );
-
-        return result;
-    }
-
-    protected String getActionFromHttpVerb( ServletRequest request )
+    protected Action getActionFromHttpVerb( ServletRequest request )
     {
         String action = ( (HttpServletRequest) request ).getMethod().toLowerCase();
 
@@ -132,6 +117,7 @@ public class NexusTargetMappingAuthorizationFilter
             catch ( Exception e )
             {
                 // huh?
+                throw new IllegalStateException( "Got exception during target mapping!", e );
             }
 
             // the path exists, this is UPDATE
@@ -165,43 +151,20 @@ public class NexusTargetMappingAuthorizationFilter
             }
         }
 
-        // collect the targetSet/matches for the request
-        TargetSet matched = getNexus( request ).getRootRouter().getTargetsForRequest(
-            getResourceStoreRequest( request, true ) );
-
-        // did we hit repositories at all?
-        if ( matched.getMatchedRepositoryIds().size() > 0 )
+        if ( authorizer == null )
         {
-            // we had reposes affected, check the targets
-            // make perms from TargetSet
-            String[] targetPerms = getTargetPerms( matched );
+            PlexusContainer plexus = (PlexusContainer) getAttribute( PlexusConstants.PLEXUS_KEY );
 
-            // get the action from HTTP verb
-            String action = getActionFromHttpVerb( request );
-
-            // append the action to the end of targetPerms
-            String[] mappedPerms = mapPerms( targetPerms, action );
-
-            // get the subject for testing perms
-            Subject subject = getSubject( request, response );
-
-            // iterator over perms, and if any of them is permitted for subject
-            // allow access
-            for ( String perm : mappedPerms )
+            try
             {
-                if ( subject.isPermitted( perm ) )
-                {
-                    return true;
-                }
+                authorizer = (NexusItemAuthorizer) plexus.lookup( NexusItemAuthorizer.ROLE );
             }
+            catch ( ComponentLookupException e )
+            {
+                throw new IllegalStateException( "Cannot lookup NexusArtifactAuthorizer!", e );
+            }
+        }
 
-            // did not hit any of perms, so the subject is not allowed to do this
-            return false;
-        }
-        else
-        {
-            // we hit no repos, it is a virtual path, allow access
-            return true;
-        }
+        return authorizer.authorizePath( getResourceStoreRequest( request, true ), getActionFromHttpVerb( request ) );
     }
 }
