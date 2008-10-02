@@ -37,6 +37,10 @@
 			trperms.pathPrefix = /service/local/repositories/(.*)/content(.*)
 			trperms.pathReplacement = /repositories/@1@2
 
+			tiperms = org.sonatype.nexus.security.filter.authz.NexusTargetMappingAuthorizationFilter
+			tiperms.pathPrefix = /service/local/repositories/(.*)/index_content(.*)
+			tiperms.pathReplacement = /repositories/@1@2
+
 			tgperms = org.sonatype.nexus.security.filter.authz.NexusTargetMappingAuthorizationFilter
 			tgperms.pathPrefix = /service/local/repo_groups/(.*)/content(.*)
 			tgperms.pathReplacement = /groups/@1@2
@@ -63,6 +67,8 @@
 			/service/*/repositories/*/meta = authcBasic,perms[nexus:repometa]
 			/service/*/repositories/*/content/** = authcBasic,trperms
 			/service/*/repositories/*/content = authcBasic,trperms
+			/service/*/repositories/*/index_content/** = authcBasic,tiperms
+			/service/*/repositories/*/index_content = authcBasic,tiperms
 			/service/*/repositories/* = authcBasic,perms[nexus:repositories]
 			/service/*/repositories = authcBasic,perms[nexus:repositories]
 			/service/*/repo_groups/*/content/** = authcBasic,tgperms
