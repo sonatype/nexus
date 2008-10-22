@@ -3,12 +3,12 @@
     <parent>
         <groupId>org.sonatype.nexus</groupId>
         <artifactId>nexus-parent</artifactId>
-        <version>4-SNAPSHOT</version>
+        <version>4</version>
     </parent>
 
     <groupId>org.sonatype.nexus</groupId>
     <artifactId>nexus-indexer</artifactId>
-    <version>1.0.3-SNAPSHOT</version>
+    <version>1.0.3</version>
     <name>Sonatype Nexus: Indexer</name>
 
     <licenses>
@@ -262,4 +262,10 @@
       </plugin>            
       </plugins>
     </build>
+
+  <scm>
+    <connection>scm:svn:http://svn.sonatype.org/nexus/tags/nexus-indexer-1.0.3</connection>
+    <developerConnection>scm:svn:https://svn.sonatype.org/nexus/tags/nexus-indexer-1.0.3</developerConnection>
+    <url>http://svn.sonatype.org/nexus/tags/nexus-indexer-1.0.3</url>
+  </scm>
 </project>
