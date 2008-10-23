@@ -785,17 +785,18 @@ Ext.extend(Sonatype.repoServer.RepoMaintPanel, Sonatype.repoServer.AbstractRepoP
       }),
       listeners: {
         contextmenu: this.onBrowseContextClickHandler,
-        scope: this
+        scope: this,
+        expandnode: this.indexBrowserExpandFollowup
       }
     });
     
-    loader = new Ext.tree.SonatypeTreeLoader({
-      dataUrl: '', //note: all node ids are their own full path
-      listeners: {
-        loadexception: this.treeLoadExceptionHandler,
-        scope: this
-      }
-    });
+//    loader = new Ext.tree.SonatypeTreeLoader({
+//      dataUrl: '', //note: all node ids are their own full path
+//      listeners: {
+//        loadexception: this.treeLoadExceptionHandler,
+//        scope: this
+//      },
+//    });
     
     var temp = new Ext.tree.TreeSorter(tp, {folderSort:true});
     //note: async treenode needs to be added after sorter to avoid race condition where child node can appear unsorted
@@ -805,7 +806,13 @@ Ext.extend(Sonatype.repoServer.RepoMaintPanel, Sonatype.repoServer.AbstractRepoP
       id: this.getBrowsePath( id ),
       singleClickExpand: true,
       expanded: true,
-      repoType: repoType
+      repoType: repoType,
+      listeners: {
+        load: {
+          fn: this.indexBrowserExpandFollowup,
+          scope: this
+        }
+      }
     });
     rNode.contentUrl = id;
     
@@ -1034,29 +1041,62 @@ Ext.extend(Sonatype.repoServer.RepoMaintPanel, Sonatype.repoServer.AbstractRepoP
           root.setText(root.text.slice(0, i-1));
         }
         root.id = this.getBrowsePath( root.contentUrl );
+        root.attributes.localStorageUpdated = false;
         root.reload();
       }
     }
   },
 
   onRepositoryContentMenuInit: function( menu, repoRecord, contentRecord ) {
-    if ( ! this.browseIndex ) {
-      var isVirtual = repoRecord.get( 'repoType' ) == 'virtual';
+    var isVirtual = repoRecord.get( 'repoType' ) == 'virtual';
 
-      if ( this.sp.checkPermission(
-            Sonatype.user.curr.repoServer.actionDeleteCache, this.sp.DELETE ) &&
-          ! isVirtual ){
-        menu.add( this.repoActions.clearCache );
-      }
-      if ( this.sp.checkPermission(
-            Sonatype.user.curr.repoServer.actionReindex, this.sp.DELETE ) &&
-          ! isVirtual ) {
-        menu.add( this.repoActions.reIndex );
-      }
-      if ( this.sp.checkPermission(
-            Sonatype.user.curr.repoServer.actionRebuildAttribs, this.sp.DELETE ) ){
-        menu.add( this.repoActions.rebuildAttributes );
-      }
+    if ( this.sp.checkPermission(
+          Sonatype.user.curr.repoServer.actionDeleteCache, this.sp.DELETE ) &&
+        ! isVirtual ){
+      menu.add( this.repoActions.clearCache );
+    }
+    if ( this.sp.checkPermission(
+          Sonatype.user.curr.repoServer.actionReindex, this.sp.DELETE ) &&
+        ! isVirtual ) {
+      menu.add( this.repoActions.reIndex );
+    }
+    if ( this.sp.checkPermission(
+          Sonatype.user.curr.repoServer.actionRebuildAttribs, this.sp.DELETE ) ){
+      menu.add( this.repoActions.rebuildAttributes );
+    }
+  },
+  
+  indexBrowserExpandFollowup: function( node ) {
+    if ( this.browseIndex && ! node.attributes.localStorageUpdated && node.firstChild ) {
+      node.attributes.localStorageUpdated = true;
+      Ext.Ajax.request({
+        url: node.id.replace( Sonatype.config.browseIndexPathSnippet, Sonatype.config.browsePathSnippet ) + '?isLocal',
+        suppressStatus: 404,
+        success: function( response, options ) {
+          var decodedResponse = Ext.decode( response.responseText );
+          if ( decodedResponse.data ) {
+            var data = decodedResponse.data;
+            for ( var j = 0; j < node.childNodes.length; j++ ) {
+              var indexNode = node.childNodes[j];
+              indexNode.attributes.localStorageUpdated = true;
+              for ( var i = 0; i < data.length; i++ ) {
+                var contentNode = data[i];
+                if ( contentNode.text == indexNode.text ) {
+                  indexNode.ui.iconNode.className = 'x-tree-node-nexus-icon';
+                  indexNode.attributes.localStorageUpdated = false;
+                  break;
+                }
+              }
+            }
+          }
+        },
+        failure: function( response, options ) {
+          for ( var j = 0; j < node.childNodes.length; j++ ) {
+            node.childNodes[j].attributes.localStorageUpdated = true;
+          }
+        },
+        scope: this
+      });
     }
   }
 });
