@@ -24,18 +24,21 @@
 		<proxy-repo-target-dir>${project.build.directory}/test-classes/${proxy-repo-target-dir-name}</proxy-repo-target-dir>
 		<nexus-plexus-config-file>${nexus-abs-basedir}/conf/plexus.xml</nexus-plexus-config-file>
 		<proxy-repo-plexus-config-file>${project.build.directory}/test-classes/proxyRepo/conf/ProxyRepoPlexus.xml</proxy-repo-plexus-config-file>
-		<proxy-repo-port>8090</proxy-repo-port>
 		<proxy-repo-base-url>http://localhost:${proxy-repo-port}/remote/</proxy-repo-base-url>
 		<nexus-application-protocol>http</nexus-application-protocol>
 		<nexus-application-host>localhost</nexus-application-host>
 		<nexus-application-name>nexus</nexus-application-name>
-		<nexus-application-port>8087</nexus-application-port>
 		<jetty-application-host>0.0.0.0</jetty-application-host>
         
 		<nexus-base-url>${nexus-application-protocol}://${nexus-application-host}:${nexus-application-port}/${nexus-application-name}/</nexus-base-url>
 
-		<nexus-control-port>33001</nexus-control-port>
-		<proxy-repo-control-port>33002</proxy-repo-control-port>
+    <!--  Testing port allocator
+    <proxy-repo-port>8090</proxy-repo-port>
+    <proxy-repo-control-port>33002</proxy-repo-control-port>
+
+    <nexus-application-port>8087</nexus-application-port>
+    <nexus-control-port>33001</nexus-control-port>
+ -->
 	</properties>
 
 	<dependencies>
@@ -350,12 +353,37 @@
 				</configuration>
 			</plugin>
 
-		</plugins>
-
-
-
-	</build>
-
+      <plugin>
+        <groupId>org.sonatype.plugins</groupId>
+        <artifactId>port-allocator-maven-plugin</artifactId>
+        <version>1.0-SNAPSHOT</version>
+        <executions>
+          <execution>
+            <phase>validate</phase>
+            <goals>
+              <goal>allocate-ports</goal>
+            </goals>
+            <configuration>
+              <ports>
+                <port>
+                  <name>proxy-repo-port</name>
+                </port>
+                <port>
+                  <name>proxy-repo-control-port</name>
+                </port>
+                <port>
+                  <name>nexus-application-port</name>
+                </port>
+                <port>
+                  <name>nexus-control-port</name>
+                </port>
+              </ports>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
 
 	<reporting>
 		<plugins>
