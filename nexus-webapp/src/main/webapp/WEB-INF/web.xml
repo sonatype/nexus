@@ -105,11 +105,12 @@
     </servlet-mapping>
 
     <!-- Welcome File -->
-    <welcome-file-list>
+
+<!--    <welcome-file-list>
         <welcome-file>index.html</welcome-file>
     </welcome-file-list>
 
-    <!--
+    
         Uncomment this if you need to edit JavaScript files and other resources while Jetty is running (to prevent it from locking
         everything). 
     <servlet>
