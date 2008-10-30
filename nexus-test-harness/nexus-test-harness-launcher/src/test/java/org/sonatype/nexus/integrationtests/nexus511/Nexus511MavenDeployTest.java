@@ -52,7 +52,9 @@ public class Nexus511MavenDeployTest
         throws Exception
     {
         // try to deploy without servers authentication tokens
-        verifier.getCliOptions().clear();
+        File mavenProject = getTestFile( "maven-project" );
+        File settings = getTestFile( "serverWithoutAuthentication.xml" );
+        verifier = createVerifier( mavenProject, settings );
 
         try
         {
