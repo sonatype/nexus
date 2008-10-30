@@ -96,7 +96,7 @@ public class Nexus636EvictUnusedProxiedTaskTest
     public void doNotDeleteEverythingTest() throws Exception
     {
         
-        executeTask( "doNotDeleteEverythingTest-1", this.getTestRepositoryId(), 2 );
+        executeTask( "doNotDeleteEverythingTest-1", "repo_release-proxy-repo-1", 2 );
         // expect 3 files in repo
         File groupDirectory = new File(repositoryPath, this.getTestId());
         File[] files = groupDirectory.listFiles();
@@ -111,7 +111,7 @@ public class Nexus636EvictUnusedProxiedTaskTest
         this.changeProxyAttributeDate( oldPom, -3 );
         
         // run task
-        executeTask( "doNotDeleteEverythingTest-2", this.getTestRepositoryId(), 2 );
+        executeTask( "doNotDeleteEverythingTest-2", "repo_release-proxy-repo-1", 2 );
         
         // check file list
         files = groupDirectory.listFiles();
