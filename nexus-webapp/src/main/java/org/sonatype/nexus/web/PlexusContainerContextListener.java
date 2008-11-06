@@ -21,6 +21,8 @@
 
 package org.sonatype.nexus.web;
 
+import java.io.File;
+
 import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
@@ -48,6 +50,12 @@ public class PlexusContainerContextListener
                 .buildContainerConfiguration( servletContext );
 
             NexusWorkDirUtils.setUpNexusWorkDir( plexusContainerConfiguration.getContext() );
+            
+            Log4JConfigurationUtils
+					.configure(new File(
+							(String) plexusContainerConfiguration.getContext()
+									.get(NexusWorkDirUtils.KEY_NEXUS_WORK),
+							"logs/nexus.log").getAbsolutePath());
 
             PlexusContainer plexusContainer = plexusContainerUtils.startContainer( plexusContainerConfiguration );
 
