@@ -70,6 +70,10 @@ public class NexusWorkDirUtils
         //no user customization found, use default
         value = new File(System.getProperty( "user.home" ), NEXUS_DEFAULT_ROOT).getAbsolutePath();
         context.put( KEY_NEXUS_WORK, value);
+        
+        //put KEY_NEXUS_WORK into system properties
+        System.getProperties().put( KEY_NEXUS_WORK, value );
+        
         return value;
     }
     
