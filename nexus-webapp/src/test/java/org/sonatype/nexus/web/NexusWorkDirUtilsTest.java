@@ -38,13 +38,13 @@ public class NexusWorkDirUtilsTest
         }
         Map<Object, String> context = new HashMap<Object, String>();
         NexusWorkDirUtils.setUpNexusWorkDir( context );
-        String defaultRoot = new File( System.getProperty( "user.home" ), "/sonatype-work/nexus-work" ).getAbsolutePath();
+        String defaultRoot = new File( System.getProperty( "user.home" ), "/sonatype-work/nexus" ).getAbsolutePath();
         assertDirectoryProperties(context, defaultRoot);
         
     }
     
     public void testPlexusSetUp(){
-        String rootPath = new File("/src/test/resources/nexus-work").getAbsolutePath();
+        String rootPath = new File("/src/test/resources/nexus").getAbsolutePath();
         Map<Object, String> context = new HashMap<Object, String>();
         context.put( "nexus-work",  rootPath);
         NexusWorkDirUtils.setUpNexusWorkDir( context );
@@ -53,7 +53,7 @@ public class NexusWorkDirUtilsTest
     
     
     public void testSystemPropertiesSetUp(){
-        String rootPath = new File("/src/test/resources/nexus-work").getAbsolutePath();
+        String rootPath = new File("/src/test/resources/nexus").getAbsolutePath();
         Map<Object, String> context = new HashMap<Object, String>();
         System.getProperties().put( "nexus-work", rootPath );
         NexusWorkDirUtils.setUpNexusWorkDir( context );

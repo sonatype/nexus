@@ -28,14 +28,14 @@ import org.codehaus.plexus.util.StringUtils;
 
 
 /**
- * This utils is used to initialize the nexus-work directory location. The order is plexus.xml > system property >
+ * This utils is used to initialize the nexus-work directory location. The order is plexus.properties > system property >
  * environment variables > default
  * 
  * @author Juven Xu
  */
 public class NexusWorkDirUtils
 {
-    public static final String NEXUS_DEFAULT_ROOT = "/sonatype-work/nexus-work";
+    public static final String NEXUS_DEFAULT_ROOT = "/sonatype-work/nexus";
     public static final String KEY_NEXUS_WORK = "nexus-work";
     public static final String KEY_RUNTIME = "runtime";
     public static final String KEY_SECURITY_XML_FILE = "security-xml-file";
