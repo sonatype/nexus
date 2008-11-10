@@ -40,6 +40,8 @@ public class NexusWorkDirUtils
 
     public static final String KEY_NEXUS_WORK_SYS_PROP = "plexus.nexus-work";
 
+    public static final String KEY_NEXUS_WORK_ENV_VAR = "PLEXUS_NEXUS_WORK";
+
     public static final String KEY_RUNTIME = "runtime";
 
     public static final String KEY_SECURITY_XML_FILE = "security-xml-file";
@@ -61,35 +63,31 @@ public class NexusWorkDirUtils
         String value;
 
         // check if the value already exists (loaded by plexus container)
-        value = context.get( KEY_NEXUS_WORK );
-
-        if ( !StringUtils.isEmpty( value ) )
+        if ( !StringUtils.isEmpty( context.get( KEY_NEXUS_WORK ) ) )
         {
-            return value;
+            value = context.get( KEY_NEXUS_WORK );
         }
+
         // check system properties
-        value = System.getProperty( KEY_NEXUS_WORK );
-        
-        if ( !StringUtils.isEmpty( value ) )
+        else if ( !StringUtils.isEmpty( System.getProperty( KEY_NEXUS_WORK_SYS_PROP ) ) )
         {
-            context.put( KEY_NEXUS_WORK, new File( value ).getAbsolutePath() );
-            
-            return value;
+            value = System.getProperty( KEY_NEXUS_WORK_SYS_PROP );
         }
-        // check environment variables
-        value = System.getenv().get( KEY_NEXUS_WORK );
-        
-        if ( !StringUtils.isEmpty( value ) )
-        {
-            context.put( KEY_NEXUS_WORK, new File( value ).getAbsolutePath() );
-            
-            return value;
-        }
-        // no user customization found, use default
-        value = new File( System.getProperty( "user.home" ), NEXUS_DEFAULT_ROOT ).getAbsolutePath();
-        
-        context.put( KEY_NEXUS_WORK, value );
 
+        // check environment variables
+        else if ( !StringUtils.isEmpty( System.getenv().get( KEY_NEXUS_WORK_ENV_VAR ) ) )
+        {
+            value = System.getenv().get( KEY_NEXUS_WORK_ENV_VAR );
+        }
+
+        // no user customization found, use default
+        else
+        {
+            value = new File( System.getProperty( "user.home" ), NEXUS_DEFAULT_ROOT ).getAbsolutePath();
+        }
+
+        // set plexus context value
+        context.put( KEY_NEXUS_WORK, value );
         // set nexus work system property
         System.getProperties().put( KEY_NEXUS_WORK_SYS_PROP, value );
 

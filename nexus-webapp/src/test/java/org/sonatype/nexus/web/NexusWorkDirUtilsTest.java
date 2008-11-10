@@ -32,8 +32,8 @@ public class NexusWorkDirUtilsTest
 {
     public void testDefaultSetUp()
     {
-        System.getProperties().remove( "nexus-work" );
-        if(System.getenv().containsKey( "nexus-work" )){
+        System.getProperties().remove( NexusWorkDirUtils.KEY_NEXUS_WORK_SYS_PROP );
+        if(System.getenv().containsKey( NexusWorkDirUtils.KEY_NEXUS_WORK_ENV_VAR )){
             return;
         }
         Map<Object, String> context = new HashMap<Object, String>();
