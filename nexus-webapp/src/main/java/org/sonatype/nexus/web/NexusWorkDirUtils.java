@@ -42,13 +42,20 @@ public class NexusWorkDirUtils
 
     public static final String KEY_NEXUS_WORK_ENV_VAR = "PLEXUS_NEXUS_WORK";
 
+    /*
+     * These variables are by default set based on ${nexus-work}, but also they are configurable.
+     */
     public static final String KEY_RUNTIME = "runtime";
 
     public static final String KEY_SECURITY_XML_FILE = "security-xml-file";
 
+    public static final String KEY_APPLICATION_CONF = "application-conf";
+
     public static final String RELATIVE_PATH_RUNTIME = "/runtime";
 
     public static final String RELATIVE_PATH_SECURITY_XML_FILE = "/conf/security.xml";
+
+    public static final String RELATIVE_PATH_APPLICATION_CONF = "/conf";
 
     public static void setUpNexusWorkDir( Map<Object, String> context )
     {
@@ -99,8 +106,20 @@ public class NexusWorkDirUtils
      */
     private static void setUpMinorDirs( Map<Object, String> context, String root )
     {
-        context.put( KEY_RUNTIME, new File( root, RELATIVE_PATH_RUNTIME ).getAbsolutePath() );
-        context.put( KEY_SECURITY_XML_FILE, new File( root, RELATIVE_PATH_SECURITY_XML_FILE ).getAbsolutePath() );
+        if ( StringUtils.isEmpty( context.get( KEY_RUNTIME ) ) )
+        {
+            context.put( KEY_RUNTIME, new File( root, RELATIVE_PATH_RUNTIME ).getAbsolutePath() );
+        }
+
+        if ( StringUtils.isEmpty( context.get( KEY_SECURITY_XML_FILE ) ) )
+        {
+            context.put( KEY_SECURITY_XML_FILE, new File( root, RELATIVE_PATH_SECURITY_XML_FILE ).getAbsolutePath() );
+        }
+
+        if ( StringUtils.isEmpty( context.get( KEY_APPLICATION_CONF ) ) )
+        {
+            context.put( KEY_APPLICATION_CONF, new File( root, RELATIVE_PATH_APPLICATION_CONF ).getAbsolutePath() );
+        }
     }
 
 }
