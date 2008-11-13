@@ -11,6 +11,7 @@ import org.apache.maven.model.Scm;
 import org.codehaus.plexus.PlexusConstants;
 import org.codehaus.plexus.PlexusContainer;
 import org.codehaus.plexus.component.annotations.Requirement;
+import org.codehaus.plexus.util.StringUtils;
 import org.jsecurity.mgt.SecurityManager;
 import org.restlet.Context;
 import org.restlet.data.Reference;
@@ -113,7 +114,14 @@ public abstract class AbstractNexusPlexusResource
      */
     protected Reference getContextRoot( Request request )
     {
-        return request.getRootRef();
+        Reference result = request.getRootRef();
+
+        if ( StringUtils.isEmpty( result.getPath() ) )
+        {
+            result.setPath( "/" );
+        }
+
+        return result;
     }
 
     protected Reference createChildReference( Request request, String childPath )
