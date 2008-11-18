@@ -249,28 +249,41 @@ public class DefaultApplicationRuntimeConfigurationBuilder
                 repository.setRemoteStorage( getRemoteRepositoryStorage( repo.getId(), repo
                     .getRemoteStorage().getProvider() ) );
 
-                if ( repo.getRemoteStorage().getAuthentication() != null
-                    || repo.getRemoteStorage().getConnectionSettings() != null
-                    || repo.getRemoteStorage().getHttpProxySettings() != null )
+                DefaultRemoteStorageContext ctx = new DefaultRemoteStorageContext( nexusConfiguration
+                    .getRemoteStorageContext() );
+
+                if ( repo.getRemoteStorage().getAuthentication() != null )
                 {
-                    DefaultRemoteStorageContext ctx = new DefaultRemoteStorageContext( nexusConfiguration
-                        .getRemoteStorageContext() );
-
-                    ctx.putRemoteConnectionContextObject( RemoteStorageContext.REMOTE_CONNECTIONS_SETTINGS, repo
-                        .getRemoteStorage().getConnectionSettings() );
-
-                    ctx.putRemoteConnectionContextObject( RemoteStorageContext.REMOTE_HTTP_PROXY_SETTINGS, repo
-                        .getRemoteStorage().getHttpProxySettings() );
-
                     ctx.putRemoteConnectionContextObject( RemoteStorageContext.REMOTE_AUTHENTICATION_SETTINGS, repo
                         .getRemoteStorage().getAuthentication() );
-
-                    repository.setRemoteStorageContext( ctx );
                 }
                 else
                 {
-                    repository.setRemoteStorageContext( nexusConfiguration.getRemoteStorageContext() );
+                    ctx.removeRemoteConnectionContextObject( RemoteStorageContext.REMOTE_AUTHENTICATION_SETTINGS );
                 }
+
+                if ( repo.getRemoteStorage().getConnectionSettings() != null )
+                {
+                    ctx.putRemoteConnectionContextObject( RemoteStorageContext.REMOTE_CONNECTIONS_SETTINGS, repo
+                        .getRemoteStorage().getConnectionSettings() );
+                }
+                else
+                {
+                    ctx.removeRemoteConnectionContextObject( RemoteStorageContext.REMOTE_CONNECTIONS_SETTINGS );
+                }
+
+                if ( repo.getRemoteStorage().getHttpProxySettings() != null )
+                {
+                    ctx.putRemoteConnectionContextObject( RemoteStorageContext.REMOTE_HTTP_PROXY_SETTINGS, repo
+                        .getRemoteStorage().getHttpProxySettings() );
+                }
+                else
+                {
+                    ctx.removeRemoteConnectionContextObject( RemoteStorageContext.REMOTE_HTTP_PROXY_SETTINGS );
+                }
+
+                repository.setRemoteStorageContext( ctx );
+
             }
 
             return repository;
