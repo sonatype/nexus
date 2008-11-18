@@ -43,6 +43,7 @@ import org.sonatype.nexus.proxy.NoSuchResourceStoreException;
 import org.sonatype.nexus.proxy.RepositoryNotAvailableException;
 import org.sonatype.nexus.proxy.ResourceStoreRequest;
 import org.sonatype.nexus.proxy.StorageException;
+import org.sonatype.nexus.proxy.access.Action;
 import org.sonatype.nexus.proxy.item.ContentLocator;
 import org.sonatype.nexus.proxy.item.DefaultStorageFileItem;
 import org.sonatype.nexus.proxy.item.PreparedContentLocator;
@@ -79,6 +80,23 @@ public class ArtifactStoreHelper
             StorageException,
             AccessDeniedException
     {
+        if ( attributes.containsKey( "checkAccess" )
+            && attributes.get( "checkAccess" ).equals( "true" ) )
+        {
+            Action action = Action.update;
+            try
+            {
+                repository.retrieveItem( true, repository.createUid( request.getRequestPath() ), null );
+            }
+            catch ( ItemNotFoundException e )
+            {
+                action = Action.create;
+            }
+ 
+            // AccessDeniedException will be thrown here if not authorized
+            repository.getAccessManager().decide( request, repository, action );
+        }
+
         repository.storeItemWithChecksums( new DefaultStorageFileItem(
             repository,
             request.getRequestPath(),
