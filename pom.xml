@@ -9,7 +9,7 @@
 	<artifactId>nexus</artifactId>
 	<packaging>pom</packaging>
 	<name>Nexus Repository Manager</name>
-	<version>1.2.0-beta-2-SNAPSHOT</version>
+	<version>1.2.0-beta-2</version>
 	<description>Sonatype Nexus Repository Manager</description>
 	<inceptionYear>2007</inceptionYear>
 	<mailingLists />
@@ -127,7 +127,7 @@
 		<profile>
 			<id>test-harness</id>
 			<activation>
-				<activeByDefault>true</activeByDefault>
+				<activeByDefault>false</activeByDefault>
 				<property>
 					<name>test-harness</name>
 				</property>
@@ -760,4 +760,10 @@
 			</plugin>
 		</plugins>
 	</reporting>
+
+  <scm>
+    <connection>scm:svn:http://svn.sonatype.org/nexus/tags/nexus-1.2.0-beta-2</connection>
+    <developerConnection>scm:svn:https://svn.sonatype.org/nexus/tags/nexus-1.2.0-beta-2</developerConnection>
+    <url>http://svn.sonatype.org/nexus/tags/nexus-1.2.0-beta-2</url>
+  </scm>
 </project>
