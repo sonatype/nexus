@@ -21,6 +21,7 @@
 package org.sonatype.nexus.proxy.repository;
 
 import java.util.Collection;
+import java.util.Date;
 import java.util.Map;
 
 import org.codehaus.plexus.component.annotations.Requirement;
@@ -117,8 +118,9 @@ public abstract class DefaultRepository
                     {
                         if ( getLogger().isDebugEnabled() )
                         {
-                            getLogger()
-                                .debug( "Item " + uid.toString() + " is old, checking for newer file on remote." );
+                            getLogger().debug(
+                                "Item " + uid.toString() + " is old, checking for newer file on remote then local: "
+                                    + new Date( localItem.getModified() ) );
                         }
 
                         // check is the remote newer than the local one
@@ -128,6 +130,12 @@ public abstract class DefaultRepository
                         {
                             // remote file unchanged, touch the local one to renew it's Age
                             markItemRemotelyChecked( localItem.getRepositoryItemUid() );
+                        }
+
+                        if ( getLogger().isDebugEnabled() )
+                        {
+                            getLogger().debug(
+                                "Newer version of item " + uid.toString() + " is found on remote storage." );
                         }
 
                     }
@@ -152,7 +160,7 @@ public abstract class DefaultRepository
 
                                 result = doValidateRemoteItemContent( remoteItem, context );
 
-                                if ( result == null )
+                                if ( result == null || result.isContentValid() )
                                 {
                                     break;
                                 }
