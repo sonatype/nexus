@@ -76,6 +76,7 @@ public interface RepositoryRegistry
      * @throws NoSuchRepositoryException the no such repository exception
      * @throws InvalidGroupingException when reposes to group are not groupable
      */
+    @Deprecated
     void addRepositoryGroup( String groupId, List<String> memberRepositories )
         throws NoSuchRepositoryException,
             InvalidGroupingException;
@@ -86,6 +87,7 @@ public interface RepositoryRegistry
      * @param groupId the group id
      * @throws NoSuchRepositoryGroupException the no such repository group exception
      */
+    @Deprecated
     void removeRepositoryGroup( String groupId )
         throws NoSuchRepositoryGroupException;
 
@@ -96,6 +98,7 @@ public interface RepositoryRegistry
      * @param withRepositories if true, the members will be removed too
      * @throws NoSuchRepositoryGroupException the no such repository group exception
      */
+    @Deprecated
     void removeRepositoryGroup( String groupId, boolean withRepositories )
         throws NoSuchRepositoryGroupException;
 
@@ -112,6 +115,7 @@ public interface RepositoryRegistry
      * 
      * @return
      */
+    @Deprecated
     List<String> getRepositoryGroupIds();
 
     /**
@@ -132,6 +136,7 @@ public interface RepositoryRegistry
      * @return a List<Repository>
      * @throws NoSuchRepositoryGroupException the no such repository group exception
      */
+    @Deprecated
     List<Repository> getRepositoryGroup( String groupId )
         throws NoSuchRepositoryGroupException;
 
@@ -142,6 +147,7 @@ public interface RepositoryRegistry
      * @return
      * @throws NoSuchRepositoryGroupException
      */
+    @Deprecated
     ContentClass getRepositoryGroupContentClass( String groupId )
         throws NoSuchRepositoryGroupException;
 
@@ -159,6 +165,7 @@ public interface RepositoryRegistry
      * @param repositoryGroupId the repository group id
      * @return boolean
      */
+    @Deprecated
     boolean repositoryGroupIdExists( String repositoryGroupId );
 
     /**
@@ -167,5 +174,6 @@ public interface RepositoryRegistry
      * @param repositoryId the repository id
      * @return list of groupId's where the repo appears as member
      */
-    List<String> getGroupsOfRepository( String repositoryId );
+   @Deprecated
+   List<String> getGroupsOfRepository( String repositoryId );
 }

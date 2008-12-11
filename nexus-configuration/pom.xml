@@ -89,7 +89,7 @@
 							<goal>xpp3-writer</goal>
 						</goals>
 						<configuration>
-							<version>1.0.7</version>
+							<version>1.0.8</version>
 							<packagedVersions>
 								<packagedVersion>1.0.0</packagedVersion>
 								<packagedVersion>1.0.1</packagedVersion>
@@ -98,10 +98,24 @@
 								<packagedVersion>1.0.4</packagedVersion>
 								<packagedVersion>1.0.5</packagedVersion>
 								<packagedVersion>1.0.6</packagedVersion>
+                <packagedVersion>1.0.7</packagedVersion>
 							</packagedVersions>
 							<model>src/main/mdo/nexus.xml</model>
 						</configuration>
 					</execution>
+          <execution>
+            <id>nexus-upgrade</id>
+            <goals>
+              <goal>upgrade</goal>
+            </goals>
+            <configuration>
+              <version>1.0.8</version>
+              <packagedVersions>
+                <packagedVersion>1.0.7</packagedVersion>
+              </packagedVersions>
+              <model>src/main/mdo/nexus.xml</model>
+            </configuration>
+          </execution>
 					<execution>
 						<id>security.xml</id>
 						<goals>

@@ -27,6 +27,7 @@ import static org.easymock.EasyMock.replay;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.easymock.EasyMock;
 import org.sonatype.nexus.proxy.AbstractNexusTestEnvironment;
 import org.sonatype.nexus.proxy.NoSuchRepositoryGroupException;
 import org.sonatype.nexus.proxy.events.EventListener;
@@ -59,6 +60,10 @@ public class DefaultRepositoryRegistryTest
         Repository repoA = createMock( Repository.class );
         Repository repoB = createMock( Repository.class );
         Repository repoC = createMock( Repository.class );
+        
+        EasyMock.makeThreadSafe( repoA, true );
+        EasyMock.makeThreadSafe( repoB, true );
+        EasyMock.makeThreadSafe( repoC, true );
 
         // id will be called twice
         expect( repoA.getId() ).andReturn( "A" ).anyTimes();

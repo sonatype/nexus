@@ -26,6 +26,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.codehaus.plexus.PlexusContainer;
+import org.codehaus.plexus.component.annotations.Component;
+import org.codehaus.plexus.component.annotations.Requirement;
+import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.sonatype.nexus.proxy.EventMulticasterComponent;
 import org.sonatype.nexus.proxy.NoSuchRepositoryException;
 import org.sonatype.nexus.proxy.NoSuchRepositoryGroupException;
@@ -37,6 +41,9 @@ import org.sonatype.nexus.proxy.events.RepositoryRegistryEventRemove;
 import org.sonatype.nexus.proxy.events.RepositoryRegistryEventUpdate;
 import org.sonatype.nexus.proxy.events.RepositoryRegistryGroupEventAdd;
 import org.sonatype.nexus.proxy.events.RepositoryRegistryGroupEventRemove;
+import org.sonatype.nexus.proxy.repository.AbstractGroupRepository;
+import org.sonatype.nexus.proxy.repository.DefaultGroupRepository;
+import org.sonatype.nexus.proxy.repository.GroupRepository;
 import org.sonatype.nexus.proxy.repository.Repository;
 import org.sonatype.nexus.proxy.repository.RepositoryStatusCheckerThread;
 
@@ -51,9 +58,11 @@ import org.sonatype.nexus.proxy.repository.RepositoryStatusCheckerThread;
  * ProximityEvents: this component just "concentrates" the repositiry events of all known repositories by it. It can be
  * used as single point to access all repository events.
  * 
+ * TODO this is not a good place to keep group repository management code
+ * 
  * @author cstamas
- * @plexus.component
  */
+@Component ( role = RepositoryRegistry.class )
 public class DefaultRepositoryRegistry
     extends EventMulticasterComponent
     implements RepositoryRegistry, EventListener
@@ -61,16 +70,16 @@ public class DefaultRepositoryRegistry
     /** The repo register, [Repository.getId, Repository] */
     private Map<String, Repository> repositories = new HashMap<String, Repository>();
 
+    /** The repo register, [Repository.getId, Repository] */
+    private Map<String, GroupRepository> groupRepositories = new HashMap<String, GroupRepository>();
+
     /** The repo status checkrs */
     private Map<String, RepositoryStatusCheckerThread> repositoryStatusCheckers = new HashMap<String, RepositoryStatusCheckerThread>();
+    
+    @Requirement
+    private PlexusContainer plexus;
 
-    /** The group repo register, (key=Repository.getGroupId, value=List of RepoId's) */
-    private Map<String, List<String>> repositoryGroups = new HashMap<String, List<String>>();
-
-    /** The group repo register, (key=Repository.getGroupId, value=List of RepoId's) */
-    private Map<String, ContentClass> repositoryGroupContentClasses = new HashMap<String, ContentClass>();
-
-    protected void insertRepository( Repository repository, boolean newlyAdded )
+    private void insertRepository( Repository repository, boolean newlyAdded )
     {
         repositories.put( repository.getId(), repository );
 
@@ -95,7 +104,14 @@ public class DefaultRepositoryRegistry
 
     public void addRepository( Repository repository )
     {
-        insertRepository( repository, true );
+        if ( repository instanceof GroupRepository )
+        {
+            groupRepositories.put( repository.getId(), (GroupRepository) repository );
+        }
+        else
+        {
+            insertRepository( repository, true );
+        }
 
         getLogger().info(
             "Added repository ID=" + repository.getId() + " (contentClass="
@@ -138,82 +154,83 @@ public class DefaultRepositoryRegistry
     public void removeRepositorySilently( String repoId )
         throws NoSuchRepositoryException
     {
-        if ( repositories.containsKey( repoId ) )
-        {
-            Repository repository = (Repository) repositories.get( repoId );
+        Repository repository = (Repository) repositories.get( repoId );
 
-            for ( String groupId : repositoryGroups.keySet() )
-            {
-                List<String> groupOrder = repositoryGroups.get( groupId );
-
-                groupOrder.remove( repository.getId() );
-            }
-
-            repositories.remove( repository.getId() );
-
-            RepositoryStatusCheckerThread thread = repositoryStatusCheckers.remove( repository.getId() );
-
-            thread.interrupt();
-
-            if ( repository instanceof EventMulticaster )
-            {
-                ( (EventMulticaster) repository ).removeProximityEventListener( this );
-            }
-
-            getLogger().info( "Removed repository id=" + repository.getId() );
-        }
-        else
+        if ( repository == null )
         {
             throw new NoSuchRepositoryException( repoId );
         }
+
+        for ( GroupRepository group : groupRepositories.values() )
+        {
+            // XXX mutable group repository
+            AbstractGroupRepository hack = (AbstractGroupRepository) group;
+            hack.removeMemberRepository( repoId );
+        }
+
+        repositories.remove( repository.getId() );
+
+        RepositoryStatusCheckerThread thread = repositoryStatusCheckers.remove( repository.getId() );
+
+        thread.interrupt();
+
+        if ( repository instanceof EventMulticaster )
+        {
+            ( (EventMulticaster) repository ).removeProximityEventListener( this );
+        }
+
+        getLogger().info( "Removed repository id=" + repository.getId() );
     }
 
     public void addRepositoryGroup( String groupId, List<String> memberRepositories )
         throws NoSuchRepositoryException,
             InvalidGroupingException
     {
+        List<String> groupOrder = new ArrayList<String>();
+
+        ContentClass contentClass = null;
+
+        if ( memberRepositories != null )
+        {
+            for ( String repoId : memberRepositories )
+            {
+                Repository repository = getRepository( repoId );
+
+                if ( contentClass == null )
+                {
+                    contentClass = repository.getRepositoryContentClass();
+                }
+                else if ( !contentClass.isCompatible( repository.getRepositoryContentClass() ) )
+                {
+                    throw new InvalidGroupingException( contentClass, repository.getRepositoryContentClass() );
+                }
+
+                groupOrder.add( repository.getId() );
+            }
+        }
+
+        GroupRepository group;
         try
         {
-            List<String> groupOrder = new ArrayList<String>( memberRepositories != null ? memberRepositories.size() : 0 );
-
-            ContentClass contentClass = null;
-
-            if ( memberRepositories != null )
-            {
-                for ( String repoId : memberRepositories )
-                {
-                    Repository repository = getRepository( repoId );
-
-                    if ( contentClass == null )
-                    {
-                        contentClass = repository.getRepositoryContentClass();
-                    }
-                    else if ( !contentClass.isCompatible( repository.getRepositoryContentClass() ) )
-                    {
-                        throw new InvalidGroupingException( contentClass, repository.getRepositoryContentClass() );
-                    }
-
-                    groupOrder.add( repository.getId() );
-                }
-            }
-
-            repositoryGroups.put( groupId, groupOrder );
-
-            repositoryGroupContentClasses.put( groupId, contentClass );
-
-            notifyProximityEventListeners( new RepositoryRegistryGroupEventAdd( this, groupId ) );
-
-            getLogger().info(
-                "Added repository group ID=" + groupId + " (contentClass="
-                    + ( contentClass != null ? contentClass.getId() : "null" )
-                    + ") with repository members of (in processing order) " + memberRepositories );
+            group = (GroupRepository) plexus.lookup( GroupRepository.class, contentClass.getId() );
         }
-        catch ( NoSuchRepositoryException e )
+        catch ( ComponentLookupException e )
         {
-            repositoryGroups.remove( groupId );
-
-            throw e;
+            group = new DefaultGroupRepository( contentClass );
         }
+
+        // XXX mutable group repository
+        AbstractGroupRepository hack = (AbstractGroupRepository) group;
+        hack.setMemberRepositories( memberRepositories );
+
+        groupRepositories.put( groupId, group );
+
+        notifyProximityEventListeners( new RepositoryRegistryGroupEventAdd( this, groupId ) );
+
+        getLogger().info(
+            "Added repository group ID=" + groupId + " (contentClass="
+                + ( contentClass != null ? contentClass.getId() : "null" )
+                + ") with repository members of (in processing order) " + memberRepositories );
     }
 
     public void removeRepositoryGroup( String groupId )
@@ -225,36 +242,29 @@ public class DefaultRepositoryRegistry
     public void removeRepositoryGroup( String groupId, boolean withRepositories )
         throws NoSuchRepositoryGroupException
     {
-        if ( repositoryGroups.containsKey( groupId ) )
-        {
-            notifyProximityEventListeners( new RepositoryRegistryGroupEventRemove( this, groupId ) );
-            
-            if ( withRepositories )
-            {
-                List<Repository> groupOrder = getRepositoryGroup( groupId );
+        GroupRepository group = getRepositoryGroupRepository( groupId );
 
-                for ( Repository repository : groupOrder )
+        notifyProximityEventListeners( new RepositoryRegistryGroupEventRemove( this, groupId ) );
+
+        if ( withRepositories )
+        {
+            for ( Repository repository : group.getMemberRepositories() )
+            {
+                try
                 {
-                    try
-                    {
-                        removeRepository( repository.getId() );
-                    }
-                    catch ( NoSuchRepositoryException ex )
-                    {
-                        // this should not happen
-                        getLogger().warn(
-                            "Got NoSuchRepositoryException while removing group " + groupId + ", ignoring it.",
-                            ex );
-                    }
+                    removeRepository( repository.getId() );
+                }
+                catch ( NoSuchRepositoryException ex )
+                {
+                    // this should not happen
+                    getLogger().warn(
+                        "Got NoSuchRepositoryException while removing group " + groupId + ", ignoring it.",
+                        ex );
                 }
             }
-
-            repositoryGroups.remove( groupId );
         }
-        else
-        {
-            throw new NoSuchRepositoryGroupException( groupId );
-        }
+        
+        repositories.remove( groupId );
     }
 
     public Repository getRepository( String repoId )
@@ -272,43 +282,29 @@ public class DefaultRepositoryRegistry
 
     public List<Repository> getRepositories()
     {
-        List<Repository> result = new ArrayList<Repository>( repositories.keySet().size() );
-
-        for ( String repoId : repositories.keySet() )
-        {
-            result.add( repositories.get( repoId ) );
-        }
-
-        return Collections.unmodifiableList( result );
+        return Collections.unmodifiableList( new ArrayList<Repository>( repositories.values() ) );
     }
 
     public List<String> getRepositoryGroupIds()
     {
-        List<String> result = new ArrayList<String>( repositoryGroups.size() );
-
-        for ( String repoGroupId : repositoryGroups.keySet() )
-        {
-            result.add( repoGroupId );
-        }
-
-        return Collections.unmodifiableList( result );
+        return Collections.unmodifiableList( new ArrayList<String>( groupRepositories.keySet() ) );
     }
 
     public List<Repository> getRepositoryGroup( String groupId )
         throws NoSuchRepositoryGroupException
     {
-        if ( repositoryGroups.containsKey( groupId ) )
+        GroupRepository group = getRepositoryGroupRepository( groupId );
+        
+        return Collections.unmodifiableList( group.getMemberRepositories() );
+    }
+
+    private GroupRepository getRepositoryGroupRepository( String groupId )
+        throws NoSuchRepositoryGroupException
+    {
+        GroupRepository group = groupRepositories.get( groupId );
+        if ( group != null )
         {
-            List<String> groupOrder = repositoryGroups.get( groupId );
-
-            List<Repository> result = new ArrayList<Repository>( groupOrder.size() );
-
-            for ( String repoId : groupOrder )
-            {
-                result.add( repositories.get( repoId ) );
-            }
-
-            return Collections.unmodifiableList( result );
+            return group;
         }
         else
         {
@@ -319,14 +315,9 @@ public class DefaultRepositoryRegistry
     public ContentClass getRepositoryGroupContentClass( String groupId )
         throws NoSuchRepositoryGroupException
     {
-        if ( repositoryGroupContentClasses.containsKey( groupId ) )
-        {
-            return repositoryGroupContentClasses.get( groupId );
-        }
-        else
-        {
-            throw new NoSuchRepositoryGroupException( groupId );
-        }
+        GroupRepository repository = getRepositoryGroupRepository( groupId );
+        
+        return repository.getRepositoryContentClass();
     }
 
     public boolean repositoryIdExists( String repositoryId )
@@ -336,20 +327,24 @@ public class DefaultRepositoryRegistry
 
     public boolean repositoryGroupIdExists( String repositoryGroupId )
     {
-        return repositoryGroups.containsKey( repositoryGroupId );
+        return groupRepositories.containsKey( repositoryGroupId );
     }
 
     public List<String> getGroupsOfRepository( String repositoryId )
     {
         ArrayList<String> result = new ArrayList<String>();
+        
+        GroupRepository group = groupRepositories.get( repositoryId );
 
-        for ( String groupId : repositoryGroups.keySet() )
+        if ( group != null )
         {
-            List<String> memberIds = repositoryGroups.get( groupId );
-
-            if ( memberIds.contains( repositoryId ) )
+            for ( Repository member : group.getMemberRepositories() )
             {
-                result.add( groupId );
+                if ( member.getId().equals( repositoryId ) )
+                {
+                    result.add( group.getId() );
+                    break;
+                }
             }
         }
 

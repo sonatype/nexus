@@ -1431,6 +1431,12 @@ public abstract class AbstractRepository
         return getRepositoryContentClass().isCompatible( repository.getRepositoryContentClass() );
     }
 
+    protected StorageItem createStorageItem( RepositoryItemUid uid, byte[] bytes )
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
     /**
      * Do retrieve item.
      * 
