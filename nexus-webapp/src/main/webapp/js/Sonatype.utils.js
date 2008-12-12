@@ -23,6 +23,7 @@
 Sonatype.utils = {
   passwordPlaceholder : '|$|N|E|X|U|S|$|',
   version : '',
+  edition : '',
   lowercase : function(str){
     if (Ext.isEmpty(str)) {return str;}
     str = str.toString();
@@ -686,6 +687,7 @@ Sonatype.utils = {
           var respObj = Ext.decode(response.responseText);
   
           Sonatype.utils.version = "Version " + respObj.data.version;
+          Sonatype.utils.edition = respObj.data.edition;
           
           Sonatype.user.curr.repoServer = respObj.data.clientPermissions.permissions;
           Sonatype.user.curr.isLoggedIn = respObj.data.clientPermissions.loggedIn;
@@ -703,6 +705,7 @@ Sonatype.utils = {
         }
         else {
           Sonatype.utils.version = 'Version unavailable';
+          Sonatype.utils.edition = '';
         }
         
         Ext.get('version').update(Sonatype.utils.version);
