@@ -24,6 +24,7 @@ public interface GroupRepository
      * over resulting list.
      * 
      * @return a List<Repository>
+     * @throws StorageException 
      */
     List<Repository> getMemberRepositories();
 

@@ -31,9 +31,10 @@ import org.sonatype.nexus.configuration.model.CGroupsSettingPathMappingItem;
 import org.sonatype.nexus.proxy.LoggingComponent;
 import org.sonatype.nexus.proxy.NoSuchRepositoryException;
 import org.sonatype.nexus.proxy.ResourceStore;
-import org.sonatype.nexus.proxy.ResourceStoreRequest;
 import org.sonatype.nexus.proxy.events.AbstractEvent;
+import org.sonatype.nexus.proxy.item.RepositoryItemUid;
 import org.sonatype.nexus.proxy.registry.RepositoryRegistry;
+import org.sonatype.nexus.proxy.repository.Repository;
 
 /**
  * The Class PathBasedRequestRepositoryMapper filters repositories to search using supplied list of filter expressions.
@@ -90,8 +91,8 @@ public class PathBasedRequestRepositoryMapper
         return applicationConfiguration;
     }
 
-    public List<ResourceStore> getMappedRepositories( RepositoryRegistry registry, ResourceStoreRequest request,
-        List<ResourceStore> resolvedRepositories )
+    public List<Repository> getMappedRepositories( RepositoryRegistry registry, RepositoryItemUid uid,
+        List<Repository> resolvedRepositories )
         throws NoSuchRepositoryException
     {
         if ( !compiled )
@@ -101,19 +102,19 @@ public class PathBasedRequestRepositoryMapper
 
         boolean mapped = false;
 
-        List<ResourceStore> reposList = new ArrayList<ResourceStore>( resolvedRepositories );
+        List<Repository> reposList = new ArrayList<Repository>( resolvedRepositories );
 
         // if include found, add it to the list.
         boolean firstAdd = true;
 
         for ( RepositoryPathMapping mapping : blockings )
         {
-            if ( mapping.matches( request ) )
+            if ( mapping.matches( uid ) )
             {
                 reposList.clear();
 
                 getLogger().info(
-                    "The request path [" + request.getRequestPath() + "] is blocked by rule "
+                    "The request path [" + uid.getPath() + "] is blocked by rule "
                         + mapping.getPattern().toString() + " defined for group='" + mapping.getGroupId() + "'" );
 
                 return reposList;
@@ -123,7 +124,7 @@ public class PathBasedRequestRepositoryMapper
         // include, if found a match
         for ( RepositoryPathMapping mapping : inclusions )
         {
-            if ( mapping.matches( request ) )
+            if ( mapping.matches( uid ) )
             {
                 if ( firstAdd )
                 {
@@ -136,7 +137,7 @@ public class PathBasedRequestRepositoryMapper
 
                 // add only those that are in initial resolvedRepositories list and that are non-user managed
                 // (preserve ordering)
-                for ( ResourceStore repo : resolvedRepositories )
+                for ( Repository repo : resolvedRepositories )
                 {
                     if ( mapping.getResourceStores().contains( repo ) || !repo.isUserManaged() )
                     {
@@ -149,7 +150,7 @@ public class PathBasedRequestRepositoryMapper
         // then, if exlude found, remove those
         for ( RepositoryPathMapping mapping : exclusions )
         {
-            if ( mapping.matches( request ) )
+            if ( mapping.matches( uid ) )
             {
                 mapped = true;
 
@@ -169,7 +170,7 @@ public class PathBasedRequestRepositoryMapper
         {
             if ( getLogger().isDebugEnabled() )
             {
-                getLogger().debug( "No mapping exists for request path [" + request.getRequestPath() + "]" );
+                getLogger().debug( "No mapping exists for request path [" + uid.getPath() + "]" );
             }
         }
         else
@@ -179,12 +180,12 @@ public class PathBasedRequestRepositoryMapper
                 if ( reposList.size() == 0 )
                 {
                     getLogger().debug(
-                        "Mapping for path [" + request.getRequestPath()
+                        "Mapping for path [" + uid.getPath()
                             + "] excluded all storages from servicing the request." );
                 }
                 else
                 {
-                    getLogger().debug( "Request path for [" + request.getRequestPath() + "] is MAPPED!" );
+                    getLogger().debug( "Request path for [" + uid.getPath() + "] is MAPPED!" );
                 }
             }
         }

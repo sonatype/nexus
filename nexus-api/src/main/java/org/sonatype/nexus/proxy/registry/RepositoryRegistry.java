@@ -78,7 +78,7 @@ public interface RepositoryRegistry
      * @throws InvalidGroupingException when reposes to group are not groupable
      */
     @Deprecated
-    void addRepositoryGroup( String groupId, List<String> memberRepositories )
+    GroupRepository addRepositoryGroup( String groupId, List<String> memberRepositories )
         throws NoSuchRepositoryException,
             InvalidGroupingException;
 

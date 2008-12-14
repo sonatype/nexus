@@ -185,7 +185,7 @@ public class DefaultRepositoryRegistry
         getLogger().info( "Removed repository id=" + repository.getId() );
     }
 
-    public void addRepositoryGroup( String groupId, List<String> memberRepositories )
+    public GroupRepository addRepositoryGroup( String groupId, List<String> memberRepositories )
         throws NoSuchRepositoryException,
             InvalidGroupingException
     {
@@ -253,6 +253,8 @@ public class DefaultRepositoryRegistry
             "Added repository group ID=" + groupId + " (contentClass="
                 + ( contentClass != null ? contentClass.getId() : "null" )
                 + ") with repository members of (in processing order) " + memberRepositories );
+
+        return group;
     }
 
     public void removeRepositoryGroup( String groupId )

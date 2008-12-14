@@ -139,7 +139,7 @@ public abstract class AbstractGroupRepository
             // ignored
         }
 
-        for ( Repository repo : getMemberRepositories() )
+        for ( Repository repo : getRequestRepositories( uid ) )
         {
             try
             {
@@ -191,6 +191,21 @@ public abstract class AbstractGroupRepository
         return result;
     }
 
+    protected List<Repository> getRequestRepositories( RepositoryItemUid uid )
+        throws StorageException
+    {
+        List<Repository> members = getMemberRepositories();
+
+        try
+        {
+            return requestRepositoryMapper.getMappedRepositories( repoRegistry, uid, members );
+        }
+        catch ( NoSuchResourceStoreException e )
+        {
+            throw new StorageException( e );
+        }
+    }
+
     public void setMemberRepositories( List<String> repositories )
     {
         memberRepoIds = new ArrayList<String>( repositories );
@@ -206,7 +221,7 @@ public abstract class AbstractGroupRepository
     {
         ArrayList<StorageItem> items = new ArrayList<StorageItem>();
 
-        for ( Repository repository : getMemberRepositories() )
+        for ( Repository repository : getRequestRepositories( uid ) )
         {
             RepositoryItemUid muid = repository.createUid( uid.getPath() );
 
