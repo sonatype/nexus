@@ -51,6 +51,7 @@ import org.sonatype.nexus.proxy.RepositoryNotAvailableException;
 import org.sonatype.nexus.proxy.StorageException;
 import org.sonatype.nexus.proxy.item.StorageItem;
 import org.sonatype.nexus.proxy.item.StorageLinkItem;
+import org.sonatype.nexus.proxy.repository.GroupRepository;
 import org.sonatype.nexus.proxy.repository.Repository;
 import org.sonatype.nexus.proxy.router.RepositoryRouter;
 import org.sonatype.nexus.scheduling.NexusTask;
@@ -79,6 +80,9 @@ public interface Nexus
     Repository getRepository( String repoId )
         throws NoSuchRepositoryException;
 
+    GroupRepository getRepositoryGroupXXX( String repoId )
+        throws NoSuchRepositoryGroupException;
+
     List<Repository> getRepositoryGroup( String repoGroupId )
         throws NoSuchRepositoryGroupException;
 
@@ -86,6 +90,8 @@ public interface Nexus
         throws NoSuchRepositoryGroupException;
 
     Collection<Repository> getRepositories();
+
+    Collection<GroupRepository> getGroupRepositories();
 
     StorageItem dereferenceLinkItem( StorageLinkItem item )
         throws NoSuchResourceStoreException,

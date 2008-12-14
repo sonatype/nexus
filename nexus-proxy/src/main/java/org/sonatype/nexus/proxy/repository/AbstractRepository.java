@@ -57,6 +57,8 @@ import org.sonatype.nexus.proxy.events.RepositoryItemEventDelete;
 import org.sonatype.nexus.proxy.events.RepositoryItemEventRetrieve;
 import org.sonatype.nexus.proxy.events.RepositoryItemEventStore;
 import org.sonatype.nexus.proxy.item.AbstractStorageItem;
+import org.sonatype.nexus.proxy.item.ByteArrayContentLocator;
+import org.sonatype.nexus.proxy.item.ContentLocator;
 import org.sonatype.nexus.proxy.item.DefaultStorageCollectionItem;
 import org.sonatype.nexus.proxy.item.DefaultStorageFileItem;
 import org.sonatype.nexus.proxy.item.PreparedContentLocator;
@@ -1431,10 +1433,21 @@ public abstract class AbstractRepository
         return getRepositoryContentClass().isCompatible( repository.getRepositoryContentClass() );
     }
 
-    protected StorageItem createStorageItem( RepositoryItemUid uid, byte[] bytes )
+    protected AbstractStorageItem createStorageItem( RepositoryItemUid uid, byte[] bytes, Map<String, Object> context )
     {
-        // TODO Auto-generated method stub
-        return null;
+        ContentLocator content = new ByteArrayContentLocator( bytes );
+
+        DefaultStorageFileItem result = new DefaultStorageFileItem(
+            this,
+            uid.getPath(),
+            true /* isReadable */,
+            false /* isWritable */,
+            content );
+        result.getItemContext().putAll( context );
+        result.setMimeType( "text/plain" );
+        result.setLength( bytes.length );
+        
+        return result;
     }
 
     /**

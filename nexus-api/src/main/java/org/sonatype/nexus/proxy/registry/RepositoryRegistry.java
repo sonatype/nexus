@@ -25,6 +25,7 @@ import java.util.List;
 import org.sonatype.nexus.proxy.NoSuchRepositoryException;
 import org.sonatype.nexus.proxy.NoSuchRepositoryGroupException;
 import org.sonatype.nexus.proxy.events.EventMulticaster;
+import org.sonatype.nexus.proxy.repository.GroupRepository;
 import org.sonatype.nexus.proxy.repository.Repository;
 
 /**
@@ -176,4 +177,12 @@ public interface RepositoryRegistry
      */
    @Deprecated
    List<String> getGroupsOfRepository( String repositoryId );
+
+
+   /**
+    * Temporary method until I figure out how to access group repositories properly.
+    */
+   @Deprecated
+    GroupRepository getRepositoryGroupXXX( String groupId )
+        throws NoSuchRepositoryGroupException;
 }

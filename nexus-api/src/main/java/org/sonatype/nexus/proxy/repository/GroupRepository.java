@@ -3,6 +3,7 @@ package org.sonatype.nexus.proxy.repository;
 import java.util.List;
 import java.util.Map;
 
+import org.sonatype.nexus.proxy.StorageException;
 import org.sonatype.nexus.proxy.item.RepositoryItemUid;
 import org.sonatype.nexus.proxy.item.StorageItem;
 
@@ -26,5 +27,5 @@ public interface GroupRepository
      */
     List<Repository> getMemberRepositories();
 
-    List<StorageItem> doRetrieveItems( boolean localOnly, RepositoryItemUid uid, Map<String, Object> context );
+    List<StorageItem> doRetrieveItems( boolean localOnly, RepositoryItemUid uid, Map<String, Object> context ) throws StorageException;
 }

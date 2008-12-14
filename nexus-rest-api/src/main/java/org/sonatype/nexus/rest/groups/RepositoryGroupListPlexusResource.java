@@ -16,8 +16,6 @@ import org.sonatype.nexus.configuration.model.CRepositoryGroup;
 import org.sonatype.nexus.proxy.NoSuchRepositoryException;
 import org.sonatype.nexus.proxy.NoSuchRepositoryGroupException;
 import org.sonatype.nexus.proxy.registry.InvalidGroupingException;
-import org.sonatype.nexus.proxy.repository.GroupRepository;
-import org.sonatype.nexus.proxy.repository.Repository;
 import org.sonatype.nexus.rest.model.RepositoryGroupListResource;
 import org.sonatype.nexus.rest.model.RepositoryGroupListResourceResponse;
 import org.sonatype.nexus.rest.model.RepositoryGroupMemberRepository;
@@ -67,32 +65,54 @@ public class RepositoryGroupListPlexusResource
     {
         RepositoryGroupListResourceResponse result = new RepositoryGroupListResourceResponse();
 
-        Collection<Repository> repositories = getNexus().getRepositories();
+        Collection<CRepositoryGroup> groups = getNexus().listRepositoryGroups();
 
-        for ( Repository repository : repositories )
+        try
         {
-            if ( ! ( repository instanceof GroupRepository ) )
+            for ( CRepositoryGroup group : groups )
             {
-                continue;
+                RepositoryGroupListResource resource = new RepositoryGroupListResource();
+
+                resource.setResourceURI( createChildReference( request, group.getGroupId() ).toString() );
+
+                resource.setId( group.getGroupId() );
+
+                resource.setFormat( getNexus().getRepositoryGroupType( group.getGroupId() ) );
+
+                resource.setName( group.getName() );
+
+                // just to trigger list creation, and not stay null coz of XStream serialization
+                resource.getRepositories();
+
+                for ( String repoId : (List<String>) group.getRepositories() )
+                {
+                    RepositoryGroupMemberRepository member = new RepositoryGroupMemberRepository();
+
+                    member.setId( repoId );
+
+                    member.setName( getNexus().getRepository( repoId ).getName() );
+
+                    member.setResourceURI( createRepositoryReference( request, repoId ).toString() );
+
+                    resource.addRepository( member );
+
+                }
+
+                result.addData( resource );
+
             }
-            
-            GroupRepository group = (GroupRepository) repository;
+        }
+        catch ( NoSuchRepositoryException e )
+        {
+            getLogger().warn( "Cannot find a repository declared within a group!", e );
 
-            RepositoryGroupListResource resource = new RepositoryGroupListResource();
+            throw new ResourceException( Status.SERVER_ERROR_INTERNAL );
+        }
+        catch ( NoSuchRepositoryGroupException e )
+        {
+            getLogger().warn( "Cannot find a repository group!", e );
 
-            resource.setResourceURI( createChildReference( request, group.getId() ).toString() );
-
-            resource.setId( group.getId() );
-
-            resource.setFormat( group.getRepositoryContentClass().getId() );
-
-            resource.setName( group.getName() );
-
-            // just to trigger list creation, and not stay null coz of XStream serialization
-            resource.getRepositories();
-
-            result.addData( resource );
-
+            throw new ResourceException( Status.SERVER_ERROR_INTERNAL );
         }
 
         return result;

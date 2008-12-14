@@ -1,8 +1,6 @@
 package org.sonatype.nexus.proxy.maven.maven2;
 
 import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
@@ -20,13 +18,16 @@ import org.apache.maven.artifact.repository.metadata.io.xpp3.MetadataXpp3Writer;
 import org.codehaus.plexus.component.annotations.Component;
 import org.codehaus.plexus.component.annotations.Requirement;
 import org.sonatype.nexus.artifact.M2ArtifactRecognizer;
+import org.sonatype.nexus.configuration.ConfigurationChangeEvent;
+import org.sonatype.nexus.configuration.application.ApplicationConfiguration;
 import org.sonatype.nexus.proxy.ItemNotFoundException;
 import org.sonatype.nexus.proxy.RepositoryNotAvailableException;
 import org.sonatype.nexus.proxy.StorageException;
+import org.sonatype.nexus.proxy.events.AbstractEvent;
+import org.sonatype.nexus.proxy.item.AbstractStorageItem;
 import org.sonatype.nexus.proxy.item.DefaultStorageFileItem;
 import org.sonatype.nexus.proxy.item.RepositoryItemUid;
 import org.sonatype.nexus.proxy.item.StorageItem;
-import org.sonatype.nexus.proxy.maven.MavenRepository;
 import org.sonatype.nexus.proxy.registry.ContentClass;
 import org.sonatype.nexus.proxy.repository.AbstractGroupRepository;
 import org.sonatype.nexus.proxy.repository.GroupRepository;
@@ -38,6 +39,8 @@ public class M2GroupRepository
 
     @Requirement( hint = "maven2" )
     private ContentClass contentClass;
+
+    private boolean mergeMetadata = true;
 
     public ContentClass getRepositoryContentClass()
     {
@@ -52,8 +55,8 @@ public class M2GroupRepository
     {
         if ( M2ArtifactRecognizer.isMetadata( uid.getPath() ) && !M2ArtifactRecognizer.isChecksum( uid.getPath() ) )
         {
-            //metadata checksum files are calculate and cached as side-effect
-            //of doRetrieveMetadata.
+            // metadata checksum files are calculated and cached as side-effect
+            // of doRetrieveMetadata.
 
             return doRetriveMetadata( localOnly, uid, context );
         }
@@ -64,15 +67,27 @@ public class M2GroupRepository
     /**
      * Aggregates metadata from all member repositories
      */
-    private StorageItem doRetriveMetadata( boolean localOnly, RepositoryItemUid uid, Map<String, Object> context ) throws StorageException
+    private StorageItem doRetriveMetadata( boolean localOnly, RepositoryItemUid uid, Map<String, Object> context )
+        throws StorageException,
+            ItemNotFoundException
     {
+        List<StorageItem> listOfStorageItems = doRetrieveItems( localOnly, uid, context );
+
+        if ( !mergeMetadata )
+        {
+            if ( listOfStorageItems.size() <= 0 )
+            {
+                throw new ItemNotFoundException( uid );
+            }
+
+            return listOfStorageItems.get( 0 );
+        }
+
         MetadataXpp3Reader metadataReader = new MetadataXpp3Reader();
         MetadataXpp3Writer metadataWriter = new MetadataXpp3Writer();
         InputStreamReader isr = null;
 
         Metadata mergedMetadata = null;
-
-        List<StorageItem> listOfStorageItems = doRetrieveItems( localOnly, uid, context );
 
         // Reversing the result list, so that the most authoritative result
         // will provide fields like lastVersiion
@@ -131,17 +146,17 @@ public class M2GroupRepository
             metadataWriter.write( osw, mergedMetadata );
             osw.flush();
             osw.close();
-            storeDigest( uid, md5alg );
-            storeDigest( uid, sha1alg );
+            storeDigest( uid, md5alg, context );
+            storeDigest( uid, sha1alg, context );
 
             if ( getLogger().isDebugEnabled() )
             {
                 getLogger().debug(
-                    "Item for path " + uid.getPath() + " merged from "
-                        + Integer.toString( listOfStorageItems.size() ) + " found items." );
+                    "Item for path " + uid.getPath() + " merged from " + Integer.toString( listOfStorageItems.size() )
+                        + " found items." );
             }
 
-            return createStorageItem( uid, bos.toByteArray() );
+            return createStorageItem( uid, bos.toByteArray(), context );
         }
         catch ( NoSuchAlgorithmException ex )
         {
@@ -153,30 +168,38 @@ public class M2GroupRepository
         }
     }
 
-    protected void storeDigest( RepositoryItemUid uid, MessageDigest digest )
+    protected void storeDigest( RepositoryItemUid uid, MessageDigest digest, Map<String, Object> context )
         throws IOException
     {
-        File tmpFile = new File( getApplicationConfiguration().getTemporaryDirectory(),
-            uid.getPath().replace( RepositoryItemUid.PATH_SEPARATOR.charAt( 0 ), '_' )
-            + "." + digest.getAlgorithm().toLowerCase() );
 
-        tmpFile.deleteOnExit();
-
-        FileWriter fw = null;
-
-        try
-        {
-            fw = new FileWriter( tmpFile );
-
-            fw.write( new String( Hex.encodeHex( digest.digest() ) ) + "\n" );
-
-            fw.flush();
-        }
-        finally
-        {
-            fw.close();
-        }
+        byte[] bytes = (new String( Hex.encodeHex( digest.digest() ) ) + "\n").getBytes();
+        RepositoryItemUid csuid = createUid( uid.getPath() + "." + digest.getAlgorithm().toLowerCase() );
+        
+        AbstractStorageItem item = createStorageItem( csuid, bytes, context );
+        doCacheItem( item );
     }
 
-}
+    public boolean isMergeMetadata()
+    {
+        return mergeMetadata;
+    }
 
+    public void setMergeMetadata( boolean mergeMetadata )
+    {
+        this.mergeMetadata = mergeMetadata;
+    }
+
+    @Override
+    public void onProximityEvent( AbstractEvent evt )
+    {
+        super.onProximityEvent( evt );
+
+        if ( evt instanceof ConfigurationChangeEvent )
+        {
+            ApplicationConfiguration cfg = (ApplicationConfiguration) ( (ConfigurationChangeEvent) evt )
+                .getNotifiableConfiguration();
+
+            mergeMetadata = cfg.getConfiguration().getRouting().getGroups().isMergeMetadata();
+        }
+    }
+}

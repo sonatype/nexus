@@ -20,6 +20,7 @@
  */
 package org.sonatype.nexus.proxy.registry;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -30,6 +31,7 @@ import org.codehaus.plexus.PlexusContainer;
 import org.codehaus.plexus.component.annotations.Component;
 import org.codehaus.plexus.component.annotations.Requirement;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
+import org.sonatype.nexus.configuration.application.ApplicationConfiguration;
 import org.sonatype.nexus.proxy.EventMulticasterComponent;
 import org.sonatype.nexus.proxy.NoSuchRepositoryException;
 import org.sonatype.nexus.proxy.NoSuchRepositoryGroupException;
@@ -46,6 +48,7 @@ import org.sonatype.nexus.proxy.repository.DefaultGroupRepository;
 import org.sonatype.nexus.proxy.repository.GroupRepository;
 import org.sonatype.nexus.proxy.repository.Repository;
 import org.sonatype.nexus.proxy.repository.RepositoryStatusCheckerThread;
+import org.sonatype.nexus.proxy.storage.local.LocalRepositoryStorage;
 
 /**
  * The repo registry. It holds handles to registered repositories and sorts them properly. This class is used to get a
@@ -222,6 +225,25 @@ public class DefaultRepositoryRegistry
         // XXX mutable group repository
         AbstractGroupRepository hack = (AbstractGroupRepository) group;
         hack.setMemberRepositories( memberRepositories );
+        hack.setId( groupId );
+        hack.setName( groupId );
+
+        // XXX setup local storage
+        try
+        {
+            LocalRepositoryStorage ls = (LocalRepositoryStorage) plexus.lookup( LocalRepositoryStorage.class, "file" );
+            ApplicationConfiguration configuration = (ApplicationConfiguration) plexus.lookup( ApplicationConfiguration.class );
+            File defaultStorageFile = new File( new File( configuration.getWorkingDirectory(), "storage" ), hack.getId() );
+            defaultStorageFile.mkdirs();
+            String localUrl = defaultStorageFile.toURL().toString();
+            ls.validateStorageUrl( localUrl );
+            hack.setLocalUrl( localUrl );
+            hack.setLocalStorage( ls );
+        }
+        catch ( Exception e )
+        {
+            getLogger().warn( "Unable to configure group local storage", e );
+        }
 
         groupRepositories.put( groupId, group );
 
@@ -242,7 +264,7 @@ public class DefaultRepositoryRegistry
     public void removeRepositoryGroup( String groupId, boolean withRepositories )
         throws NoSuchRepositoryGroupException
     {
-        GroupRepository group = getRepositoryGroupRepository( groupId );
+        GroupRepository group = getRepositoryGroupXXX( groupId );
 
         notifyProximityEventListeners( new RepositoryRegistryGroupEventRemove( this, groupId ) );
 
@@ -293,12 +315,12 @@ public class DefaultRepositoryRegistry
     public List<Repository> getRepositoryGroup( String groupId )
         throws NoSuchRepositoryGroupException
     {
-        GroupRepository group = getRepositoryGroupRepository( groupId );
+        GroupRepository group = getRepositoryGroupXXX( groupId );
         
         return Collections.unmodifiableList( group.getMemberRepositories() );
     }
 
-    private GroupRepository getRepositoryGroupRepository( String groupId )
+    public GroupRepository getRepositoryGroupXXX( String groupId )
         throws NoSuchRepositoryGroupException
     {
         GroupRepository group = groupRepositories.get( groupId );
@@ -315,7 +337,7 @@ public class DefaultRepositoryRegistry
     public ContentClass getRepositoryGroupContentClass( String groupId )
         throws NoSuchRepositoryGroupException
     {
-        GroupRepository repository = getRepositoryGroupRepository( groupId );
+        GroupRepository repository = getRepositoryGroupXXX( groupId );
         
         return repository.getRepositoryContentClass();
     }

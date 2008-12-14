@@ -19,6 +19,7 @@ import org.sonatype.nexus.proxy.item.DefaultStorageCollectionItem;
 import org.sonatype.nexus.proxy.item.RepositoryItemUid;
 import org.sonatype.nexus.proxy.item.StorageCollectionItem;
 import org.sonatype.nexus.proxy.item.StorageItem;
+import org.sonatype.nexus.proxy.mapping.RequestRepositoryMapper;
 import org.sonatype.nexus.proxy.registry.RepositoryRegistry;
 import org.sonatype.nexus.proxy.storage.UnsupportedStorageOperationException;
 
@@ -28,6 +29,9 @@ public abstract class AbstractGroupRepository
 {
     @Requirement
     private RepositoryRegistry repoRegistry;
+
+    @Requirement
+    private RequestRepositoryMapper requestRepositoryMapper;
 
     private List<String> memberRepoIds = new ArrayList<String>();
 
@@ -65,8 +69,8 @@ public abstract class AbstractGroupRepository
             try
             {
                 RepositoryItemUid memberUid = repo.createUid( uid.getPath() );
-                
-                ResourceStoreRequest req = new ResourceStoreRequest(memberUid, localOnly);
+
+                ResourceStoreRequest req = new ResourceStoreRequest( memberUid, localOnly );
                 req.setRequestContext( context );
 
                 addItems( names, result, repo.list( req ) );
@@ -98,7 +102,7 @@ public abstract class AbstractGroupRepository
                 // ignored
             }
         }
-        
+
         if ( !found )
         {
             throw new ItemNotFoundException( uid );
@@ -107,7 +111,8 @@ public abstract class AbstractGroupRepository
         return result;
     }
 
-    private static void addItems( HashSet<String> names, ArrayList<StorageItem> result, Collection<StorageItem> listItems )
+    private static void addItems( HashSet<String> names, ArrayList<StorageItem> result,
+        Collection<StorageItem> listItems )
     {
         for ( StorageItem item : listItems )
         {
@@ -146,7 +151,7 @@ public abstract class AbstractGroupRepository
                 {
                     item = new DefaultStorageCollectionItem( this, uid.getPath(), true, false );
                 }
-                
+
                 return item;
             }
             catch ( RepositoryNotAvailableException e )
@@ -190,16 +195,40 @@ public abstract class AbstractGroupRepository
     {
         memberRepoIds = new ArrayList<String>( repositories );
     }
-    
+
     public void removeMemberRepository( String repositoryId )
     {
         memberRepoIds.remove( repositoryId );
     }
 
     public List<StorageItem> doRetrieveItems( boolean localOnly, RepositoryItemUid uid, Map<String, Object> context )
+        throws StorageException
     {
-        // TODO Auto-generated method stub
-        return null;
+        ArrayList<StorageItem> items = new ArrayList<StorageItem>();
+
+        for ( Repository repository : getMemberRepositories() )
+        {
+            RepositoryItemUid muid = repository.createUid( uid.getPath() );
+
+            try
+            {
+                items.add( repository.retrieveItem( localOnly, muid, context ) );
+            }
+            catch ( StorageException e )
+            {
+                throw e;
+            }
+            catch ( RepositoryNotAvailableException e )
+            {
+                getLogger().warn( "Member repository request failed", e );
+            }
+            catch ( ItemNotFoundException e )
+            {
+                // that's okay
+            }
+        }
+
+        return items;
     }
 
 }

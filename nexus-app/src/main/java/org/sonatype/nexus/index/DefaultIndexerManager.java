@@ -68,9 +68,9 @@ import org.sonatype.nexus.proxy.item.RepositoryItemUid;
 import org.sonatype.nexus.proxy.item.StorageFileItem;
 import org.sonatype.nexus.proxy.maven.MavenRepository;
 import org.sonatype.nexus.proxy.registry.RepositoryRegistry;
+import org.sonatype.nexus.proxy.repository.GroupRepository;
 import org.sonatype.nexus.proxy.repository.Repository;
 import org.sonatype.nexus.proxy.repository.RepositoryType;
-import org.sonatype.nexus.proxy.router.DefaultGroupIdBasedRepositoryRouter;
 import org.sonatype.nexus.proxy.router.RepositoryRouter;
 import org.sonatype.nexus.proxy.router.ResourceStoreIdBasedRepositoryRouter;
 import org.sonatype.nexus.proxy.router.RootRepositoryRouter;
@@ -541,40 +541,7 @@ public class DefaultIndexerManager
                     {
                         for ( File file : files )
                         {
-                            String path = "/.index/" + file.getName();
-
-                            FileInputStream fis = null;
-
-                            try
-                            {
-                                fis = new FileInputStream( file );
-
-                                DefaultStorageFileItem fItem = new DefaultStorageFileItem(
-                                    repository,
-                                    path,
-                                    true,
-                                    true,
-                                    fis );
-                                if ( RepositoryType.PROXY.equals( repository.getRepositoryType() ) )
-                                {
-                                    // XXX review this! index pieces need to be proxied differently
-                                    // for proxy reposes, date is important
-                                    // for locally published indexes in proxy reposes, set file dates old
-                                    // by setting spoofed file timestamps old, we will refetch them when we can
-                                    fItem.setModified( 1 );
-                                    fItem.setCreated( 1 );
-                                }
-
-                                repository.storeItem( fItem );
-                            }
-                            catch ( Exception e )
-                            {
-                                getLogger().error( "Cannot store index file " + path, e );
-                            }
-                            finally
-                            {
-                                IOUtil.close( fis );
-                            }
+                            storeItem( repository, file );
                         }
                     }
                 }
@@ -590,6 +557,44 @@ public class DefaultIndexerManager
         finally
         {
             repository.setIndexable( repositoryIndexable );
+        }
+    }
+
+    private void storeItem( Repository repository, File file )
+    {
+        String path = "/.index/" + file.getName();
+
+        FileInputStream fis = null;
+
+        try
+        {
+            fis = new FileInputStream( file );
+
+            DefaultStorageFileItem fItem = new DefaultStorageFileItem(
+                repository,
+                path,
+                true,
+                true,
+                fis );
+            if ( RepositoryType.PROXY.equals( repository.getRepositoryType() ) )
+            {
+                // XXX review this! index pieces need to be proxied differently
+                // for proxy reposes, date is important
+                // for locally published indexes in proxy reposes, set file dates old
+                // by setting spoofed file timestamps old, we will refetch them when we can
+                fItem.setModified( 1 );
+                fItem.setCreated( 1 );
+            }
+
+            repository.storeItem( fItem );
+        }
+        catch ( Exception e )
+        {
+            getLogger().error( "Cannot store index file " + path, e );
+        }
+        finally
+        {
+            IOUtil.close( fis );
         }
     }
 
@@ -922,46 +927,10 @@ public class DefaultIndexerManager
 
                 if ( files != null )
                 {
-                    try
+                    GroupRepository group = repositoryRegistry.getRepositoryGroupXXX( repositoryGroupId );
+                    for ( File file : files )
                     {
-                        for ( File file : files )
-                        {
-                            fi = new FileInputStream( file );
-
-                            sha1Is = new DigestInputStream( fi, MessageDigest.getInstance( "SHA1" ) );
-
-                            md5Is = new DigestInputStream( sha1Is, MessageDigest.getInstance( "MD5" ) );
-
-                            String filePath = DefaultGroupIdBasedRepositoryRouter.ID + "/" + repositoryGroupId
-                                + "/.index/" + file.getName();
-
-                            RepositoryRouter router = (RepositoryRouter) rootRouter.resolveResourceStore(
-                                new ResourceStoreRequest( filePath, true ) ).get( 0 );
-
-                            if ( getLogger().isDebugEnabled() )
-                            {
-                                getLogger().debug(
-                                    "Storing the " + file.getName() + " file in the " + router.getId() + " router." );
-                            }
-
-                            router.storeItem( repositoryGroupId + "/.index/" + file.getName(), md5Is );
-
-                            String sha1Sum = new String( Hex.encodeHex( sha1Is.getMessageDigest().digest() ) );
-
-                            String md5Sum = new String( Hex.encodeHex( md5Is.getMessageDigest().digest() ) );
-
-                            router.storeItem(
-                                repositoryGroupId + "/.index/" + file.getName() + ".sha1",
-                                new ByteArrayInputStream( sha1Sum.getBytes() ) );
-
-                            router.storeItem(
-                                repositoryGroupId + "/.index/" + file.getName() + ".md5",
-                                new ByteArrayInputStream( md5Sum.getBytes() ) );
-                        }
-                    }
-                    catch ( NoSuchAlgorithmException e )
-                    {
-                        // will not happen
+                        storeItem( group, file );
                     }
                 }
             }

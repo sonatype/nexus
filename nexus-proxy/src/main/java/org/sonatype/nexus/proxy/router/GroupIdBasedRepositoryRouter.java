@@ -23,7 +23,6 @@ package org.sonatype.nexus.proxy.router;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.codehaus.plexus.component.annotations.Requirement;
 import org.sonatype.nexus.proxy.NoSuchRepositoryException;
 import org.sonatype.nexus.proxy.NoSuchRepositoryGroupException;
 import org.sonatype.nexus.proxy.NoSuchResourceStoreException;
@@ -32,9 +31,8 @@ import org.sonatype.nexus.proxy.ResourceStoreRequest;
 import org.sonatype.nexus.proxy.item.DefaultStorageCollectionItem;
 import org.sonatype.nexus.proxy.item.RepositoryItemUid;
 import org.sonatype.nexus.proxy.item.StorageItem;
-import org.sonatype.nexus.proxy.mapping.RequestRepositoryMapper;
+import org.sonatype.nexus.proxy.repository.GroupRepository;
 import org.sonatype.nexus.proxy.repository.Repository;
-import org.sonatype.nexus.proxy.utils.ResourceStoreUtils;
 
 /**
  * This is the "old" Proximity bean. It offers the "group view". It expects paths in form "/(groupId)/(repositoryPath)".
@@ -46,31 +44,6 @@ public abstract class GroupIdBasedRepositoryRouter
     extends AbstractRegistryDrivenRepositoryRouter
     implements RepositoryRouter
 {
-    /**
-     * The mapper.
-     */
-    @Requirement
-    private RequestRepositoryMapper requestRepositoryMapper;
-
-    /**
-     * Gets the request repository mapper.
-     * 
-     * @return the request repository mapper
-     */
-    public RequestRepositoryMapper getRequestRepositoryMapper()
-    {
-        return requestRepositoryMapper;
-    }
-
-    /**
-     * Sets the request repository mapper.
-     * 
-     * @param requestRepositoryMapper the new request repository mapper
-     */
-    public void setRequestRepositoryMapper( RequestRepositoryMapper requestRepositoryMapper )
-    {
-        this.requestRepositoryMapper = requestRepositoryMapper;
-    }
 
     protected List<StorageItem> renderVirtualPath( ResourceStoreRequest request, boolean list )
         throws NoSuchResourceStoreException
@@ -119,51 +92,6 @@ public abstract class GroupIdBasedRepositoryRouter
         return result;
     }
 
-    /**
-     * We are filtering the response from superclass by PathMapper.
-     */
-    protected List<ResourceStore> resolveResourceStoreByRequest( ResourceStoreRequest request )
-        throws NoSuchResourceStoreException
-    {
-        List<ResourceStore> result = super.resolveResourceStoreByRequest( request );
-
-        if ( result != null && getRequestRepositoryMapper() != null )
-        {
-            try
-            {
-                boolean resultWasNonempty = result.size() > 0;
-
-                result = getRequestRepositoryMapper().getMappedRepositories( getRepositoryRegistry(), request, result );
-
-                if ( resultWasNonempty && result.size() == 0 )
-                {
-                    getLogger().debug(
-                        "The repository mapping hit by request path='" + request.getRequestPath()
-                            + "' excluded any processible repository." );
-                }
-            }
-            catch ( NoSuchResourceStoreException e )
-            {
-                getLogger()
-                    .error(
-                        "Repository mapping of request " + request.getRequestPath()
-                            + " contains a nonexistent repository!",
-                        e );
-
-                throw e;
-            }
-
-            if ( getLogger().isDebugEnabled() )
-            {
-                getLogger().debug(
-                    "ResourceStores involved in servicing request after mapping (in processing order): "
-                        + ResourceStoreUtils.getResourceStoreListAsString( result ) );
-            }
-        }
-
-        return result;
-    }
-
     protected List<ResourceStore> resolveResourceStore( ResourceStoreRequest request )
         throws NoSuchRepositoryException,
             NoSuchRepositoryGroupException
@@ -181,16 +109,13 @@ public abstract class GroupIdBasedRepositoryRouter
             {
                 String groupId = explodedPath[0];
 
-                List<Repository> groupMembers = getRepositoryRegistry().getRepositoryGroup( groupId );
+                GroupRepository group = getRepositoryRegistry().getRepositoryGroupXXX( groupId );
 
-                result = new ArrayList<ResourceStore>( groupMembers.size() );
+                result = new ArrayList<ResourceStore>();
 
-                for ( Repository member : groupMembers )
+                if ( group.isExposed() )
                 {
-                    if ( member.isExposed() )
-                    {
-                        result.add( member );
-                    }
+                    result.add( group );
                 }
 
                 // set the groupId in request for later
