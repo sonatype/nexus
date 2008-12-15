@@ -9,7 +9,7 @@
 	<artifactId>nexus</artifactId>
 	<packaging>pom</packaging>
 	<name>Nexus Repository Manager</name>
-	<version>1.2.0-SNAPSHOT</version>
+	<version>1.2.0</version>
 	<description>Sonatype Nexus Repository Manager</description>
 	<inceptionYear>2007</inceptionYear>
 	<mailingLists />
@@ -145,7 +145,7 @@
 		<plexus-jsecurity-realms.version>1.0.2</plexus-jsecurity-realms.version>
 		<slf4j.version>1.5.5</slf4j.version>
 		<maven.version>2.1-SONATYPE-653485</maven.version>
-		<nexus.indexer.version>1.1.2-SNAPSHOT</nexus.indexer.version>
+		<nexus.indexer.version>1.1.2</nexus.indexer.version>
 		<!-- Shared with nexus-client, hence it is properties'ed -->
 		<plexus.restlet.bridge.version>1.6</plexus.restlet.bridge.version>
 		<micromailer.version>1.0.2</micromailer.version>
@@ -766,4 +766,10 @@
 			</plugin>
 		</plugins>
 	</reporting>
+
+  <scm>
+    <connection>scm:svn:http://svn.sonatype.org/nexus/tags/nexus-1.2.0</connection>
+    <developerConnection>scm:svn:https://svn.sonatype.org/nexus/tags/nexus-1.2.0</developerConnection>
+    <url>http://svn.sonatype.org/nexus/tags/nexus-1.2.0</url>
+  </scm>
 </project>
