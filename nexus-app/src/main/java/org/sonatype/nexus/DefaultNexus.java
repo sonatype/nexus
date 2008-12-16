@@ -23,7 +23,6 @@ package org.sonatype.nexus;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -31,7 +30,6 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.RejectedExecutionException;
 
@@ -1550,29 +1548,6 @@ public class DefaultNexus
         applicationStatusSource.getSystemStatus().setOperationMode( OperationMode.STANDALONE );
 
         applicationStatusSource.getSystemStatus().setInitializedAt( new Date() );
-
-        try
-        {
-            Properties props = new Properties();
-
-            InputStream is = getClass().getResourceAsStream(
-                "/META-INF/maven/org.sonatype.nexus/nexus-app/pom.properties" );
-
-            if ( is != null )
-            {
-                props.load( is );
-            }
-
-            applicationStatusSource.getSystemStatus().setVersion( props.getProperty( "version" ) );
-        }
-        catch ( IOException e )
-        {
-            getLogger().warn(
-                "Could not load/read Nexus version from /META-INF/maven/org.sonatype.nexus/nexus-app/pom.properties",
-                e );
-
-            applicationStatusSource.getSystemStatus().setVersion( "unknown" );
-        }
 
         getLogger().info( "Initialized Nexus (version " + applicationStatusSource.getSystemStatus().getVersion() + ")" );
     }
