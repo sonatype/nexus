@@ -16,10 +16,12 @@ import org.sonatype.jsecurity.realms.tools.ConfigurationManager;
 import org.sonatype.jsecurity.realms.tools.InvalidConfigurationException;
 import org.sonatype.jsecurity.realms.tools.NoSuchPrivilegeException;
 import org.sonatype.jsecurity.realms.tools.NoSuchRoleException;
+import org.sonatype.jsecurity.realms.tools.NoSuchRoleMappingException;
 import org.sonatype.jsecurity.realms.tools.NoSuchUserException;
 import org.sonatype.jsecurity.realms.tools.dao.SecurityPrivilege;
 import org.sonatype.jsecurity.realms.tools.dao.SecurityRole;
 import org.sonatype.jsecurity.realms.tools.dao.SecurityUser;
+import org.sonatype.jsecurity.realms.tools.dao.SecurityUserRoleMapping;
 import org.sonatype.jsecurity.realms.validator.ValidationContext;
 import org.sonatype.nexus.configuration.ConfigurationChangeEvent;
 import org.sonatype.nexus.configuration.ConfigurationException;
@@ -49,7 +51,7 @@ public class DefaultNexusSecurity
     private NexusEmailer emailer;
 
     private List<EventListener> listeners = new ArrayList<EventListener>();
-    
+
     public void startService()
         throws StartingException
     {
@@ -88,7 +90,7 @@ public class DefaultNexusSecurity
     {
         createPrivilege( privilege, null );
     }
-    
+
     public void createPrivilege( SecurityPrivilege privilege, ValidationContext context )
         throws InvalidConfigurationException
     {
@@ -102,7 +104,7 @@ public class DefaultNexusSecurity
     {
         createRole( role, null );
     }
-    
+
     public void createRole( SecurityRole role, ValidationContext context )
         throws InvalidConfigurationException
     {
@@ -115,24 +117,24 @@ public class DefaultNexusSecurity
     {
         createUser( user, null, null );
     }
-    
+
     public void createUser( SecurityUser user, String password )
-    throws InvalidConfigurationException
+        throws InvalidConfigurationException
     {
         createUser( user, password, null );
     }
-    
+
     public void createUser( SecurityUser user, ValidationContext context )
         throws InvalidConfigurationException
     {
         createUser( user, null, context );
     }
-    
+
     public void createUser( SecurityUser user, String password, ValidationContext context )
         throws InvalidConfigurationException
     {
         // if the password passed in is not null, hash it and use it, else, just generate one.
-        if( StringUtils.isEmpty( password ))
+        if ( StringUtils.isEmpty( password ) )
         {
             password = generatePassword( user );
         }
@@ -140,14 +142,12 @@ public class DefaultNexusSecurity
         {
             user.setPassword( pwGenerator.hashPassword( password ) );
         }
-        
+
         manager.createUser( user, context );
         emailer.sendNewUserCreated( user.getEmail(), user.getId(), password );
         save();
-        
+
     }
-
-
 
     public void deletePrivilege( String id )
         throws NoSuchPrivilegeException
@@ -227,7 +227,7 @@ public class DefaultNexusSecurity
     {
         updatePrivilege( privilege, null );
     }
-    
+
     public void updatePrivilege( SecurityPrivilege privilege, ValidationContext context )
         throws InvalidConfigurationException,
             NoSuchPrivilegeException
@@ -242,7 +242,7 @@ public class DefaultNexusSecurity
     {
         updateRole( role, null );
     }
-    
+
     public void updateRole( SecurityRole role, ValidationContext context )
         throws InvalidConfigurationException,
             NoSuchRoleException
@@ -257,7 +257,7 @@ public class DefaultNexusSecurity
     {
         updateUser( user, null );
     }
-    
+
     public void updateUser( SecurityUser user, ValidationContext context )
         throws InvalidConfigurationException,
             NoSuchUserException
@@ -321,16 +321,17 @@ public class DefaultNexusSecurity
         // set the password
         changePassword( user, newPassword );
     }
-    
-    public void changePassword( String userId, String newPassword ) throws NoSuchUserException
+
+    public void changePassword( String userId, String newPassword )
+        throws NoSuchUserException
     {
         SecurityUser user = readUser( userId );
         // set the password
         changePassword( user, newPassword );
     }
-    
+
     public void changePassword( SecurityUser user, String newPassword )
-    throws NoSuchUserException
+        throws NoSuchUserException
     {
         user.setPassword( pwGenerator.hashPassword( newPassword ) );
 
@@ -343,7 +344,6 @@ public class DefaultNexusSecurity
             // Just changing password, can't get into this state
         }
     }
-    
 
     public void forgotPassword( String userId, String email )
         throws NoSuchUserException,
@@ -443,9 +443,58 @@ public class DefaultNexusSecurity
 
         return password;
     }
-    
+
     public ValidationContext initializeContext()
     {
         return null;
     }
+
+    public void createUserRoleMapping( SecurityUserRoleMapping userRoleMapping, ValidationContext context )
+        throws InvalidConfigurationException
+    {
+        this.manager.createUserRoleMapping( userRoleMapping, context );
+        save();
+    }
+
+    public void createUserRoleMapping( SecurityUserRoleMapping userRoleMapping )
+        throws InvalidConfigurationException
+    {
+        this.manager.createUserRoleMapping( userRoleMapping );
+        save();
+    }
+
+    public void deleteUserRoleMapping( String userId, String source )
+        throws NoSuchRoleMappingException
+    {
+        this.manager.deleteUserRoleMapping( userId, source );
+        save();
+    }
+
+    public List<SecurityUserRoleMapping> listUserRoleMappings()
+    {
+        return this.manager.listUserRoleMappings();
+    }
+
+    public SecurityUserRoleMapping readUserRoleMapping( String userId, String source )
+        throws NoSuchRoleMappingException
+    {
+       return this.manager.readUserRoleMapping( userId, source );
+    }
+
+    public void updateUserRoleMapping( SecurityUserRoleMapping userRoleMapping, ValidationContext context )
+        throws InvalidConfigurationException,
+            NoSuchRoleMappingException
+    {
+        this.manager.updateUserRoleMapping( userRoleMapping, context );
+        save();
+    }
+
+    public void updateUserRoleMapping( SecurityUserRoleMapping userRoleMapping )
+        throws InvalidConfigurationException,
+            NoSuchRoleMappingException
+    {
+        this.manager.updateUserRoleMapping( userRoleMapping );
+        save();
+    }
+
 }
