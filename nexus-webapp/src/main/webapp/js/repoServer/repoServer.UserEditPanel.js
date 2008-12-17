@@ -576,7 +576,7 @@ Sonatype.repoServer.UserMappingEditor = function( config ) {
     {
       xtype: 'trigger',
       triggerClass: 'x-form-search-trigger',
-      fieldLabel: 'Enter a User ID and click "Find"',
+      fieldLabel: 'Enter a User ID',
       itemCls: 'required-field',
       labelStyle: 'margin-left: 15px; width: 185px;',
       name: 'userId',
@@ -591,7 +591,17 @@ Sonatype.repoServer.UserMappingEditor = function( config ) {
           }
         }
       },
-      onTriggerClick: this.loadUserId.createDelegate( this )
+      onTriggerClick: this.loadUserId.createDelegate( this ),
+      listeners: {
+        change: {
+          fn: function( control, newValue, oldValue ) {
+            if ( newValue != this.lastLoadedId ) {
+              this.loadUserId();
+            }
+          },
+          scope: this
+        }
+      }
     } :
     {
       xtype: 'textfield',
@@ -688,27 +698,32 @@ Ext.extend( Sonatype.repoServer.UserMappingEditor, Sonatype.ext.FormPanel, {
   },
   
   isValid: function() {
-    return this.form.isValid() && this.find( 'name', 'roles' )[0].validate();
+    return this.form.findField( 'userId' ).userFound &&
+      this.form.findField( 'source' ).getValue() && 
+      this.find( 'name', 'roles' )[0].validate();
   },
-  
-  loadUserId: function( e, source, options ) {
+
+  loadUserId: function() {
     var testField = this.form.findField( 'userId' );
     testField.clearInvalid();
+    testField.userFound = true;
+    this.lastLoadedId = testField.getValue();
 
     this.form.doAction( 'sonatypeLoad', {
       url: this.uri + '/' + testField.getValue(),
       method: 'GET',
       fpanel: this,
       testField: testField,
-      suppressStatus: 500,
+      suppressStatus: 404,
       dataModifiers: this.dataModifiers.load,
       scope: this
     } );
   },
 
   actionFailedHandler: function( form, action ) {
-    if ( action.response.status == 500 && action.options.testField ) {
+    if ( action.response.status == 404 && action.options.testField ) {
       action.options.testField.markInvalid( 'User record not found.' );
+      action.options.testField.userFound = false;
     }
     else {
       return Sonatype.repoServer.UserMappingEditor.superclass.actionFailedHandler.call(
