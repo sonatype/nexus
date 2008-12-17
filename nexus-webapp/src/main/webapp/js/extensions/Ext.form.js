@@ -250,6 +250,10 @@ Ext.extend(Ext.form.Action.sonatypeSubmit, Ext.form.Action, {
       if (Ext.type(value) === 'object'){
         if (sVal){ //only write object serialization for non-root objects
           var fieldSet = Ext.getCmp(fpanel.id + '_' + sPrepend + sVal);
+          if ( ! fieldSet ) {
+            fieldSet = fpanel.find( 'name', 'fieldset_' + sPrepend + sVal )[0];
+          }
+
           if(fieldSet && fieldSet.collapsed){
             eval('accObj' + '.' + sPrepend + sVal + ' = null;');
             return; //skip recursive calls for children form items
@@ -348,7 +352,8 @@ Ext.extend(Ext.form.Action.sonatypeLoad, Ext.form.Action, {
       this.createCallback(this.options), {
         method:this.getMethod(),
         url:this.getUrl(false),
-        params:this.getParams()
+        params:this.getParams(),
+        suppressStatus: this.options.suppressStatus
     }));
   },
 
@@ -403,6 +408,9 @@ Ext.extend(Ext.form.Action.sonatypeLoad, Ext.form.Action, {
       if (sVal){ //only write object serialization for non-root objects
         if(hasNonEmptyChildren){
           var fieldSet = Ext.getCmp(fpanel.id + '_' + sPrepend + sVal);
+          if ( ! fieldSet ) {
+            fieldSet = fpanel.find( 'name', 'fieldset_' + sPrepend + sVal )[0];
+          }
           if(fieldSet){
             fieldSet.expand(true);
           }
@@ -486,9 +494,9 @@ Sonatype.ext.FormPanel = function( config ) {
         disabled: config.readOnly
       },
       {
-        handler: this.cancelHandler,
+        handler: this.resetHandler,
         scope: this,
-        text: 'Cancel'
+        text: 'Reset'
       }
     ]
   };
@@ -503,15 +511,7 @@ Sonatype.ext.FormPanel = function( config ) {
   this.form.on( 'actionfailed', this.actionFailedHandler, this );
   this.addEvents( { cancel: true, load: true, submit: true } );
 
-  if ( ! this.isNew ) {
-    this.form.doAction( 'sonatypeLoad', {
-      url: this.getActionURL(),
-      method: 'GET',
-      fpanel: this,
-      dataModifiers: this.dataModifiers.load,
-      scope: this
-    } );
-  }
+  this.loadData();
 };
 
 Ext.extend( Sonatype.ext.FormPanel, Ext.FormPanel, {
@@ -543,6 +543,25 @@ Ext.extend( Sonatype.ext.FormPanel, Ext.FormPanel, {
   
   cancelHandler: function( button, event ) {
     this.fireEvent( 'cancel', this );
+  },
+  
+  resetHandler: function( button, event ) {
+    this.loadData();
+  },
+  
+  loadData: function() {
+    if ( this.isNew ) {
+      this.form.reset();
+    }
+    else {
+      this.form.doAction( 'sonatypeLoad', {
+        url: this.getActionURL(),
+        method: 'GET',
+        fpanel: this,
+        dataModifiers: this.dataModifiers.load,
+        scope: this
+      } );
+    }
   },
   
   isValid: function() {
@@ -582,10 +601,20 @@ Ext.extend( Sonatype.ext.FormPanel, Ext.FormPanel, {
   
   //(Ext.form.BasicForm, Ext.form.Action)
   actionCompleteHandler : function( form, action ) {
-    var receivedData = action.handleResponse(action.response).data;
+    var receivedData = action.handleResponse( action.response ).data;
     if ( action.type == 'sonatypeSubmit' ) {
       this.fireEvent( 'submit', form, action, receivedData );
+      
+      if ( this.isNew && this.payload.autoCreateNewRecord ) {
+        var store = this.payload.store;
+        store.remove( this.payload );
+        
+        var rec = new store.reader.recordType( receivedData, receivedData.resourceURI );
+        rec.autoCreateNewRecord = true;
+        store.addSorted( rec );
+      }
       this.isNew = false;
+      this.payload.autoCreateNewRecord = false;
     }
     else if ( action.type == 'sonatypeLoad' ) {
       this.fireEvent( 'load', form, action, receivedData );
@@ -597,5 +626,27 @@ Ext.extend( Sonatype.ext.FormPanel, Ext.FormPanel, {
       ( this.payload.data.resourceURI ?  // if resouceURI is supplied, return it
           this.payload.data.resourceURI :
           this.uri + '/' + payload.id ); // otherwise construct a uri
+  },
+  
+  optionalFieldsetExpandHandler: function( panel ) {
+    panel.items.each( function( item, i, len ) {
+      if ( item.getEl().up( 'div.required-field', 3 ) ) {
+        item.allowBlank = false;
+      }
+      else if ( item.isXType( 'fieldset', true ) ) {
+        this.optionalFieldsetExpandHandler( item );
+      }
+    }, this );
+  },
+  
+  optionalFieldsetCollapseHandler : function( panel ) {
+    panel.items.each( function( item, i, len ) {
+      if ( item.getEl().up( 'div.required-field', 3 ) ) {
+        item.allowBlank = true;
+      }
+      else if ( item.isXType( 'fieldset', true ) ) {
+        this.optionalFieldsetCollapseHandler( item );
+      }
+    }, this );
   }
 });

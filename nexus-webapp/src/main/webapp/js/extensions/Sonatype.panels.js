@@ -21,10 +21,75 @@
 
 Ext.namespace( 'Sonatype.panels' );
 
+
+/*
+ * A helper panel creating a tabbed container inside itself if more than 
+ * one component is added.
+ */
+Sonatype.panels.AutoTabPanel = function( config ) {
+  var config = config || { };
+  var defaultConfig = {
+    layout: 'card',
+    activeItem: 0,
+    deferredRender: false,
+    autoScroll: false,
+    frame: false,
+    border: false
+  };
+  Ext.apply( this, config, defaultConfig );
+  Sonatype.panels.AutoTabPanel.superclass.constructor.call( this, {} );
+};
+
+Ext.extend( Sonatype.panels.AutoTabPanel, Ext.Panel, {
+  add: function( c ) {
+    if ( this.items && this.items.length > 0 ) {
+      if ( ! this.tabPanel ) {
+        var first = this.getComponent( 0 );
+        this.remove( first, false );
+        first.setTitle( first.tabTitle );
+  
+        this.tabPanel = new Ext.TabPanel( { 
+          activeItem: 0,
+          deferredRender: false,
+          autoScroll: false,
+          frame: false,
+          border: false,
+          items: [ first ]
+        } );
+  
+        Sonatype.panels.AutoTabPanel.superclass.add.call( this, this.tabPanel );
+        if ( this.getLayout() && this.getLayout().setActiveItem ) {
+          this.getLayout().setActiveItem( this.tabPanel );
+        }
+      }
+
+      if ( ! c.title && c.tabTitle ) {
+        c.title = c.tabTitle;
+      }
+      return this.tabPanel.add( c );
+    }
+    else {
+      return Sonatype.panels.AutoTabPanel.superclass.add.call( this, c );
+    }
+  }
+} );
+
+
 /*
  * A viewer panel offering a grid on top and a details pane at the bottom.
  * 
  * Config options:
+ * 
+ * autoCreateNewRecord: if set, the "add" menu action handler will automatically
+ *                      create a new blank record and insert it into the grid, before
+ *                      invoking the subscriber supplied handler. The record will be
+ *                      assigned the same "autoCreateNewRecord=true" flag, which is
+ *                      tracked by the editor component, causing it to re-create the
+ *                      record from the server response when the form is submitted.
+ * 
+ * addMenuInitEvent: this parameter causes the panel to create an "Add" button
+ *                   on the taskbar and fire the event so the subscribers can
+ *                   append actions to the "add" menu.
  *
  * columns: a column config, combining the properties of Ext.data.Record and 
  *          Ext.grid.ColumnModel. All items are used in the Record constructor.
@@ -36,6 +101,11 @@ Ext.namespace( 'Sonatype.panels' );
  * dataId: the id property in the record set (defaults to 'resourceURI').
  * 
  * dataRoot: the root property of the response (defaults to 'data').
+ * 
+ * dataSortInfo: the 'sortInfo' property for the data store.
+ * 
+ * deleteButton: creates a "Delete" button on the toolbar. The delete handler will
+ *               submit a DELETE request to requestURI of the selected record.
  * 
  * rowClickEvent: event name to fire when a row is clicked.
  * 
@@ -53,6 +123,7 @@ Sonatype.panels.GridViewer = function( config ) {
     dataAutoLoad: true,
     dataId: 'resourceURI',
     dataRoot: 'data',
+    dataSortInfo: { field: 'name', direction: 'asc' },
     titleColumn: 'name',
     singleSelect: true
   };
@@ -99,7 +170,12 @@ Sonatype.panels.GridViewer = function( config ) {
     fields: fields,
     url: this.url,
     autoLoad: this.dataAutoLoad,
+    sortInfo: this.dataSortInfo,
     listeners: {
+      add: {
+        fn: this.recordAddHandler,
+        scope: this
+      },
       remove: {
         fn: this.recordRemoveHandler,
         scope: this
@@ -147,7 +223,23 @@ Sonatype.panels.GridViewer = function( config ) {
       }
     }
   } );
-  
+
+  var toolbar = this.tbar;
+  this.tbar = [
+    {
+      text: 'Refresh',
+      icon: Sonatype.config.resourcePath + '/images/icons/arrow_refresh.png',
+      cls: 'x-btn-text-icon',
+      scope: this,
+      handler: this.refreshHandler
+    }
+  ]
+  this.createAddMenu();
+  this.createDeleteButton();
+  if ( toolbar ) {
+    this.tbar = this.tbar.concat( toolbar );
+  }
+
   this.cardPanel = new Ext.Panel( {
     layout: 'card',
     region: 'center',
@@ -169,15 +261,6 @@ Sonatype.panels.GridViewer = function( config ) {
     autoScroll: false,
     width: '100%',
     height: '100%',
-    tbar: [
-      {
-        text: 'Refresh',
-        icon: Sonatype.config.resourcePath + '/images/icons/arrow_refresh.png',
-        cls: 'x-btn-text-icon',
-        scope: this,
-        handler: this.refreshHandler
-      }
-    ].concat( this.tbar ? this.tbar : [] ),
     items: [
       this.gridPanel,
       this.cardPanel
@@ -186,12 +269,64 @@ Sonatype.panels.GridViewer = function( config ) {
 };
 
 Ext.extend( Sonatype.panels.GridViewer, Ext.Panel, {
+  addActionHandler: function( handler, item, e ) {
+    if ( item.autoCreateNewRecord ) {
+      var rec = new this.dataStore.reader.recordType( {
+        name: 'New ' + item.text
+      },
+      'new_' + new Date().getTime() );
+      rec.autoCreateNewRecord = true;
+      if ( handler && handler( rec, item, e ) == false ) {
+        return;
+      }
+
+      this.dataStore.insert( 0, [rec] );
+    }
+    else {
+      handler( item, e );
+    }
+  },
+
   clearCards: function() {
     this.cardPanel.items.each( function( item, i, len ) {
       if ( i > 0 ) { this.remove( item, true ); }
     }, this.cardPanel );
     
     this.cardPanel.getLayout().setActiveItem( 0 );
+  },
+  
+  createAddMenu: function() {
+    if ( this.addMenuInitEvent ) {
+      var menu = new Sonatype.menu.Menu({
+        payload: this,
+        scope: this,
+        items: []
+      } );
+
+      Sonatype.Events.fireEvent( this.addMenuInitEvent, menu );
+      var item = menu.items.first();
+      if ( item && ! item.text ) {
+        menu.remove( item ); // clean up if the first element is a separator
+      }
+      item = menu.items.last();
+      if ( item && ! item.text ) {
+        menu.remove( item ); // clean up if the last element is a separator
+      }
+      if ( ! menu.items.length ) return; // quit if empty
+      
+      menu.items.each( function( item, index, length ) {
+        if ( item.handler ) {
+          item.setHandler( this.addActionHandler.createDelegate( this, [item.handler], 0 ) );
+        }
+      }, this );
+      
+      this.tbar.push( {
+        text: 'Add...',
+        icon: Sonatype.config.resourcePath + '/images/icons/add.png',
+        cls: 'x-btn-text-icon',
+        menu: menu
+      } );
+    }
   },
   
   createChildPanel: function( rec, recreateIfExists ) {
@@ -210,15 +345,9 @@ Ext.extend( Sonatype.panels.GridViewer, Ext.Panel, {
     }
 
     if ( ! panel ) {
-      panel = new Ext.Panel( { 
+      panel = new Sonatype.panels.AutoTabPanel( { 
         id: id,
-        layout: 'card',
-        activeItem: 0,
-        deferredRender: false,
-        autoScroll: false,
-        frame: false,
-        border: false,
-        title: rec.get( this.titleColumn )
+        title: rec.data[this.titleColumn]
       } );
 
       Sonatype.Events.fireEvent( this.rowClickEvent, panel, rec );
@@ -233,6 +362,63 @@ Ext.extend( Sonatype.panels.GridViewer, Ext.Panel, {
 
     this.cardPanel.getLayout().setActiveItem( panel );
     panel.doLayout();
+  },
+  
+  createDeleteButton: function() {
+    if ( this.deleteButton ) {
+      this.tbar.push( {
+        text: 'Delete',
+        icon: Sonatype.config.resourcePath + '/images/icons/delete.png',
+        cls: 'x-btn-text-icon',
+        handler: this.deleteActionHandler,
+        scope: this
+      } );
+    }
+  },
+  
+  deleteActionHandler: function( button, e ) {
+    if ( this.gridPanel.getSelectionModel().hasSelection() ) {
+      var rec = this.gridPanel.getSelectionModel().getSelected();
+      
+      if ( rec.id.substring( 0, 4 ) == 'new_' ) {
+        this.dataStore.remove( rec );
+      }
+      else {
+        Sonatype.utils.defaultToNo();
+        
+        Sonatype.MessageBox.show({
+          animEl: this.gridPanel.getEl(),
+          title: 'Delete',
+          msg: 'Delete ' + rec.data[this.titleColumn] + '?',
+          buttons: Sonatype.MessageBox.YESNO,
+          scope: this,
+          icon: Sonatype.MessageBox.QUESTION,
+          fn: function( btnName ) {
+            if ( btnName == 'yes' || btnName == 'ok' ) {
+              Ext.Ajax.request( {
+                callback: function( options, success, response ) {
+                  if ( success ) {
+                    this.dataStore.remove( rec );
+                  }
+                  else {
+                    Sonatype.utils.connectionError( response, 'Delete Failed!' );
+                  }
+                },
+                scope: this,
+                method: 'DELETE',
+                url: rec.data.resourceURI
+              } );
+            }
+          }
+        } );
+      }
+    }
+  },
+  
+  recordAddHandler: function( store, recs, index ) {
+    if ( recs.length == 1 && recs[0].autoCreateNewRecord ) {
+      this.createChildPanel( recs[0] );
+    }
   },
   
   recordRemoveHandler: function( store, rec, index ) {
