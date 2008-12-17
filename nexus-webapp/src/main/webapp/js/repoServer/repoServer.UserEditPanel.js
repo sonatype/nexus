@@ -286,6 +286,7 @@ Ext.extend( Sonatype.repoServer.UserEditPanel, Sonatype.panels.GridViewer, {
   mapRolesHandler: function( button, e ) {
     this.createChildPanel( { 
       id: 'new_mapping',
+      hostPanel: this,
       data: {
         name: 'User Role Mapping'
       }
@@ -547,7 +548,8 @@ Sonatype.repoServer.UserMappingEditor = function( config ) {
       userId: '',
       source: '',
       roles: []
-    }
+    },
+    cancelButton: config.payload.id == 'new_mapping'
   };
   Ext.apply( this, config, defaultConfig );
 
@@ -657,7 +659,15 @@ Sonatype.repoServer.UserMappingEditor = function( config ) {
         store: this.roleDataStore,
         required: true
       }
-    ]
+    ],
+    listeners: {
+      cancel: {
+        fn: function() {
+          this.payload.hostPanel.recordRemoveHandler( null, this.payload, 0 );
+        },
+        scope: this
+      }
+    }
   } );
 };
 
