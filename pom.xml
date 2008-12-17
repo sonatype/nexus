@@ -10,7 +10,7 @@
 
   <groupId>org.sonatype.nexus</groupId>
   <artifactId>nexus-indexer</artifactId>
-  <version>1.1.2.3-SNAPSHOT</version>
+  <version>1.1.2.3</version>
 
   <name>Sonatype Nexus: Indexer</name>
 
@@ -160,6 +160,7 @@
               <goal>shade</goal>
             </goals>
             <configuration>
+			  <shadedArtifactAttached>true</shadedArtifactAttached>
               <finalName>nexus-indexer-${version}-cli-jdk14</finalName>
               <createDependencyReducedPom>false</createDependencyReducedPom>
               <keepDependenciesWithProvidedScope>true</keepDependenciesWithProvidedScope>
@@ -200,6 +201,7 @@
               <finalName>nexus-indexer-${version}-cli-jdk15</finalName>
               <createDependencyReducedPom>false</createDependencyReducedPom>
               <keepDependenciesWithProvidedScope>true</keepDependenciesWithProvidedScope>
+			  <shadedArtifactAttached>true</shadedArtifactAttached>
               <transformers>
                 <transformer implementation="org.apache.maven.plugins.shade.resource.ComponentsXmlResourceTransformer" />
                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
@@ -287,4 +289,10 @@
       <timezone>-5</timezone>
     </developer>
   </developers>
+
+  <scm>
+    <connection>scm:svn:http://svn.sonatype.org/nexus/tags/nexus-indexer-1.1.2.3</connection>
+    <developerConnection>scm:svn:https://svn.sonatype.org/nexus/tags/nexus-indexer-1.1.2.3</developerConnection>
+    <url>http://svn.sonatype.org/nexus/tags/nexus-indexer-1.1.2.3</url>
+  </scm>
 </project>
