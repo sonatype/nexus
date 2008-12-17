@@ -1972,7 +1972,7 @@ Ext.extend(Sonatype.repoServer.SchedulesEditPanel, Ext.Panel, {
     }
     
     //rest api is using 24 hour clock
-    var hours = parseInt(selectedRecurringTime.getValue().substring(0, selectedRecurringTime.getValue().indexOf(':')));
+    var hours = parseInt(selectedRecurringTime.getValue().substring(0, selectedRecurringTime.getValue().indexOf(':')),10);
     var minutes = selectedRecurringTime.getValue().substring(selectedRecurringTime.getValue().indexOf(':') + 1, selectedRecurringTime.getValue().indexOf(':') + 3);
     
     return hours + ':' + minutes;
@@ -2072,7 +2072,7 @@ Ext.extend(Sonatype.repoServer.SchedulesEditPanel, Ext.Panel, {
         break;
       }
     }
-    var hours = parseInt(val.substring(0, val.indexOf(':')));
+    var hours = parseInt(val.substring(0, val.indexOf(':')),10);
     var minutes = val.substring(val.indexOf(':') + 1, val.indexOf(':') + 3);
     
     var importedTime = hours + ':' + minutes;
@@ -2090,7 +2090,7 @@ Ext.extend(Sonatype.repoServer.SchedulesEditPanel, Ext.Panel, {
         break;
       }
     }
-    var hours = parseInt(val.substring(0, val.indexOf(':')));
+    var hours = parseInt(val.substring(0, val.indexOf(':')),10);
     var minutes = val.substring(val.indexOf(':') + 1, val.indexOf(':') + 3);
     
     var importedTime = hours + ':' + minutes;
