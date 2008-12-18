@@ -10,7 +10,7 @@
 
   <groupId>org.sonatype.nexus</groupId>
   <artifactId>nexus-indexer</artifactId>
-  <version>1.1.2.4-SNAPSHOT</version>
+  <version>1.1.2.3-SNAPSHOT</version>
 
   <name>Sonatype Nexus: Indexer</name>
 
@@ -147,14 +147,6 @@
               </execution>
           </executions>
       </plugin>
-	  
-	  <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-release-plugin</artifactId>
-        <configuration>
-          <goals>package deploy</goals>
-        </configuration>
-	  </plugin>
 
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -169,6 +161,7 @@
             </goals>
             <configuration>
 			  <shadedArtifactAttached>true</shadedArtifactAttached>
+			  <shadedClassifierName>cli-jdk14</shadedClassifierName>
               <finalName>nexus-indexer-${version}-cli-jdk14</finalName>
               <createDependencyReducedPom>false</createDependencyReducedPom>
               <keepDependenciesWithProvidedScope>true</keepDependenciesWithProvidedScope>
@@ -206,10 +199,11 @@
               <goal>shade</goal>
             </goals>
             <configuration>
+			  <shadedArtifactAttached>true</shadedArtifactAttached>
+			  <shadedClassifierName>cli-jdk15</shadedClassifierName>
               <finalName>nexus-indexer-${version}-cli-jdk15</finalName>
               <createDependencyReducedPom>false</createDependencyReducedPom>
               <keepDependenciesWithProvidedScope>true</keepDependenciesWithProvidedScope>
-			  <shadedArtifactAttached>true</shadedArtifactAttached>
               <transformers>
                 <transformer implementation="org.apache.maven.plugins.shade.resource.ComponentsXmlResourceTransformer" />
                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
