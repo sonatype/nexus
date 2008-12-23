@@ -10,7 +10,12 @@ import org.restlet.data.MediaType;
 import org.restlet.data.Method;
 import org.restlet.data.Response;
 import org.restlet.data.Status;
+import org.restlet.resource.StringRepresentation;
 import org.sonatype.nexus.integrationtests.RequestFacade;
+import org.sonatype.nexus.rest.model.ExternalRoleMappingResource;
+import org.sonatype.nexus.rest.model.ExternalRoleMappingResourceResponse;
+import org.sonatype.nexus.rest.model.PlexusRoleListResourceResponse;
+import org.sonatype.nexus.rest.model.PlexusRoleResource;
 import org.sonatype.nexus.rest.model.RoleListResourceResponse;
 import org.sonatype.nexus.rest.model.RoleResource;
 import org.sonatype.nexus.rest.model.RoleResourceRequest;
@@ -48,8 +53,8 @@ public class RoleMessageUtil
 
         // make sure the id != null
         Assert.assertNotNull( responseResource.getId() );
-        
-        if( role.getId() != null)
+
+        if ( role.getId() != null )
         {
             Assert.assertEquals( role.getId(), responseResource.getId() );
         }
@@ -109,7 +114,7 @@ public class RoleMessageUtil
 
     /**
      * This should be replaced with a REST Call, but the REST client does not set the Accept correctly on GET's/
-     *
+     * 
      * @return
      * @throws IOException
      */
@@ -119,11 +124,13 @@ public class RoleMessageUtil
     {
         String responseText = RequestFacade.doGetRequest( "service/local/roles" ).getEntity().getText();
 
-        XStreamRepresentation representation =
-            new XStreamRepresentation( XStreamFactory.getXmlXStream(), responseText, MediaType.APPLICATION_XML );
+        XStreamRepresentation representation = new XStreamRepresentation(
+            XStreamFactory.getXmlXStream(),
+            responseText,
+            MediaType.APPLICATION_XML );
 
-        RoleListResourceResponse resourceResponse =
-            (RoleListResourceResponse) representation.getPayload( new RoleListResourceResponse() );
+        RoleListResourceResponse resourceResponse = (RoleListResourceResponse) representation
+            .getPayload( new RoleListResourceResponse() );
 
         return resourceResponse.getData();
 
@@ -138,8 +145,8 @@ public class RoleMessageUtil
         XStreamRepresentation representation = new XStreamRepresentation( xstream, responseString, mediaType );
 
         // this
-        RoleResourceRequest roleResourceRequest =
-            (RoleResourceRequest) representation.getPayload( new RoleResourceRequest() );
+        RoleResourceRequest roleResourceRequest = (RoleResourceRequest) representation
+            .getPayload( new RoleResourceRequest() );
 
         return roleResourceRequest.getData();
     }
@@ -179,4 +186,57 @@ public class RoleMessageUtil
         // get the Resource object
         return this.getResourceFromResponse( response );
     }
+
+    @SuppressWarnings( "unchecked" )
+    public List<ExternalRoleMappingResource> getExternalRoleMap( String source )
+        throws IOException
+    {
+        // external_role_map
+        String uriPart = RequestFacade.SERVICE_LOCAL + "external_role_map/" + source;
+
+        Response response = RequestFacade.sendMessage( uriPart, Method.GET, new StringRepresentation(
+            "",
+            this.mediaType ) );
+        String responseString = response.getEntity().getText();
+        Assert.assertTrue( "Status: " + response.getStatus() + "\nResponse:\n" + responseString, response
+            .getStatus().isSuccess() );
+
+        ExternalRoleMappingResourceResponse result = (ExternalRoleMappingResourceResponse) this.parseResponseText(
+            responseString,
+            new ExternalRoleMappingResourceResponse() );
+
+        return result.getData();
+    }
+    
+    @SuppressWarnings( "unchecked" )
+    public List<PlexusRoleResource> getRoles( String source )
+        throws IOException
+    {
+        // plexus_roles
+        String uriPart = RequestFacade.SERVICE_LOCAL + "plexus_roles/" + source;
+
+        Response response = RequestFacade.sendMessage( uriPart, Method.GET, new StringRepresentation(
+            "",
+            this.mediaType ) );
+        String responseString = response.getEntity().getText();
+        Assert.assertTrue( "Status: " + response.getStatus() + "\nResponse:\n" + responseString, response
+            .getStatus().isSuccess() );
+        
+        System.out.println( "response: "+ responseString );
+
+        PlexusRoleListResourceResponse result = (PlexusRoleListResourceResponse) this.parseResponseText(
+            responseString,
+            new PlexusRoleListResourceResponse() );
+
+        return result.getData();
+    }
+
+    public Object parseResponseText( String responseString, Object responseType )
+        throws IOException
+    {
+        XStreamRepresentation representation = new XStreamRepresentation( xstream, responseString, mediaType );
+
+        return representation.getPayload( responseType );
+    }
+
 }

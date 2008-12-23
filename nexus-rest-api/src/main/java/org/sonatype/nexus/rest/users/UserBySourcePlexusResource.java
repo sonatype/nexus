@@ -1,3 +1,19 @@
+/**
+ * Sonatype Nexus (TM) [Open Source Version].
+ * Copyright (c) 2008 Sonatype, Inc. All rights reserved.
+ * Includes the third-party code listed at ${thirdPartyUrl}.
+ *
+ * This program is licensed to you under Version 3 only of the GNU
+ * General Public License as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * General Public License Version 3 for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * Version 3 along with this program. If not, see http://www.gnu.org/licenses/.
+ */
 package org.sonatype.nexus.rest.users;
 
 import org.codehaus.plexus.component.annotations.Component;
@@ -15,16 +31,18 @@ import org.sonatype.nexus.rest.model.PlexusUserResourceResponse;
 import org.sonatype.plexus.rest.resource.PathProtectionDescriptor;
 import org.sonatype.plexus.rest.resource.PlexusResource;
 
-@Component( role = PlexusResource.class, hint = "PlexusUserPlexusResource" )
-public class PlexusUserPlexusResource
+@Component( role = PlexusResource.class, hint = "UserBySourcePlexusResource" )
+public class UserBySourcePlexusResource
     extends AbstractPlexusUserPlexusResource
 {
-    public static final String USER_ID_KEY = "userId";
+public static final String USER_ID_KEY = "userId";
+    
+    public static final String USER_SOURCE_KEY = "userSource";
     
     @Requirement( role = PlexusUserManager.class, hint="additinalRoles" )
     private PlexusUserManager userManager;
     
-    public PlexusUserPlexusResource()
+    public UserBySourcePlexusResource()
     {
         setModifiable( false );
     }
@@ -44,7 +62,7 @@ public class PlexusUserPlexusResource
     @Override
     public String getResourceUri()
     {
-        return "/plexus_user/{" + USER_ID_KEY + "}";
+        return "/plexus_user/{"+ USER_SOURCE_KEY +"}/{" + USER_ID_KEY + "}";
     }
     
     @Override
@@ -53,7 +71,7 @@ public class PlexusUserPlexusResource
     {
         PlexusUserResourceResponse result = new PlexusUserResourceResponse();
 
-        PlexusUser user = userManager.getUser( getUserId( request ) );
+        PlexusUser user = userManager.getUser( getUserId( request ), getUserSource( request ) );
         
         if ( user == null )
         {
@@ -70,5 +88,10 @@ public class PlexusUserPlexusResource
     protected String getUserId( Request request )
     {
         return request.getAttributes().get( USER_ID_KEY ).toString();
+    }
+
+    protected String getUserSource( Request request )
+    {
+        return request.getAttributes().get( USER_SOURCE_KEY ).toString();
     }
 }
