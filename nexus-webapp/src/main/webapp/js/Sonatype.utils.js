@@ -50,6 +50,16 @@ Sonatype.utils = {
       return Sonatype.utils.returnEmptyStr();
     }
   },
+
+  validateId: function( value ) {
+    if ( value.indexOf( ' ' ) == -1 ) { 
+      return true; 
+    }
+    else { 
+      return 'No spaces allowed in ID'; 
+    }
+  },
+
   convert : {
     stringContextToBool : function(str){
       return (str.toLowerCase() === 'true');

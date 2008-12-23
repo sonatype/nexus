@@ -131,7 +131,8 @@ Sonatype.repoServer.RoleEditPanel = function(config){
         helpText: ht.id,
         name: 'id',
         allowBlank: false,
-        width: this.COMBO_WIDTH
+        width: this.COMBO_WIDTH,
+        validator: Sonatype.utils.validateId
       },
       {
         xtype: 'textfield',
