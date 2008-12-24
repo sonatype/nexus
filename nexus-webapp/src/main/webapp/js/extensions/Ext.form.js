@@ -438,38 +438,68 @@ Ext.form.Action.ACTION_TYPES.sonatypeSubmit = Ext.form.Action.sonatypeSubmit;
 
 
 /*
-  Generic object editor (intended to be subclassed).
-  
-  var formPanel = new Sonatype.ext.FormPanelSubclass( {
-    payload: newRec,
-    uri: '/my/rest/path',
-    dataModifiers: {
-      load: this.loadDataModFunc,
-      submit: this.submitDataModFunc
-    },
-    listeners: {
-      cancel: {
-        fn: function( panel ) {
-          // remove the form from the container,
-          // delete the temporary grid record, etc.
-        },
-        scope: this
-      },
-      load: {
-        fn: function( form, action, receivedData ) {
-          // handle data update
-        },
-        scope: this
-      },
-      submit: {
-        fn: function( form, action, receivedData ) {
-          // handle grid data update
-        },
-        scope: this
-      }
-    }
-  } );
-
+ * Generic object editor (intended to be subclassed).
+ * 
+ * When used with Sonatype.panels.GridViewer, instanced of this editor panel will never
+ * be reused. When the form is submitted, all child panels related to this grid record
+ * are re-created, so the editor does not have to worry about altering its state after
+ * submit (as opposed to having to disable certain fields after the new record is saved,
+ * which we had to do previously). 
+ * 
+ * Config options:
+ *
+ * cancelButton: if set to "true", the form will display a "Cancel" button, so the
+ *               invoker can subscribe to a "cancel" event and do the necessary 
+ *               cleanup (e.g. close the panel). By default, the form will display
+ *               a "Reset" button instead, which reloads the form when clicked.
+ * 
+ * dataModifiers: { // data modifiers on form submit/load 
+ *   load: {
+ *     attr1: func1,
+ *     attr2: func2
+ *   },
+ *   save: { ... }
+ * }
+ * 
+ * dataStores: an array of data stores this editor depends on. It will make sure all
+ *             stores are loaded before the form load request is sent. The stores
+ *             should be configured with auto load off.
+ *
+ * listeners: { // custom events offered by the editor panel
+ *   cancel: {
+ *     fn: function( panel ) {
+ *       // do cleanup, remove the form from the container,
+ *       // delete the temporary grid record, etc.
+ *     },
+ *     scope: this
+ *   },
+ *   load: {
+ *     fn: function( form, action, receivedData ) {
+ *       // do extra work for data load if needed
+ *     },
+ *     scope: this
+ *   },
+ *   submit: {
+ *     fn: function( form, action, receivedData ) {
+ *       // update the grid record and do other stuff if needed
+ *       var rec = this.payload;
+ *       rec.beginEdit();
+ *       rec.set( 'attr1', receivedData.attr1 );
+ *       rec.set( 'attr2', receivedData.attr2 );
+ *       rec.commit();
+ *       rec.endEdit();
+ *     },
+ *     scope: this
+ *   }
+ * }
+ * 
+ * payload: the grid record being edited
+ * 
+ * referenceData: a reference data object that's used as a template on form submit
+ * 
+ * uri: base URL for JSON requests. It will be used for POST requests when creating
+ *      a new object, or for PUT (with payload.id appended) if the record does not
+ *      a resourceURI attribute
 */
 Sonatype.ext.FormPanel = function( config ) {
   var config = config || {};
@@ -486,12 +516,11 @@ Sonatype.ext.FormPanel = function( config ) {
     layoutConfig: {
       labelSeparator: ''
     },
-    buttons: [
+    buttons: ( config.readOnly || this.readOnly ) ? [] : [
       {
         text: 'Save',
         handler: this.saveHandler,
-        scope: this,
-        disabled: config.readOnly
+        scope: this
       },
       {
         handler: this.cancelButton ? this.cancelHandler : this.resetHandler,
@@ -506,12 +535,11 @@ Sonatype.ext.FormPanel = function( config ) {
 
   Sonatype.ext.FormPanel.superclass.constructor.call( this, {} );
 
+  this.on( 'afterlayout', this.initData, this, { single:true } );
   this.on( 'afterlayout', this.registerRequiredQuicktips, this, { single:true } );
   this.form.on( 'actioncomplete', this.actionCompleteHandler, this );
   this.form.on( 'actionfailed', this.actionFailedHandler, this );
   this.addEvents( { cancel: true, load: true, submit: true } );
-
-  this.loadData();
 };
 
 Ext.extend( Sonatype.ext.FormPanel, Ext.FormPanel, {
@@ -522,6 +550,24 @@ Ext.extend( Sonatype.ext.FormPanel, Ext.FormPanel, {
       if ( this.id.substring( 0, 4 ) == 'new_' ) {
         this.isNew = true;
       }
+    }
+  },
+  
+  checkStores: function() {
+    if ( this.dataStores ) {
+      for ( var i = 0; i < this.dataStores.length; i++ ) {
+        var store = this.dataStores[i];
+        if ( store.lastOptions == null ) {
+          return false;
+        }
+      }
+    }
+    return true;
+  },
+  
+  dataStoreLoadHandler: function( store, records, options ) {
+    if ( this.checkStores() ) {
+      this.loadData();
     }
   },
   
@@ -547,6 +593,21 @@ Ext.extend( Sonatype.ext.FormPanel, Ext.FormPanel, {
   
   resetHandler: function( button, event ) {
     this.loadData();
+  },
+
+  initData: function() {
+    if ( this.dataStores ) {
+      for ( var i = 0; i < this.dataStores.length; i++ ) {
+        var store = this.dataStores[i]; 
+        store.on( 'load', this.dataStoreLoadHandler, this );
+        if ( store.autoLoad != true ) {
+          store.load();
+        }
+      }
+    }
+    else {
+      this.loadData();
+    }
   },
   
   loadData: function() {
@@ -575,6 +636,7 @@ Ext.extend( Sonatype.ext.FormPanel, Ext.FormPanel, {
         url: this.getActionURL(),
         waitMsg: this.isNew ? 'Creating a new record...' : 'Updating records...',
         fpanel: this,
+        validationModifiers: this.validationModifiers,
         dataModifiers: this.dataModifiers.submit,
         serviceDataObj: this.referenceData,
         isNew: this.isNew //extra option to send to callback, instead of conditioning on method
@@ -608,10 +670,19 @@ Ext.extend( Sonatype.ext.FormPanel, Ext.FormPanel, {
       if ( this.isNew && this.payload.autoCreateNewRecord ) {
         var store = this.payload.store;
         store.remove( this.payload );
-        
-        var rec = new store.reader.recordType( receivedData, receivedData.resourceURI );
-        rec.autoCreateNewRecord = true;
-        store.addSorted( rec );
+
+        if ( Ext.isArray( receivedData ) ) {
+          for ( var i = 0; i < receivedData.length; i++ ) {
+            var r = receivedData[i];
+            var rec = new store.reader.recordType( r, r.resourceURI );
+            store.addSorted( rec );
+          }
+        }
+        else {
+          var rec = new store.reader.recordType( receivedData, receivedData.resourceURI );
+          rec.autoCreateNewRecord = true;
+          store.addSorted( rec );
+        }
       }
       this.isNew = false;
       this.payload.autoCreateNewRecord = false;

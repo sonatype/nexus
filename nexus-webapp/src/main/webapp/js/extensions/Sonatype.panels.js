@@ -18,7 +18,6 @@
  * along with this program.  If not, see http://www.gnu.org/licenses/.
  *
  */
-
 Ext.namespace( 'Sonatype.panels' );
 
 
@@ -169,7 +168,7 @@ Sonatype.panels.GridViewer = function( config ) {
     id: this.dataId,
     fields: fields,
     url: this.url,
-    autoLoad: this.dataAutoLoad,
+    autoLoad: this.dataAutoLoad && ( this.dataStores == null || this.dataStores.length == 0 ),
     sortInfo: this.dataSortInfo,
     listeners: {
       add: {
@@ -266,6 +265,16 @@ Sonatype.panels.GridViewer = function( config ) {
       this.cardPanel
     ]
   } );
+
+  if ( this.dataStores ) {
+    for ( var i = 0; i < this.dataStores.length; i++ ) {
+      var store = this.dataStores[i]; 
+      store.on( 'load', this.dataStoreLoadHandler, this );
+      if ( store.autoLoad != true ) {
+        store.load();
+      }
+    }
+  }
 };
 
 Ext.extend( Sonatype.panels.GridViewer, Ext.Panel, {
@@ -286,6 +295,23 @@ Ext.extend( Sonatype.panels.GridViewer, Ext.Panel, {
       handler( item, e );
     }
   },
+  
+  checkStores: function() {
+    if ( this.dataStores ) {
+      for ( var i = 0; i < this.dataStores.length; i++ ) {
+        var store = this.dataStores[i];
+        if ( store.lastOptions == null ) {
+          return false;
+        }
+      }
+    }
+    return true;
+  },
+
+  clearAll: function() {
+    this.clearCards();
+    this.dataStore.removeAll();
+  },
 
   clearCards: function() {
     this.cardPanel.items.each( function( item, i, len ) {
@@ -293,6 +319,16 @@ Ext.extend( Sonatype.panels.GridViewer, Ext.Panel, {
     }, this.cardPanel );
     
     this.cardPanel.getLayout().setActiveItem( 0 );
+  },
+
+  convertDataValue: function( value, store, idProperty, nameProperty ) {
+    if ( value ) {
+      var rec = store.getAt( store.find( idProperty, value ) );
+      if ( rec ) {
+        return rec.data[nameProperty];
+      }
+    }
+    return '';
   },
   
   createAddMenu: function() {
@@ -373,6 +409,13 @@ Ext.extend( Sonatype.panels.GridViewer, Ext.Panel, {
         handler: this.deleteActionHandler,
         scope: this
       } );
+    }
+  },
+  
+  dataStoreLoadHandler: function( store, records, options ) {
+    if ( this.checkStores() && this.dataAutoLoad ) {
+      this.dataAutoLoad = false;
+      this.dataStore.load();
     }
   },
   
