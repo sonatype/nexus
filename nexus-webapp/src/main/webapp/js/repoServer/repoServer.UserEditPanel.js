@@ -43,6 +43,15 @@ Sonatype.repoServer.UserEditPanel = function( config ) {
       handler: this.changePasswordHandler
     }
   };
+  
+  this.searchField = new Ext.app.SearchField( { 
+    searchPanel: this,
+    width: 240,
+    emptyText: 'Show All Users With Nexus Roles'
+  } );
+
+  Sonatype.Events.on( 'userAddMenuInit', this.onAddMenuInit, this );
+  Sonatype.Events.on( 'userMenuInit', this.onUserMenuInit, this );
 
   Sonatype.repoServer.UserEditPanel.superclass.constructor.call( this, {
     addMenuInitEvent: 'userAddMenuInit',
@@ -95,23 +104,36 @@ Sonatype.repoServer.UserEditPanel = function( config ) {
     listeners: {
       beforedestroy: {
         fn: function(){
-          Sonatype.Events.removeListener( 'userMenuInit', this.onUserMenuInit, this );
+          Sonatype.Events.un( 'userAddMenuInit', this.onAddMenuInit, this );
+          Sonatype.Events.un( 'userMenuInit', this.onUserMenuInit, this );
         },
         scope: this
       }
     },
     tbar: [
+      ' ',
       {
-        text: 'Map User Roles',
-        icon: Sonatype.config.resourcePath + '/images/icons/page_white_put.png',
+        text: 'Find',
+        icon: Sonatype.config.resourcePath + '/images/icons/search.gif',
         cls: 'x-btn-text-icon',
-        scope: this,
-        handler: this.mapRolesHandler
-      }
+        menu: {
+          items: [
+            {
+              text: 'Show Default Realm Users',
+              handler: this.showDefaultUsers,
+              scope: this
+            },
+            {
+              text: 'Show All Users With Nexus Roles',
+              handler: this.showMappedUsers,
+              scope: this
+            }
+          ]
+        }
+      },
+      this.searchField
     ]
   } );
-
-  Sonatype.Events.addListener( 'userMenuInit', this.onUserMenuInit, this );
 };
 
 
@@ -229,7 +251,17 @@ Ext.extend( Sonatype.repoServer.UserEditPanel, Sonatype.panels.GridViewer, {
 
     w.show();
   },
-  
+
+  refreshHandler: function( button, e ) {
+    this.clearCards();
+    if ( this.lastUrl ) {
+      this.searchByUrl( this.lastUrl );
+    }
+    else {
+      this.dataStore.reload();
+    }
+  },
+
   resetPasswordHandler : function( rec ) {
     if ( rec.data.resourceURI != 'new' ) {
       Sonatype.utils.defaultToNo();
@@ -265,6 +297,69 @@ Ext.extend( Sonatype.repoServer.UserEditPanel, Sonatype.panels.GridViewer, {
     else {
       Sonatype.MessageBox.alert('The server did not reset the password.');
     }
+  },
+  
+  searchByUrl: function( url ) {
+    this.lastUrl = url;
+    Ext.Ajax.request( {
+      scope: this,
+      url: url,
+      success: function( response, options ) {
+        var r = Ext.decode( response.responseText );
+        if ( r.data ) {
+          this.dataStore.loadData( r );
+        }
+        else {
+          this.clearAll();
+        }
+      }
+    } );
+  },
+
+  showDefaultUsers: function( button, e ) {
+    this.searchField.emptyText = button.text;
+    this.stopSearch( this );
+    this.searchByUrl( Sonatype.config.repos.urls.plexusUsersDefault );
+  },
+
+  showMappedUsers: function( button, e ) {
+    this.searchField.emptyText = button.text;
+    this.stopSearch( this );
+    this.searchByUrl( Sonatype.config.repos.urls.plexusUsersAllConfigured );
+  },
+  
+  startSearch: function( panel ) {
+    this.searchField.emptyText = null;
+    panel.searchField.triggers[0].show();
+    panel.searchByUrl( Sonatype.config.repos.urls.searchUsers + '/all/' +
+      panel.searchField.getValue() );
+  },
+  
+  stopSearch: function( panel ) {
+    panel.searchField.setValue( null );
+    panel.searchField.triggers[0].hide();
+  },
+  
+  onAddMenuInit: function( menu ) {
+    menu.add( '-' );
+    if ( this.sp.checkPermission( 'nexus:users', this.sp.CREATE ) ) {
+      menu.add( {
+        text: 'Nexus User',
+        autoCreateNewRecord: true,
+        handler: function( container, rec, item, e ) {
+          rec.beginEdit();
+          rec.set( 'source', 'default' );
+          rec.commit();
+          rec.endEdit();
+        },
+        scope: this
+      } );
+    }
+    menu.add( {
+      text: 'User Role Mapping',
+      handler: this.mapRolesHandler,
+      scope: this
+    } );
   },
 
   onUserMenuInit: function( menu, userRecord ) {
@@ -343,7 +438,6 @@ Sonatype.repoServer.DefaultUserEditor = function( config ) {
     id: 'id',
     url: Sonatype.config.repos.urls.roles,
     sortInfo: { field: 'name', direction: 'ASC' },
-    autoLoad: true,
     fields: [
       { name: 'id' },
       { name: 'name', sortType:Ext.data.SortTypes.asUCString }
@@ -451,6 +545,7 @@ Sonatype.repoServer.DefaultUserEditor = function( config ) {
 
   Sonatype.repoServer.DefaultUserEditor.superclass.constructor.call( this, {
     items: items,
+    dataStores: [this.roleDataStore],
     listeners: {
       submit: {
         fn: this.submitHandler,
@@ -553,17 +648,11 @@ Sonatype.repoServer.UserMappingEditor = function( config ) {
   };
   Ext.apply( this, config, defaultConfig );
 
-//  if ( ! Sonatype.lib.Permissions.checkPermission( 'nexus:ldapuserrolemap',
-//      Sonatype.lib.Permissions.EDIT ) ) {
-//    this.readOnly = true;
-//  }
-
   this.roleDataStore = new Ext.data.JsonStore( {
     root: 'data',
     id: 'id',
     url: Sonatype.config.repos.urls.roles,
     sortInfo: { field: 'name', direction: 'ASC' },
-    autoLoad: true,
     fields: [
       { name: 'id' },
       { name: 'name', sortType:Ext.data.SortTypes.asUCString }
@@ -618,6 +707,7 @@ Sonatype.repoServer.UserMappingEditor = function( config ) {
     
 
   Sonatype.repoServer.UserMappingEditor.superclass.constructor.call( this, {
+    dataStores: [this.roleDataStore],
     items: [
       useridField,
       {
@@ -742,58 +832,10 @@ Ext.extend( Sonatype.repoServer.UserMappingEditor, Sonatype.ext.FormPanel, {
   }
 } );
 
-Sonatype.Events.addListener( 'userListInit', function( userContainer ) {
-  var url = Sonatype.config.servicePath + '/plexus_users/LDAP';
-  if ( Sonatype.lib.Permissions.checkPermission( 'nexus:ldapuserrolemap', Sonatype.lib.Permissions.READ ) ) {
-    Ext.Ajax.request( {
-      url: url,
-      suppressStatus: 503, // the server will return an error if LDAP is not configured
-      success: function( response, options ) {
-        var resp = Ext.decode( response.responseText );
-        if ( resp.data ) {
-          var data = resp.data;
-          for ( var i = 0; i < data.length; i++ ) {
-            data[i].resourceURI = Sonatype.config.servicePath + '/plexus_user/' + data[i].userId;
-            if ( data[i].roles ) {
-              for ( var j = 0; j < data[i].roles.length; j++ ) {
-                data[i].roles[j] = data[i].roles[j].roleId;
-              }
-            }
-          }
-          userContainer.addRecords( data, 'LDAP', Sonatype.repoServer.LdapUserEditor );
-        }
-      },
-      scope: userContainer
-    } );
-  }
-} );
-
 Sonatype.Events.addListener( 'userViewInit', function( cardPanel, rec ) {
   var config = { payload: rec };
   cardPanel.add( rec.data.source == 'default' ?
     new Sonatype.repoServer.DefaultUserEditor( config ) :
     new Sonatype.repoServer.UserMappingEditor( config )
   );
-} );
-
-Sonatype.Events.addListener( 'userAddMenuInit', function( menu ) {
-  var sp = Sonatype.lib.Permissions;
-  
-  if ( sp.checkPermission( 'nexus:users', sp.CREATE ) ) {
-    var createUserFunc = function( container, rec, item, e ) {
-      rec.beginEdit();
-      rec.set( 'source', 'default' );
-      rec.commit();
-      rec.endEdit();
-    };
-
-    menu.add( [
-      '-',
-      {
-        text: 'Nexus User',
-        autoCreateNewRecord: true,
-        handler: createUserFunc
-      }
-    ] );
-  }
 } );
