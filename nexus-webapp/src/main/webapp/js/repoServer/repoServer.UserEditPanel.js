@@ -702,7 +702,8 @@ Sonatype.repoServer.UserMappingEditor = function( config ) {
       name: 'userId',
       disabled: true,
       allowBlank: false,
-      width: this.COMBO_WIDTH
+      width: this.COMBO_WIDTH,
+      userFound: true
     };
     
 
