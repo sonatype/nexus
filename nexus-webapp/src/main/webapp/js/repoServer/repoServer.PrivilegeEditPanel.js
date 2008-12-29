@@ -283,7 +283,6 @@ Sonatype.repoServer.PrivilegeEditor = function( config ) {
       xtype: 'textfield',
       fieldLabel: 'Name',
       itemCls: 'required-field',
-      labelStyle: 'margin-left: 15px; width: 185px;',
       helpText: ht.name,
       name: 'name',
       allowBlank: false,
@@ -294,17 +293,15 @@ Sonatype.repoServer.PrivilegeEditor = function( config ) {
       xtype: 'textfield',
       fieldLabel: 'Description',
       itemCls: 'required-field',
-      labelStyle: 'margin-left: 15px; width: 185px;',
       helpText: ht.description,
       name: 'description',
       allowBlank: false,
-      anchor: Sonatype.view.FIELD_OFFSET_WITH_SCROLL,
+      width: this.COMBO_WIDTH,
       disabled: this.readOnly
     },
     {
       xtype: 'combo',
       fieldLabel: 'Type',
-      labelStyle: 'margin-left: 15px; width: 185px;',
       itemCls: 'required-field',
       helpText: ht.type,
       name: 'type',
@@ -344,7 +341,6 @@ Sonatype.repoServer.PrivilegeEditor = function( config ) {
     items.push( {
       xtype: 'combo',
       fieldLabel: 'Repository',
-      labelStyle: 'margin-left: 15px; width: 185px;',
       itemCls: 'required-field',
       helpText: ht.repositoryOrGroup,
       name: 'repositoryOrGroup',
@@ -372,7 +368,6 @@ Sonatype.repoServer.PrivilegeEditor = function( config ) {
     items.push( {
       xtype: 'combo',
       fieldLabel: 'Repository Target',
-      labelStyle: 'margin-left: 15px; width: 185px;',
       itemCls: 'required-field',
       helpText: ht.repositoryTarget,
       name: 'repositoryTargetId',
@@ -396,7 +391,6 @@ Sonatype.repoServer.PrivilegeEditor = function( config ) {
       xtype: 'textfield',
       fieldLabel: 'Method',
       itemCls: 'required-field',
-      labelStyle: 'margin-left: 15px; width: 185px;',
       helpText: '',
       name: 'method',
       allowBlank: false,
@@ -406,6 +400,7 @@ Sonatype.repoServer.PrivilegeEditor = function( config ) {
   }
   
   Sonatype.repoServer.PrivilegeEditor.superclass.constructor.call( this, {
+	labelWidth: 120,
     items: items
   } );
 };
