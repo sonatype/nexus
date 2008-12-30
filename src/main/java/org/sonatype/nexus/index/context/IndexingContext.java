@@ -55,7 +55,11 @@ public interface IndexingContext
 
     public static final String INDEX_TIMESTAMP = INDEX_PROPERTY_PREFIX + "time";
 
-    public static final String INDEX_CHUNKS_RESOLUTION = INDEX_PROPERTY_PREFIX + "chunkResolution";
+    public static final String INDEX_CHUNK_PREFIX = INDEX_PROPERTY_PREFIX + "chunk-";
+
+    public static final String INDEX_TIME_FORMAT = "yyyyMMddHHmmss.SSS Z";
+
+    public static final String INDEX_TIME_DAY_FORMAT = "yyyyMMdd";
 
     /**
      * Returns this indexing context id.
@@ -73,31 +77,14 @@ public interface IndexingContext
     File getRepository();
 
     /**
-     * Sets the location of the local repository.
-     * 
-     * @param repository
-     */
-    void setRepository( File repository );
-
-    /**
      * Returns public repository url.
      */
     String getRepositoryUrl();
 
     /**
-     * Returns public repository url.
-     */
-    void setRepositoryUrl( String remoteUrl );
-
-    /**
      * Returns url for the index update
      */
     String getIndexUpdateUrl();
-
-    /**
-     * Returns url for the index update
-     */
-    void setIndexUpdateUrl( String indexUpdateUrl );
 
     /**
      * Is the context searchable when doing "non-targeted" searches? Ie. Should it take a part when searching without

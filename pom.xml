@@ -129,7 +129,26 @@
         </executions>
       </plugin>
 	  
-	  <plugin>
+      <plugin>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <configuration>
+              <forkMode>never</forkMode>
+          </configuration>
+      </plugin>
+
+      <plugin>
+          <artifactId>maven-source-plugin</artifactId>
+          <executions>
+              <execution>
+                  <goals>
+                      <goal>jar</goal>
+                  </goals>
+                  <phase>package</phase>
+              </execution>
+          </executions>
+      </plugin>
+
+      <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-shade-plugin</artifactId>
         <version>1.2</version>
@@ -141,8 +160,8 @@
               <goal>shade</goal>
             </goals>
             <configuration>
-			  <shadedArtifactAttached>true</shadedArtifactAttached>
-			  <shadedClassifierName>cli-jdk14</shadedClassifierName>
+              <shadedArtifactAttached>true</shadedArtifactAttached>
+              <shadedClassifierName>cli-jdk14</shadedClassifierName>
               <createDependencyReducedPom>false</createDependencyReducedPom>
               <keepDependenciesWithProvidedScope>true</keepDependenciesWithProvidedScope>
               <transformers>
@@ -179,8 +198,8 @@
               <goal>shade</goal>
             </goals>
             <configuration>
-			  <shadedArtifactAttached>true</shadedArtifactAttached>
-			  <shadedClassifierName>cli-jdk15</shadedClassifierName>
+              <shadedArtifactAttached>true</shadedArtifactAttached>
+              <shadedClassifierName>cli-jdk15</shadedClassifierName>
               <createDependencyReducedPom>false</createDependencyReducedPom>
               <keepDependenciesWithProvidedScope>true</keepDependenciesWithProvidedScope>
               <transformers>
@@ -208,25 +227,6 @@
             </configuration>
           </execution>
         </executions>
-      </plugin>
-
-      <plugin>
-          <artifactId>maven-surefire-plugin</artifactId>
-          <configuration>
-              <forkMode>never</forkMode>
-          </configuration>
-      </plugin>
-
-      <plugin>
-          <artifactId>maven-source-plugin</artifactId>
-          <executions>
-              <execution>
-                  <goals>
-                      <goal>jar</goal>
-                  </goals>
-                  <phase>package</phase>
-              </execution>
-          </executions>
       </plugin>
     </plugins>
   </build>
