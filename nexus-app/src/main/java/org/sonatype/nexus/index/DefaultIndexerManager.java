@@ -20,10 +20,10 @@
  */
 package org.sonatype.nexus.index;
 
-import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
@@ -38,7 +38,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 
 import org.apache.commons.codec.binary.Hex;
 import org.apache.lucene.search.BooleanClause;
@@ -57,7 +56,9 @@ import org.sonatype.nexus.index.context.IndexContextInInconsistentStateException
 import org.sonatype.nexus.index.context.IndexingContext;
 import org.sonatype.nexus.index.packer.IndexPacker;
 import org.sonatype.nexus.index.packer.IndexPackingRequest;
+import org.sonatype.nexus.index.updater.IndexUpdateRequest;
 import org.sonatype.nexus.index.updater.IndexUpdater;
+import org.sonatype.nexus.index.updater.ResourceFetcher;
 import org.sonatype.nexus.proxy.ItemNotFoundException;
 import org.sonatype.nexus.proxy.NoSuchRepositoryException;
 import org.sonatype.nexus.proxy.NoSuchRepositoryGroupException;
@@ -894,172 +895,88 @@ public class DefaultIndexerManager
         }
     }
 
-    private boolean updateRemoteIndex( Repository repository )
+    private boolean updateRemoteIndex( final Repository repository )
         throws IOException,
-            RepositoryNotAvailableException,
             ItemNotFoundException
     {
-        if ( RepositoryType.PROXY.equals( repository.getRepositoryType() ) )
-        {
-            // this will force remote check for newer files
-            repository.clearCaches( "/.index" );
-
-            IndexingContext context = null;
-
-            try
-            {
-                context = getRepositoryRemoteIndexContext( repository.getId() );
-            }
-            catch ( NoSuchRepositoryException e )
-            {
-                // will not happen
-            }
-
-            Date contextTimestamp = context.getTimestamp();
-
-            RepositoryItemUid propsUid = repository.createUid( //
-                "/.index/" + IndexingContext.INDEX_FILE + ".properties" );
-
-            Map<String, Object> ctx = new HashMap<String, Object>();
-
-            StorageFileItem propItem = retrieveItem( repository, ctx, propsUid );
-
-            File tmpdir = null;
-
-            FSDirectory directory = null;
-
-            try
-            {
-                if ( contextTimestamp != null )
-                {
-                    Properties properties = loadProperties( propItem );
-
-                    Date updateTimestamp = indexUpdater.getTimestamp( properties, IndexingContext.INDEX_TIMESTAMP );
-
-                    if ( updateTimestamp != null && contextTimestamp.after( updateTimestamp ) )
-                    {
-                        return false; // index is up to date
-                    }
-
-                    // iterate over chunks
-                    Date chunkTimestamp = indexUpdater.getNextUpdateChunkTimestamp( contextTimestamp, null, properties );
-
-                    if ( chunkTimestamp != null )
-                    {
-                        while ( chunkTimestamp != null )
-                        {
-                            String chunkName = indexUpdater.getUpdateChunkName( chunkTimestamp, properties );
-
-                            // download update index chunk
-                            RepositoryItemUid zipUid = repository.createUid( "/.index/" + chunkName );
-
-                            StorageFileItem chunkItem = retrieveItem( repository, ctx, zipUid );
-
-                            tmpdir = createTmpDir();
-
-                            directory = unpackIndex( chunkItem, repository, tmpdir );
-
-                            context.merge( directory );
-
-                            context.updateTimestamp( true, chunkTimestamp );
-
-                            chunkTimestamp = indexUpdater.getNextUpdateChunkTimestamp(
-                                contextTimestamp,
-                                chunkTimestamp,
-                                properties );
-                        }
-
-                        return true;
-                    }
-                }
-
-                // download full index
-                RepositoryItemUid zipUid = repository.createUid( "/.index/" + IndexingContext.INDEX_FILE + ".zip" );
-
-                StorageFileItem zipItem = retrieveItem( repository, ctx, zipUid );
-
-                tmpdir = createTmpDir();
-
-                directory = unpackIndex( zipItem, repository, tmpdir );
-
-                context.replace( directory );
-
-                return true;
-            }
-            finally
-            {
-                if ( directory != null )
-                {
-                    directory.close();
-                }
-
-                if ( tmpdir != null )
-                {
-                    try
-                    {
-                        FileUtils.deleteDirectory( tmpdir );
-                    }
-                    catch ( IOException ex )
-                    {
-                        // ignore
-                    }
-                }
-            }
-        }
-        else
-        {
+        if ( !RepositoryType.PROXY.equals( repository.getRepositoryType() ) ) {
             return false;
         }
-    }
+        
+        // this will force remote check for newer files
+        repository.clearCaches( "/.index" );
 
-    private Properties loadProperties( StorageFileItem item )
-        throws IOException
-    {
-        InputStream is = null;
+        IndexingContext context = null;
+
         try
         {
-            is = item.getInputStream();
-
-            Properties properties = new Properties();
-
-            properties.load( is );
-
-            return properties;
+            context = getRepositoryRemoteIndexContext( repository.getId() );
         }
-        finally
+        catch ( NoSuchRepositoryException e )
         {
-            IOUtil.close( is );
+            // will not happen
         }
-    }
 
-    private File createTmpDir()
-    {
-        File tmpdir = new File( getTempDirectory(), "nx-remote-index" + System.currentTimeMillis() );
-
-        tmpdir.mkdirs();
-
-        return tmpdir;
-    }
-
-    private FSDirectory unpackIndex( StorageFileItem item, Repository repository, File tmpdir )
-        throws IOException
-    {
-        FSDirectory directory = FSDirectory.getDirectory( tmpdir );
-
-        BufferedInputStream is = new BufferedInputStream( item.getInputStream(), 4096 );
-
-        IndexUtils.unpackIndexArchive( is, directory );
+        IndexUpdateRequest updateRequest = new IndexUpdateRequest( context );
 
         if ( repository instanceof MavenRepository )
         {
-            getLogger().info( "Filtering downloaded index..." );
-
             MavenRepository mrepository = (MavenRepository) repository;
 
-            IndexUtils.filterDirectory( directory, mrepository.getRepositoryPolicy().getFilter() );
+            updateRequest.setDocumentFilter( mrepository.getRepositoryPolicy().getFilter() );
         }
-
-        return directory;
+        
+        updateRequest.setResourceFetcher( new ResourceFetcher() 
+        {
+            Map<String, Object> ctx = new HashMap<String, Object>();
+            
+            public void connect(String id, String url) throws IOException 
+            {
+            }
+  
+            public void disconnect() throws IOException 
+            {
+            }
+  
+            // TODO is there a better way to fetch a file at given location?
+            public void retrieve( String name, File targetFile )
+                throws IOException 
+            {
+                RepositoryItemUid uid = repository.createUid( //
+                    "/.index/" + name );
+                
+                FileOutputStream fos = null;
+                InputStream is = null;
+  
+                try 
+                {
+                    StorageFileItem item = retrieveItem( repository, ctx, uid );
+                    
+                    is = item.getInputStream();
+                    
+                    fos = new FileOutputStream( targetFile );
+                    
+                    IOUtil.copy( is, fos, 8192 );
+                } 
+                catch ( ItemNotFoundException ex ) 
+                {
+                    throw new IOException( "Item not found " + name );
+                } 
+                catch ( RepositoryNotAvailableException ex ) 
+                {
+                    throw new IOException( "Repository not available " + repository.getId() );
+                } 
+                finally
+                {
+                     IOUtil.close( is );
+                     IOUtil.close( fos );
+                }
+            }
+        } );
+        
+        Date contextTimestamp = indexUpdater.fetchAndUpdateIndex( updateRequest );
+        
+        return contextTimestamp != null;
     }
 
     // ----------------------------------------------------------------------------
