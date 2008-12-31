@@ -691,8 +691,7 @@ Sonatype.repoServer.UserMappingEditor = function( config ) {
       userId: '',
       source: '',
       roles: []
-    },
-    cancelButton: config.payload.id == 'new_mapping'
+    }
   };
   Ext.apply( this, config, defaultConfig );
 
@@ -800,12 +799,6 @@ Sonatype.repoServer.UserMappingEditor = function( config ) {
       }
     ],
     listeners: {
-      cancel: {
-        fn: function() {
-          this.payload.hostPanel.recordRemoveHandler( null, this.payload, 0 );
-        },
-        scope: this
-      },
       submit: {
         fn: this.submitHandler,
         scope: this
