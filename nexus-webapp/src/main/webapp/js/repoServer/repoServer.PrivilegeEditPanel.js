@@ -229,7 +229,7 @@ Sonatype.repoServer.PrivilegeEditor = function( config ) {
               ! ( parent.repositoryId || parent.repositoryGroupId ) ) {
             fpanel.form.findField( 'repositoryOrGroup' ).setValue( 'all_repo' );
           }
-        },
+        }
       },
       submit: { 
         method: function( val, fpanel ) {
