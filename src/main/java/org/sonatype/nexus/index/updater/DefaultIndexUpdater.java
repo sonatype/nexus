@@ -72,11 +72,11 @@ public class DefaultIndexUpdater
                     IndexingContext.INDEX_TIMESTAMP);
     
                 if ( updateTimestamp != null
-                    && contextTimestamp.after( updateTimestamp ) ) {
+                    && !updateTimestamp.after( contextTimestamp ) ) {
                   return null; // index is up to date
                 }
     
-                String chunkName = getUpdateChunkName(contextTimestamp, properties);
+                String chunkName = getUpdateChunkName( contextTimestamp, properties );
     
                 if ( chunkName != null ) 
                 {
@@ -256,7 +256,7 @@ public class DefaultIndexUpdater
             if( contextTimestamp.after( chunkTimestamp ) )
             {
                 SimpleDateFormat df = new SimpleDateFormat( IndexingContext.INDEX_TIME_DAY_FORMAT );
-                return IndexingContext.INDEX_FILE + "." + df.format( contextTimestamp ) + ".zip";                
+                return IndexingContext.INDEX_FILE + "." + df.format( chunkTimestamp ) + ".zip";                
             }
         
             n++;
@@ -285,7 +285,7 @@ public class DefaultIndexUpdater
     /**
      * A ResourceFetcher implementation based on Wagon 
      */
-    static class WagonFetcher implements ResourceFetcher
+    public static class WagonFetcher implements ResourceFetcher
     {
         private final WagonManager wagonManager;
         private final TransferListener listener;
