@@ -136,7 +136,7 @@
             </goals>
             <configuration>
               <shadedArtifactAttached>true</shadedArtifactAttached>
-              <shadedClassifierName>cli-jdk15</shadedClassifierName>
+              <shadedClassifierName>cli</shadedClassifierName>
               <createDependencyReducedPom>false</createDependencyReducedPom>
               <keepDependenciesWithProvidedScope>true</keepDependenciesWithProvidedScope>
               <transformers>
