@@ -112,12 +112,30 @@ public class HttpVerbMappingAuthorizationFilter
     {
         Subject subject = getSubject( request, response );
 
-        getLogger().info(
-            "Unable to authorize user [" + subject.getPrincipal() + "] for " + getActionFromHttpVerb( request )
-                + " to " + ( (HttpServletRequest) request ).getRequestURI() + " from address/host ["
-                + request.getRemoteAddr() + "/" + request.getRemoteHost() + "]" );
+        if ( !isAnonymousUser( request, subject ) )
+        {
+            getLogger().debug(
+                "Unable to authorize user [" + subject.getPrincipal() + "] for " + getActionFromHttpVerb( request )
+                    + " to " + ( (HttpServletRequest) request ).getRequestURI() + " from address/host ["
+                    + request.getRemoteAddr() + "/" + request.getRemoteHost() + "]" );
+        }
 
         request.setAttribute( NexusJSecurityFilter.REQUEST_IS_AUTHZ_REJECTED, Boolean.TRUE );
+
+        return false;
+    }
+
+    protected boolean isAnonymousUser( ServletRequest request, Subject subject )
+    {
+        if ( !getNexus( request ).isAnonymousAccessEnabled() )
+        {
+            return false;
+        }
+
+        if ( getNexus( request ).getAnonymousUsername().equals( subject.getPrincipal() ) )
+        {
+            return true;
+        }
 
         return false;
     }

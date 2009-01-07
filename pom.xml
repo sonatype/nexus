@@ -112,6 +112,19 @@
 			</releases>
 		</pluginRepository>
 	</pluginRepositories>
+	<!-- Shortcuts for outnumbered deps :) -->
+	<properties>
+		<plexus.appbooter.version>1.6.4.1</plexus.appbooter.version>
+		<jsw.binaries.version>3.2.3.2</jsw.binaries.version>
+		<plexus-jsecurity-realms.version>1.0.5</plexus-jsecurity-realms.version>
+		<slf4j.version>1.5.5</slf4j.version>
+		<maven.version>2.1-SONATYPE-653485</maven.version>
+		<nexus.indexer.version>1.1.2.3</nexus.indexer.version>
+		<!-- Shared with nexus-client, hence it is properties'ed -->
+		<plexus.restlet.bridge.version>1.6.1</plexus.restlet.bridge.version>
+		<micromailer.version>1.0.2</micromailer.version>
+        <mercury.version>1.0.0-alpha-2-722647</mercury.version>
+	</properties>
 	<modules>
 		<module>nexus-utils</module>
 		<module>nexus-api</module>
@@ -128,29 +141,15 @@
 		<profile>
 			<id>test-harness</id>
 			<activation>
-				<activeByDefault>false</activeByDefault>
 				<property>
-					<name>test-harness</name>
+					<name>!skip-test-harness</name>
 				</property>
 			</activation>
 			<modules>
 				<module>nexus-test-harness</module>
 			</modules>
 		</profile>
-	</profiles>
-	<!-- Shortcuts for outnumbered deps :) -->
-	<properties>
-		<plexus.appbooter.version>1.6.4</plexus.appbooter.version>
-		<jsw.binaries.version>3.2.3.2</jsw.binaries.version>
-		<plexus-jsecurity-realms.version>1.0.5</plexus-jsecurity-realms.version>
-		<slf4j.version>1.5.5</slf4j.version>
-		<maven.version>2.1-SONATYPE-653485</maven.version>
-		<nexus.indexer.version>1.1.2.3</nexus.indexer.version>
-		<!-- Shared with nexus-client, hence it is properties'ed -->
-		<plexus.restlet.bridge.version>1.6</plexus.restlet.bridge.version>
-		<micromailer.version>1.0.2</micromailer.version>
-    <mercury.version>1.0.0-alpha-2-722647</mercury.version>
-	</properties>
+	</profiles>	
 	<dependencyManagement>
 		<dependencies>
 			<!-- Platform -->

@@ -44,10 +44,54 @@ Sonatype.repoServer.UserEditPanel = function( config ) {
     }
   };
   
+  this.displaySelector = new Ext.Button( {
+    text: 'All Configured Users',
+    icon: Sonatype.config.resourcePath + '/images/icons/page_white_stack.png',
+    cls: 'x-btn-text-icon',
+    value: 'allConfigured',
+    menu: {
+      id: 'user-realm-selector-menu',
+      items: [
+        {
+          text: 'All Users',
+          checked: false,
+          handler: this.showUsers,
+          value: 'all',
+          group: 'user-realm-selector',
+          scope: this
+        }
+      ]
+    }
+  } );
+
+  this.sourceStore = new Ext.data.JsonStore( {
+    root: 'data',
+    id: 'roleHint',
+    autoLoad: true,
+    url: Sonatype.config.repos.urls.userLocators,
+    sortInfo: { field: 'description', direction: 'ASC' },
+    fields: [
+      { name: 'roleHint' },
+      { name: 'description', sortType:Ext.data.SortTypes.asUCString }
+    ],
+    listeners: {
+      load: {
+        fn: this.loadSources,
+        scope: this
+      }
+    }
+  } );
+  
   this.searchField = new Ext.app.SearchField( { 
     searchPanel: this,
-    width: 240,
-    emptyText: 'Show All Users With Nexus Roles'
+    disabled: true,
+    width: 250,
+    emptyText: 'Select a filter to enable username search',
+
+    onTrigger2Click : function(){
+      var v = this.getRawValue();
+      this.searchPanel.startSearch( this.searchPanel );
+    }
   } );
 
   Sonatype.Events.on( 'userAddMenuInit', this.onAddMenuInit, this );
@@ -112,25 +156,7 @@ Sonatype.repoServer.UserEditPanel = function( config ) {
     },
     tbar: [
       ' ',
-      {
-        text: 'Find',
-        icon: Sonatype.config.resourcePath + '/images/icons/search.gif',
-        cls: 'x-btn-text-icon',
-        menu: {
-          items: [
-            {
-              text: 'Show Default Realm Users',
-              handler: this.showDefaultUsers,
-              scope: this
-            },
-            {
-              text: 'Show All Users With Nexus Roles',
-              handler: this.showMappedUsers,
-              scope: this
-            }
-          ]
-        }
-      },
+      this.displaySelector,
       this.searchField
     ]
   } );
@@ -255,7 +281,7 @@ Ext.extend( Sonatype.repoServer.UserEditPanel, Sonatype.panels.GridViewer, {
   refreshHandler: function( button, e ) {
     this.clearCards();
     if ( this.lastUrl ) {
-      this.searchByUrl( this.lastUrl );
+      this.searchByUrl();
     }
     else {
       this.dataStore.reload();
@@ -299,12 +325,12 @@ Ext.extend( Sonatype.repoServer.UserEditPanel, Sonatype.panels.GridViewer, {
     }
   },
   
-  searchByUrl: function( url ) {
-    this.lastUrl = url;
+  searchByUrl: function() {
+    this.clearCards();
     this.gridPanel.loadMask.show();
     Ext.Ajax.request( {
       scope: this,
-      url: url,
+      url: this.lastUrl,
       callback: function( options, success, response ) {
         this.gridPanel.loadMask.hide();
         if ( success ) {
@@ -320,23 +346,39 @@ Ext.extend( Sonatype.repoServer.UserEditPanel, Sonatype.panels.GridViewer, {
     } );
   },
 
-  showDefaultUsers: function( button, e ) {
-    this.searchField.emptyText = button.text;
-    this.stopSearch( this );
-    this.searchByUrl( Sonatype.config.repos.urls.plexusUsersDefault );
-  },
+  showUsers: function( button, e ) {
+    this.displaySelector.setText( button.text );
+    this.displaySelector.value = button.value;
 
-  showMappedUsers: function( button, e ) {
-    this.searchField.emptyText = button.text;
-    this.stopSearch( this );
-    this.searchByUrl( Sonatype.config.repos.urls.plexusUsersAllConfigured );
+    if ( button.value == 'allConfigured' ) {
+      this.searchField.emptyText = 'Select a filter to enable username search';
+      this.searchField.setValue( '' );
+      this.searchField.disable();
+      this.calculateSearchUrl( this );
+      this.searchByUrl();
+    }
+    else {
+      this.searchField.emptyText = 'Enter a username or leave blank to display all';
+      this.searchField.setValue( '' );
+      this.searchField.enable();
+      this.calculateSearchUrl( this );
+    }
   },
   
   startSearch: function( panel ) {
-    this.searchField.emptyText = null;
-    panel.searchField.triggers[0].show();
-    panel.searchByUrl( Sonatype.config.repos.urls.searchUsers + '/all/' +
-      panel.searchField.getValue() );
+    panel.calculateSearchUrl( panel );
+    panel.searchByUrl();
+  },
+
+  calculateSearchUrl: function( panel ) {
+    var v = panel.searchField.getValue();
+    var prefix = '/' + panel.displaySelector.value; 
+    if ( v.length > 0 ) {
+      panel.lastUrl = Sonatype.config.repos.urls.searchUsers + prefix + '/' + panel.searchField.getValue();
+    }
+    else {
+      panel.lastUrl = Sonatype.config.repos.urls.plexusUsers + prefix;
+    }
   },
   
   stopSearch: function( panel ) {
@@ -452,6 +494,23 @@ Ext.extend( Sonatype.repoServer.UserEditPanel, Sonatype.panels.GridViewer, {
           icon: Sonatype.MessageBox.WARNING
         } );
       }
+    }
+  },
+  
+  loadSources: function( store, records, options ) {
+    var menu = Ext.menu.MenuMgr.get( 'user-realm-selector-menu' );
+
+    for ( var i = 0; i < records.length; i++ ) {
+      var rec = records[i];
+      var v = rec.data.roleHint;
+      menu.addMenuItem( {
+        text: v == 'default' ? 'Default Realm Users' : rec.data.description,
+        value: v,
+        checked: v == 'allConfigured',
+        handler: this.showUsers,
+        group: 'user-realm-selector',
+        scope: this
+      } );
     }
   }
 } );
