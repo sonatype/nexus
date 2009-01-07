@@ -21,6 +21,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Properties;
+import java.util.TimeZone;
 
 import org.apache.lucene.store.FSDirectory;
 import org.apache.maven.artifact.manager.WagonManager;
@@ -256,6 +257,7 @@ public class DefaultIndexUpdater
             if( contextTimestamp.after( chunkTimestamp ) )
             {
                 SimpleDateFormat df = new SimpleDateFormat( IndexingContext.INDEX_TIME_DAY_FORMAT );
+                df.setTimeZone( TimeZone.getTimeZone( "GMT" ) );
                 return IndexingContext.INDEX_FILE + "." + df.format( chunkTimestamp ) + ".zip";                
             }
         
@@ -273,7 +275,9 @@ public class DefaultIndexUpdater
         {
             try
             {
-                return new SimpleDateFormat( IndexingContext.INDEX_TIME_FORMAT ).parse( indexTimestamp );
+                SimpleDateFormat df = new SimpleDateFormat( IndexingContext.INDEX_TIME_FORMAT );
+                df.setTimeZone( TimeZone.getTimeZone( "GMT" ) );
+                return df.parse( indexTimestamp );
             }
             catch ( ParseException ex )
             {
