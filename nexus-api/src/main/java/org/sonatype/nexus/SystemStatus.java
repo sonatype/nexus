@@ -29,17 +29,25 @@ import org.sonatype.nexus.configuration.validator.ValidationResponse;
  * 
  * @author cstamas
  */
+/**
+ * @author Damian
+ *
+ */
+/**
+ * @author Damian
+ *
+ */
 public class SystemStatus
 {
     /**
      * The Application Name
      */
-    private String appName = "Sonatype Nexus";
+    private String appName = "Sonatype Nexus Maven Repository Manager";
     
     /**
      * The Formatted Application Name, used whenever possible
      */
-    private String formattedAppName = "Sonatype&trade Nexus&trade";
+    private String formattedAppName = "Sonatype Nexus&trade;";
     
     /**
      * The Nexus Application version.
@@ -47,9 +55,15 @@ public class SystemStatus
     private String version = "unknown";
 
     /**
-     * The Nexus Application edition.
+     * The Nexus Application edition for display in UI.
      */
-    private String edition = "OSS";
+    private String editionUI = "Open Source";
+    
+    
+    /**
+     * The Nexus Application edition for user agent
+     */
+    private String editionUserAgent = "OSS";
 
     /**
      * The Nexus Application state.
@@ -131,14 +145,24 @@ public class SystemStatus
         this.version = version;
     }
 
-    public String getEdition()
+    public String getEditionUI()
     {
-        return edition;
+        return editionUI;
     }
 
-    public void setEdition( String edition )
+    public void setEditionUI( String editionUI )
     {
-        this.edition = edition;
+        this.editionUI = editionUI;
+    }
+    
+    public String getEditionUserAgent()
+    {
+        return editionUserAgent;
+    }
+
+    public void setEditionUserAgent( String editionUserAgent )
+    {
+        this.editionUserAgent = editionUserAgent;
     }
 
     public SystemState getState()
