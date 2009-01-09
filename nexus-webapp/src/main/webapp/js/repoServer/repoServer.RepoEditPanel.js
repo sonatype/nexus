@@ -92,7 +92,7 @@ Sonatype.repoServer.RepoEditPanel = function(config){
   this.shadowRepoTypeDataStore = new Ext.data.Store({
     url: Sonatype.config.repos.urls.shadowRepoTypes,
     reader: this.shadowRepoTypeReader,
-    sortInfo: { field: 'roleHint', direction: 'ASC' },
+    sortInfo: { field: 'description', direction: 'ASC' },
     autoLoad: true
   });
   
@@ -917,7 +917,7 @@ Sonatype.repoServer.RepoEditPanel = function(config){
       width: 200,
       midWidth: 200,
       store: this.shadowRepoTypeDataStore,
-      displayField:'roleHint',
+      displayField:'description',
       valueField:'roleHint',
       editable: false,
       forceSelection: true,

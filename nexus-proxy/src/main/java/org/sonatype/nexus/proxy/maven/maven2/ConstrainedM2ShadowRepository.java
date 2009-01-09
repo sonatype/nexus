@@ -76,7 +76,7 @@ import org.sonatype.nexus.util.AlphanumComparator;
  * 
  * @author cstamas
  */
-@Component( role = ShadowRepository.class, hint = "m2-constrained", instantiationStrategy = "per-lookup" )
+@Component( role = ShadowRepository.class, hint = "m2-constrained", instantiationStrategy = "per-lookup", description = "Maven2 Constrained" )
 public class ConstrainedM2ShadowRepository
     extends DefaultShadowRepository
     implements MavenRepository
