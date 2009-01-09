@@ -12,6 +12,7 @@
 
 	<!-- a unique name for this project -->
 	<artifactId>nexus-utils</artifactId>
+  <version> 1.2.0.3</version>
 
 	<!-- POM packaging -->
 	<packaging>jar</packaging>
