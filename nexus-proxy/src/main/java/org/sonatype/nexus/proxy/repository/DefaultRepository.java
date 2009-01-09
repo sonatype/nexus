@@ -124,20 +124,39 @@ public abstract class DefaultRepository
                         }
 
                         // check is the remote newer than the local one
-                        shouldGetRemote = getRemoteStorage().containsItem( uid, localItem.getModified(), context );
-
-                        if ( !shouldGetRemote )
+                        try
                         {
-                            // remote file unchanged, touch the local one to renew it's Age
-                            markItemRemotelyChecked( localItem.getRepositoryItemUid() );
-                        }
+                            shouldGetRemote = getRemoteStorage().containsItem( uid, localItem.getModified(), context );
 
-                        if ( getLogger().isDebugEnabled() )
+                            if ( !shouldGetRemote )
+                            {
+                                // remote file unchanged, touch the local one to renew it's Age
+                                markItemRemotelyChecked( localItem.getRepositoryItemUid() );
+                            }
+
+                            if ( getLogger().isDebugEnabled() )
+                            {
+                                getLogger().debug(
+                                    "Newer version of item " + uid.toString() + " is found on remote storage." );
+                            }
+                        }
+                        catch ( StorageException ex )
                         {
-                            getLogger().debug(
-                                "Newer version of item " + uid.toString() + " is found on remote storage." );
-                        }
+                            getLogger()
+                                .warn(
+                                    "RemoteStorage of repository "
+                                        + getId()
+                                        + " throws StorageException. Problem connecting to remote repository='"
+                                        + this.getId()
+                                        + "'. Setting ProxyMode of this repository to BlockedAuto. MANUAL INTERVENTION NEEDED.",
+                                    ex );
 
+                            autoBlockProxying( ex );
+
+                            // do not go remote, but we did not mark it as "remote checked" also.
+                            // let the user do proper setup and probably it will try again
+                            shouldGetRemote = false;
+                        }
                     }
                     else
                     {
