@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>org.sonatype.nexus</groupId>
 		<artifactId>nexus</artifactId>
-		<version>1.2.0.4-SNAPSHOT</version>
+		<version>1.2.0.3</version>
 	</parent>
 
 	<!-- the version of maven's project object model -->
@@ -12,6 +12,7 @@
 
 	<!-- a unique name for this project -->
 	<artifactId>nexus-utils</artifactId>
+  <version> 1.2.0.3</version>
 
 	<!-- POM packaging -->
 	<packaging>jar</packaging>
