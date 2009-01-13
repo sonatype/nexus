@@ -671,7 +671,8 @@ Sonatype.utils = {
           Sonatype.repoServer.RepoServer.loginForm.getForm().reset();
         }
 
-        Sonatype.utils.loadNexusStatus();
+        var respObj = Ext.decode( response.responseText );
+        Sonatype.utils.loadNexusStatus( respObj.data.clientPermissions.loggedInUserSource );
       },
       failure: function(response, options){
         activeWindow.getEl().unmask();
@@ -683,7 +684,7 @@ Sonatype.utils = {
     });
   },
   
-  loadNexusStatus: function() {
+  loadNexusStatus: function( loggedInUserSource ) {
     Sonatype.user.curr = Sonatype.utils.cloneObj(Sonatype.user.anon);
 
     Ext.Ajax.request({
@@ -702,6 +703,7 @@ Sonatype.utils = {
           Sonatype.user.curr.repoServer = respObj.data.clientPermissions.permissions;
           Sonatype.user.curr.isLoggedIn = respObj.data.clientPermissions.loggedIn;
           Sonatype.user.curr.username = respObj.data.clientPermissions.loggedInUsername;
+          Sonatype.user.curr.loggedInUserSource = loggedInUserSource;
           
           var availSvrs = Sonatype.config.installedServers;
           for(var srv in availSvrs) {
