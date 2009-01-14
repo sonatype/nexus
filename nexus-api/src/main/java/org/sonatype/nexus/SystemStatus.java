@@ -35,7 +35,6 @@ import org.sonatype.nexus.configuration.validator.ValidationResponse;
  */
 /**
  * @author Damian
- *
  */
 public class SystemStatus
 {
@@ -43,27 +42,31 @@ public class SystemStatus
      * The Application Name
      */
     private String appName = "Sonatype Nexus Maven Repository Manager";
-    
+
     /**
      * The Formatted Application Name, used whenever possible
      */
     private String formattedAppName = "Sonatype Nexus&trade;";
-    
+
     /**
      * The Nexus Application version.
      */
     private String version = "unknown";
 
     /**
+     * The Nexus Java API version (not the REST API!).
+     */
+    private String apiVersion = "unknown";
+
+    /**
      * The Nexus Application edition for display in UI.
      */
-    private String editionUI = "Open Source";
-    
-    
+    private String editionLong = "Open Source";
+
     /**
      * The Nexus Application edition for user agent
      */
-    private String editionUserAgent = "OSS";
+    private String editionShort = "OSS";
 
     /**
      * The Nexus Application state.
@@ -114,22 +117,22 @@ public class SystemStatus
      * Other error cause that blocked startup.
      */
     private Throwable errorCause;
-    
+
     public String getAppName()
     {
         return appName;
     }
-    
+
     public void setAppName( String appName )
     {
         this.appName = appName;
     }
-    
+
     public String getFormattedAppName()
     {
         return formattedAppName;
     }
-    
+
     public void setFormattedAppName( String formattedAppName )
     {
         this.formattedAppName = formattedAppName;
@@ -145,24 +148,34 @@ public class SystemStatus
         this.version = version;
     }
 
-    public String getEditionUI()
+    public String getApiVersion()
     {
-        return editionUI;
+        return apiVersion;
     }
 
-    public void setEditionUI( String editionUI )
+    public void setApiVersion( String version )
     {
-        this.editionUI = editionUI;
-    }
-    
-    public String getEditionUserAgent()
-    {
-        return editionUserAgent;
+        this.apiVersion = version;
     }
 
-    public void setEditionUserAgent( String editionUserAgent )
+    public String getEditionLong()
     {
-        this.editionUserAgent = editionUserAgent;
+        return editionLong;
+    }
+
+    public void setEditionLong( String editionUI )
+    {
+        this.editionLong = editionUI;
+    }
+
+    public String getEditionShort()
+    {
+        return editionShort;
+    }
+
+    public void setEditionShort( String editionUserAgent )
+    {
+        this.editionShort = editionUserAgent;
     }
 
     public SystemState getState()

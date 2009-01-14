@@ -150,6 +150,13 @@ public abstract class AbstractRemoteRepositoryStorage
         return containsItem( uid, 0, context );
     }
 
+    public String getVersion()
+    {
+        SystemStatus status = applicationStatusSource.getSystemStatus();
+
+        return status.getVersion();
+    }
+
     // helper methods
 
     private String getUserAgentPlatformInfo()
@@ -158,10 +165,11 @@ public abstract class AbstractRemoteRepositoryStorage
         {
             SystemStatus status = applicationStatusSource.getSystemStatus();
 
-            userAgentPlatformInfo = new StringBuffer( "Nexus/" ).append( status.getVersion() ).append( " (" ).append(
-                status.getEditionUserAgent() ).append( "; " ).append( System.getProperty( "os.name" ) ).append( "; " ).append(
-                System.getProperty( "os.version" ) ).append( "; " ).append( System.getProperty( "os.arch" ) ).append(
-                "; " ).append( System.getProperty( "java.version" ) ).append( ") " ).toString();
+            userAgentPlatformInfo = new StringBuffer( "Nexus/" )
+                .append( status.getVersion() ).append( " (" ).append( status.getEditionShort() ).append( "; " ).append(
+                    System.getProperty( "os.name" ) ).append( "; " ).append( System.getProperty( "os.version" ) )
+                .append( "; " ).append( System.getProperty( "os.arch" ) ).append( "; " ).append(
+                    System.getProperty( "java.version" ) ).append( ") " ).toString();
         }
 
         return userAgentPlatformInfo;
@@ -172,9 +180,7 @@ public abstract class AbstractRemoteRepositoryStorage
     {
         StringBuffer buf = new StringBuffer( getUserAgentPlatformInfo() );
 
-        SystemStatus status = applicationStatusSource.getSystemStatus();
-
-        buf.append( getName() ).append( "/" ).append( status.getVersion() );
+        buf.append( getName() ).append( "/" ).append( getVersion() );
 
         // user customization
         CRemoteConnectionSettings remoteConnectionSettings = getRemoteConnectionSettings( ctx );
