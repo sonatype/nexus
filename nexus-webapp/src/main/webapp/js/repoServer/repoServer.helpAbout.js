@@ -42,7 +42,7 @@ Ext.extend(Sonatype.repoServer.HelpAboutPanel, Ext.Panel, {
   getHelpText : function() {
     return '<div class="little-padding">'
     + 'Sonatype Nexus&trade; '
-    + Sonatype.utils.edition
+    + Sonatype.utils.editionLong
     + ' Version'
     + '<br>Copyright&copy; 2008 Sonatype, Inc.  All rights reserved.'
     + '<br>Includes the third-party code listed at <a href="http://nexus.sonatype.org/dev/attributions.html" target="_new">http://nexus.sonatype.org/dev/attributions.html</a>'
