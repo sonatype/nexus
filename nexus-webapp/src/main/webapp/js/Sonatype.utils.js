@@ -684,6 +684,10 @@ Sonatype.utils = {
     });
   },
   
+  parseFormattedAppName: function( formattedAppName ){
+    return formattedAppName;
+  },
+  
   loadNexusStatus: function( loggedInUserSource, versionOnly ) {
     if ( !versionOnly ){
       Sonatype.user.curr = Sonatype.utils.cloneObj(Sonatype.user.anon);
@@ -706,8 +710,10 @@ Sonatype.utils = {
           
           Sonatype.utils.edition = respObj.data.editionLong;
           
+          var formattedAppName = Sonatype.utils.parseFormattedAppName( respObj.data.formattedAppName );
+          
           Ext.get('logo').update('<span>' 
-              + respObj.data.formattedAppName 
+              + formattedAppName 
               + '</span>');
 
           if ( !versionOnly ){
