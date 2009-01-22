@@ -58,7 +58,13 @@
 				<executions>
 					<execution>
 						<id>unpack-maven</id>
+            <!-- we don't need these until JUST BEFORE packaging, 
+                 so moving to a later phase to get out of 
+                 the way of m2eclipse. -->
+						<phase>process-test-classes</phase>
+						<!--
 						<phase>generate-resources</phase>
+  					-->
 						<goals>
 							<goal>unpack</goal>
 						</goals>
@@ -78,7 +84,13 @@
 
 					<execution>
 						<id>copy-fake-central-repo</id>
+            <!-- we don't need these until JUST BEFORE packaging, 
+                 so moving to a later phase to get out of 
+                 the way of m2eclipse. -->
+						<phase>process-test-classes</phase>
+						<!--
 						<phase>generate-resources</phase>
+  					-->
 						<goals>
 							<goal>copy-dependencies</goal>
 						</goals>
