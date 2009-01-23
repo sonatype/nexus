@@ -170,6 +170,7 @@ public interface MutableConfiguration
 
     void deleteRepositoryShadow( String id )
         throws NoSuchRepositoryException,
+            ConfigurationException,
             IOException;
 
     // CGroupsSettingPathMapping: CRUD

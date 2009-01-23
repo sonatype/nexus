@@ -634,7 +634,7 @@ public class DefaultNexus
 
     public void deleteRepositoryShadow( String id )
         throws NoSuchRepositoryException,
-
+            ConfigurationException,
             IOException
     {
         nexusConfiguration.deleteRepositoryShadow( id );
