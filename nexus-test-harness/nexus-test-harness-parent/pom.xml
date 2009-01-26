@@ -134,7 +134,7 @@
           </execution>
           <execution>
             <id>copy-dependencies</id>
-            <phase>generate-resources</phase>
+            <phase>generate-test-resources</phase>
             <goals>
               <goal>copy</goal>
             </goals>
