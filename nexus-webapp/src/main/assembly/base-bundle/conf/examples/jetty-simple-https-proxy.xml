@@ -3,7 +3,7 @@
 
 <!-- =============================================================== -->
 <!--                                                                 -->
-<!--  NOTE: Copy this file to ../../jetty.xml to use it.             -->
+<!--  NOTE: Copy this file to ../jetty.xml to use it.                -->
 <!--                                                                 -->
 <!-- Configure the Jetty Server                                      -->
 <!--                                                                 -->
@@ -22,21 +22,21 @@
     </Call>
     
     <New id="Contexts" class="org.mortbay.jetty.handler.ContextHandlerCollection">
-      <!-- The following configuration is REQUIRED, and MUST BE FIRST. 
-           It makes the Plexus container available for use in the Nexus webapp. -->
-      <Call name="addLifeCycleListener">
-          <Arg>
-            <New class="org.sonatype.plexus.jetty.custom.InjectExistingPlexusListener" />
-          </Arg>
-      </Call>
+        <!-- The following configuration is REQUIRED, and MUST BE FIRST. 
+             It makes the Plexus container available for use in the Nexus webapp. -->
+        <Call name="addLifeCycleListener">
+            <Arg>
+              <New class="org.sonatype.plexus.jetty.custom.InjectExistingPlexusListener" />
+            </Arg>
+        </Call>
   
-      <!-- The following configuration disables JSP taglib support, the validation of which
-           slows down Jetty's startup significantly. -->
-      <Call name="addLifeCycleListener">
-          <Arg>
-            <New class="org.sonatype.plexus.jetty.custom.DisableTagLibsListener" />
-          </Arg>
-      </Call>
+        <!-- The following configuration disables JSP taglib support, the validation of which
+             slows down Jetty's startup significantly. -->
+        <Call name="addLifeCycleListener">
+            <Arg>
+              <New class="org.sonatype.plexus.jetty.custom.DisableTagLibsListener" />
+            </Arg>
+        </Call>
     </New>
     
     <New id="NexusWebAppContext" class="org.mortbay.jetty.webapp.WebAppContext">
@@ -58,13 +58,7 @@
                         <New id="forwardedHttps"
                             class="org.mortbay.jetty.handler.rewrite.ForwardedSchemeHeaderRule">
                             
-                            <!-- If this header is present, and the specified headerValue matches, 
-                                 then the specified scheme will be passed on. If the headerValue isn't
-                                 specified, then the presence of the header with any value will trigger
-                                 the scheme modification.
-                            -->
-                            <Set name="header">X-Forwarded-Scheme</Set>
-                            <Set name="headerValue">https</Set>
+                            <!-- No matter what scheme or X-Forwarded-Scheme header comes through, ALWAYS use HTTPS. -->
                             <Set name="scheme">https</Set>
                         </New>
                     </Item>
