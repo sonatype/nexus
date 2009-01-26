@@ -145,7 +145,15 @@ Sonatype.repoServer.GroupsEditPanel = function(config){
                 var repos = this.tree.root.childNodes;
                 var draggedRepo = data.node.attributes.payload;
                 for ( var i = 0; i < repos.length; i++ ) {
-                  if ( repos[i].attributes.payload.format != draggedRepo.format ) {
+                  var format1 = repos[i].attributes.payload.format;
+                  var format2 = draggedRepo.format;
+                  var compatibleFormats = {
+                    'maven1': 'm2-m1-shadow',
+                    'maven2': 'm1-m2-shadow',
+                    'm1-m2-shadow': 'maven2',
+                    'm2-m1-shadow': 'maven1'
+                  };
+                  if ( format1 != format2 && compatibleFormats[format1] != format2 ) {
                     return this.dropNotAllowed;
                   }
                 }
