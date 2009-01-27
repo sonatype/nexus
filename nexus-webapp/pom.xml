@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.sonatype.nexus</groupId>
     <artifactId>nexus</artifactId>
-    <version>1.2.0.5-SNAPSHOT</version>
+    <version>1.2.1</version>
   </parent>
   <!-- a unique name for this project -->
   <artifactId>nexus-webapp</artifactId>
@@ -18,7 +18,7 @@
     <jsw-input>target/jsw-template</jsw-input>
     <jsw-output>jsw-filtered</jsw-output>
     <nexus-tools-input>target/nexus-tools</nexus-tools-input>
-	<nexus-lvo-plugin.version>1.0-SNAPSHOT</nexus-lvo-plugin.version>
+	<nexus-lvo-plugin.version>1.0.0</nexus-lvo-plugin.version>
   </properties>
   <dependencies>
 		<dependency>
