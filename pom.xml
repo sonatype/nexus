@@ -137,19 +137,6 @@
 		<module>nexus-webapp</module>
 		<module>nexus-clients</module>
 	</modules>
-	<profiles>
-		<profile>
-			<id>test-harness</id>
-			<activation>
-				<property>
-					<name>!skip-test-harness</name>
-				</property>
-			</activation>
-			<modules>
-				<module>nexus-test-harness</module>
-			</modules>
-		</profile>
-	</profiles>	
 	<dependencyManagement>
 		<dependencies>
 			<!-- Platform -->

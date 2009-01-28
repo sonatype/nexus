@@ -141,29 +141,41 @@ Sonatype.repoServer.GroupsEditPanel = function(config){
                   return false;
                 }
               },
+              validateFormat:function(format1, format2) {
+                var compatibleFormats = {
+                  'maven1': 'm2-m1-shadow',
+                  'maven2': 'm1-m2-shadow',
+                  'm1-m2-shadow': 'maven2',
+                  'm2-m1-shadow': 'maven1'
+                };
+                
+                if ( format1 != format2 && compatibleFormats[format1] != format2 ) {
+                  return false;
+                }
+                return true;
+              },
               onContainerOver:function(source, e, data){
                 var repos = this.tree.root.childNodes;
-                var draggedRepo = data.node.attributes.payload;
                 for ( var i = 0; i < repos.length; i++ ) {
-                  var format1 = repos[i].attributes.payload.format;
-                  var format2 = draggedRepo.format;
-                  var compatibleFormats = {
-                    'maven1': 'm2-m1-shadow',
-                    'maven2': 'm1-m2-shadow',
-                    'm1-m2-shadow': 'maven2',
-                    'm2-m1-shadow': 'maven1'
-                  };
-                  if ( format1 != format2 && compatibleFormats[format1] != format2 ) {
+                  if ( !this.validateFormat(repos[i].attributes.payload.format, data.node.attributes.payload.format)){
                     return this.dropNotAllowed;
                   }
                 }
                 return this.dropAllowed;
               },
               onNodeDrop:function(node, source, e, data){
-                return this.onContainerDrop( source, e, data );
+                if ( this.onNodeOver( node, source, e, data ) == this.dropNotAllowed ) {
+                  return false;
+                }
+
+                return Ext.tree.TreeDropZone.prototype.onNodeDrop.call(this, node, source, e, data);
               },
-              onNodeOver:function(node, source, e, data){
-                return this.onContainerOver( source, e, data );
+              onNodeOver:function(node, source, e, data){                
+                if ( !this.validateFormat(node.node.attributes.payload.format, data.node.attributes.payload.format)){
+                  return this.dropNotAllowed;
+                }
+                
+                return Ext.tree.TreeDropZone.prototype.onNodeOver.call(this, node, source, e, data);
               },
               // passign padding to make whole treePanel the drop zone.  This is dependent
               // on a sonatype fix in the Ext.dd.DropTarget class.  This is necessary
