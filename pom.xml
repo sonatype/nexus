@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.sonatype.nexus</groupId>
     <artifactId>nexus-parent</artifactId>
-    <version>8</version>
+    <version>9</version>
     <relativePath>../nexus-parent/pom.xml</relativePath>
   </parent>
 
@@ -113,7 +113,6 @@
       <timezone>-6</timezone>
     </developer>
   </developers>
-
 
   <scm>
     <connection>scm:svn:http://svn.sonatype.org/nexus/tags/nexus-repository-metadata-1.0.0</connection>
