@@ -3,13 +3,13 @@
 
   <parent>
     <groupId>org.sonatype.nexus.plugins</groupId>
-    <artifactId>nexus-plugins-parent</artifactId>
-    <version>2</version>
+    <artifactId>nexus-core-plugins</artifactId>
+    <version>2-SNAPSHOT</version>
   </parent>
 
   <artifactId>nexus-lvo-plugin</artifactId>
   <name>Nexus LVO Plugin (Extras)</name>
-  <version>1.0.1</version>
+  <version>1.0.2-SNAPSHOT</version>
   <description>Nexus LVO Plugin (Extras).</description>
 
 
