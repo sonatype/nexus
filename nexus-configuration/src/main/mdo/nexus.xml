@@ -681,6 +681,13 @@
           <description>Human readable Repository name.</description>
         </field>
         <field>
+          <name>pathPrefix</name>
+          <version>1.0.8+</version>
+          <type>String</type>
+          <required>false</required>
+          <description>Path prefix, used by router, to form the URL where this repository will be published.</description>
+        </field>
+        <field>
           <name>localStatus</name>
           <version>1.0.2+</version>
           <type>String</type>
@@ -1201,6 +1208,13 @@
           <description>Human readable Repository name.</description>
         </field>
         <field>
+          <name>pathPrefix</name>
+          <version>1.0.8+</version>
+          <type>String</type>
+          <required>false</required>
+          <description>Path prefix, used by router, to form the URL where this repository will be published.</description>
+        </field>
+        <field>
           <name>localStatus</name>
           <version>1.0.2+</version>
           <type>String</type>
@@ -1463,6 +1477,13 @@
           <type>String</type>
           <required>true</required>
           <description>Human readable Repository Group name.</description>
+        </field>
+        <field>
+          <name>pathPrefix</name>
+          <version>1.0.8+</version>
+          <type>String</type>
+          <required>false</required>
+          <description>Path prefix, used by router, to form the URL where this repository will be published.</description>
         </field>
         <field>
           <name>type</name>
