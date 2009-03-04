@@ -599,6 +599,27 @@
           <repository>nexus-commercial-3b661636333c5b</repository>
         </repositories>
       </repositoryGroup>
+      <repositoryGroup>
+        <groupId>nexus-STAGING</groupId>
+        <name>nexus-staging</name>
+        <repositories>
+          <repository>nexus-3b5c0561762b7c</repository>
+          <repository>nexus-3b5c61c99c26ef</repository>
+          <repository>nexus-3b61b1f432ba7b</repository>
+          <repository>all-3b6320d4d49019</repository>
+          <repository>nexus-commercial-3b6381ecf648ea</repository>
+          <repository>nexus-commercial-3b654eb462b37e</repository>
+          <repository>nexus-commercial-3b661636333c5b</repository>
+        </repositories>
+      </repositoryGroup>
+      <repositoryGroup>
+        <groupId>Releases</groupId>
+        <name>Releases Group (check case)</name>
+        <repositories>
+          <repository>releases</repository>
+          <repository>openqa-releases</repository>
+        </repositories>
+      </repositoryGroup>
     </repositoryGroups>
   </repositoryGrouping>
   <repositoryTargets>
