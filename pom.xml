@@ -114,7 +114,7 @@
     <module>nexus-core-plugins</module>
     <module>nexus-webapp</module>
     <module>nexus-clients</module>
-    <module>nexus-test-harness</module>
+    <!--module>nexus-test-harness</module-->
   </modules>
   <!-- Shortcuts for outnumbered deps :) -->
   <properties>
