@@ -113,7 +113,8 @@ public class Upgrade107to108
         {
             for ( CRepository repository : (List<CRepository>) newc.getRepositories() )
             {
-                repoIds.add( repository.getId() );
+                // need to check case insensitive for windows
+                repoIds.add( repository.getId().toLowerCase() );
             }
         }
 
@@ -122,7 +123,8 @@ public class Upgrade107to108
         {
             for ( CRepositoryShadow repository : (List<CRepositoryShadow>) newc.getRepositoryShadows() )
             {
-                repoIds.add( repository.getId() );
+                // need to check case insensitive for windows
+                repoIds.add( repository.getId().toLowerCase() );
             }
         }
 
@@ -130,7 +132,8 @@ public class Upgrade107to108
         {
             for ( CRepositoryGroup group : (List<CRepositoryGroup>) newc.getRepositoryGrouping().getRepositoryGroups() )
             {
-                if ( repoIds.contains( group.getGroupId() ) )
+                // need to check case insensitive for windows
+                if ( repoIds.contains( group.getGroupId().toLowerCase() ) )
                 {
                     // if duped only
                     group.setPathPrefix( group.getGroupId() );
