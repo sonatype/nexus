@@ -42,7 +42,6 @@ import org.sonatype.nexus.proxy.maven.MavenRepository;
 import org.sonatype.nexus.proxy.maven.RecreateMavenMetadataWalkerProcessor;
 import org.sonatype.nexus.proxy.maven.RepositoryPolicy;
 import org.sonatype.nexus.proxy.maven.maven2.Maven2ContentClass;
-import org.sonatype.nexus.proxy.maven.metadata.DefaultMetadataHelper;
 import org.sonatype.nexus.proxy.registry.ContentClass;
 import org.sonatype.nexus.proxy.registry.RepositoryRegistry;
 import org.sonatype.nexus.proxy.repository.GroupRepository;
@@ -505,7 +504,7 @@ public class DefaultSnapshotRemover
 
                 metadataRebuildPaths.add( parentPath );
             }
-            else 
+            else
             {
                 metadataRebuildPaths.add( coll.getPath() );
             }
@@ -553,7 +552,8 @@ public class DefaultSnapshotRemover
                     MavenRepository mrepository = repository.adaptToFacet( MavenRepository.class );
 
                     // look in release reposes only
-                    if ( RepositoryPolicy.RELEASE.equals( mrepository.getRepositoryPolicy() ) )
+                    if ( mrepository.isUserManaged()
+                        && RepositoryPolicy.RELEASE.equals( mrepository.getRepositoryPolicy() ) )
                     {
                         try
                         {
