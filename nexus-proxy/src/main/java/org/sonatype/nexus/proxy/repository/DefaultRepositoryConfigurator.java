@@ -207,6 +207,12 @@ public class DefaultRepositoryConfigurator
                 configurator.configureRepository( repository );
             }
         }
+        
+        // clear the NotFoundCache
+        if( repository.getNotFoundCache() != null )
+        {
+            repository.getNotFoundCache().purge();
+        }
 
         return repository;
     }
