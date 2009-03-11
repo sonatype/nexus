@@ -28,8 +28,6 @@ import org.sonatype.nexus.proxy.repository.Repository;
 public interface RequestRepositoryMapper
     extends EventListener
 {
-    String ROLE = RequestRepositoryMapper.class.getName();
-
     /**
      * Gets the mapped repositories.
      * 

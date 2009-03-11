@@ -19,13 +19,13 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.codehaus.plexus.component.annotations.Requirement;
+import org.codehaus.plexus.logging.AbstractLogEnabled;
 import org.codehaus.plexus.util.StringUtils;
 import org.sonatype.nexus.ApplicationStatusSource;
 import org.sonatype.nexus.SystemStatus;
-import org.sonatype.nexus.configuration.model.CRemoteAuthentication;
-import org.sonatype.nexus.configuration.model.CRemoteConnectionSettings;
-import org.sonatype.nexus.configuration.model.CRemoteHttpProxySettings;
-import org.sonatype.nexus.proxy.LoggingComponent;
+import org.sonatype.nexus.configuration.modello.CRemoteAuthentication;
+import org.sonatype.nexus.configuration.modello.CRemoteConnectionSettings;
+import org.sonatype.nexus.configuration.modello.CRemoteHttpProxySettings;
 import org.sonatype.nexus.proxy.RemoteAccessException;
 import org.sonatype.nexus.proxy.RemoteAuthenticationNeededException;
 import org.sonatype.nexus.proxy.StorageException;
@@ -39,7 +39,7 @@ import org.sonatype.nexus.proxy.repository.Repository;
  * @author cstamas
  */
 public abstract class AbstractRemoteRepositoryStorage
-    extends LoggingComponent
+    extends AbstractLogEnabled
     implements RemoteRepositoryStorage
 {
     @Requirement

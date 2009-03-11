@@ -21,12 +21,15 @@ import java.util.List;
 import java.util.Map;
 
 import org.codehaus.plexus.component.annotations.Requirement;
+import org.codehaus.plexus.logging.AbstractLogEnabled;
 import org.codehaus.plexus.personality.plexus.lifecycle.phase.Initializable;
 import org.codehaus.plexus.personality.plexus.lifecycle.phase.InitializationException;
 import org.codehaus.plexus.util.StringUtils;
+import org.sonatype.nexus.configuration.ConfigurationException;
 import org.sonatype.nexus.configuration.application.ApplicationConfiguration;
+import org.sonatype.nexus.configuration.modello.CRepository;
+import org.sonatype.nexus.configuration.validator.InvalidConfigurationException;
 import org.sonatype.nexus.proxy.AccessDeniedException;
-import org.sonatype.nexus.proxy.EventMulticasterComponent;
 import org.sonatype.nexus.proxy.IllegalOperationException;
 import org.sonatype.nexus.proxy.IllegalRequestException;
 import org.sonatype.nexus.proxy.ItemNotFoundException;
@@ -38,6 +41,8 @@ import org.sonatype.nexus.proxy.access.Action;
 import org.sonatype.nexus.proxy.cache.CacheManager;
 import org.sonatype.nexus.proxy.cache.PathCache;
 import org.sonatype.nexus.proxy.events.AbstractEvent;
+import org.sonatype.nexus.proxy.events.ApplicationEventMulticaster;
+import org.sonatype.nexus.proxy.events.EventListener;
 import org.sonatype.nexus.proxy.events.RepositoryEventClearCaches;
 import org.sonatype.nexus.proxy.events.RepositoryEventEvictUnusedItems;
 import org.sonatype.nexus.proxy.events.RepositoryEventLocalStatusChanged;
@@ -87,8 +92,8 @@ import org.sonatype.nexus.util.ContextUtils;
  * @author cstamas
  */
 public abstract class AbstractRepository
-    extends EventMulticasterComponent
-    implements Repository, Initializable
+    extends AbstractLogEnabled
+    implements Repository, EventListener, Initializable
 {
     /**
      * StorageItem context key. If value set to Boolean.TRUE, the item will not be stored locally. Useful to suppress
@@ -96,6 +101,9 @@ public abstract class AbstractRepository
      */
     public static final String CTX_TRANSITIVE_ITEM = AbstractRepository.class.getCanonicalName()
         + ".CTX_TRANSITIVE_ITEM";
+
+    @Requirement
+    private ApplicationEventMulticaster applicationEventMulticaster;
 
     @Requirement
     private ApplicationConfiguration applicationConfiguration;
@@ -181,10 +189,80 @@ public abstract class AbstractRepository
     /** Request processors list */
     private List<RequestProcessor> requestProcessors;
 
+    /** The configuration */
+    private CRepository crepository;
+
+    // Configurable iface
+
+    public final CRepository getCurrentConfiguration()
+    {
+        return crepository;
+    }
+
+    public final void validateConfiguration( Object config )
+        throws ConfigurationException
+    {
+        if ( config == null )
+        {
+            throw new InvalidConfigurationException( "This configuration is null!" );
+        }
+        else if ( config instanceof CRepository )
+        {
+            doValidateConfiguration( (CRepository) config );
+        }
+        else
+        {
+            throw new InvalidConfigurationException( "This configuration is of class '" + config.getClass().getName()
+                + "' is not applicable!" );
+        }
+    }
+
+    public final void configure( Object config )
+        throws ConfigurationException
+    {
+        validateConfiguration( config );
+
+        this.crepository = (CRepository) config;
+
+        doConfigure( false );
+    }
+
+    public final void configure()
+        throws ConfigurationException
+    {
+        doConfigure( true );
+    }
+
+    protected void doValidateConfiguration( CRepository config )
+        throws ConfigurationException
+    {
+        if ( getRepositoryConfigurationValidator() != null )
+        {
+            getRepositoryConfigurationValidator().validate( applicationConfiguration, config );
+        }
+    }
+
+    protected void doConfigure( boolean validate )
+        throws ConfigurationException
+    {
+        if ( validate )
+        {
+            doValidateConfiguration( getCurrentConfiguration() );
+        }
+
+        getRepositoryConfigurator().configure( this, applicationConfiguration, getCurrentConfiguration() );
+    }
+
+    public abstract RepositoryConfigurationValidator getRepositoryConfigurationValidator();
+
+    public abstract RepositoryConfigurator getRepositoryConfigurator();
+
+    // --
+
     public void initialize()
         throws InitializationException
     {
-        applicationConfiguration.addProximityEventListener( this );
+        applicationEventMulticaster.addProximityEventListener( this );
     }
 
     public void onProximityEvent( AbstractEvent evt )
@@ -197,9 +275,14 @@ public abstract class AbstractRepository
             if ( revt.getRepository() == this )
             {
                 // we are being removed
-                applicationConfiguration.removeProximityEventListener( this );
+                applicationEventMulticaster.removeProximityEventListener( this );
             }
         }
+    }
+
+    protected ApplicationEventMulticaster getApplicationEventMulticaster()
+    {
+        return applicationEventMulticaster;
     }
 
     protected ApplicationConfiguration getApplicationConfiguration()
@@ -229,7 +312,8 @@ public abstract class AbstractRepository
 
         if ( !oldStatus.equals( localStatus ) )
         {
-            notifyProximityEventListeners( new RepositoryEventLocalStatusChanged( this, oldStatus, localStatus ) );
+            getApplicationEventMulticaster().notifyProximityEventListeners(
+                new RepositoryEventLocalStatusChanged( this, oldStatus, localStatus ) );
         }
     }
 
@@ -419,11 +503,11 @@ public abstract class AbstractRepository
     }
 
     @SuppressWarnings( "unchecked" )
-    public <T> T adaptToFacet( Class<T> t )
+    public <F> F adaptToFacet( Class<F> t )
     {
         if ( t.isAssignableFrom( this.getClass() ) )
         {
-            return (T) this;
+            return (F) this;
         }
         else
         {
@@ -505,7 +589,7 @@ public abstract class AbstractRepository
             }
         }
 
-        notifyProximityEventListeners( new RepositoryEventClearCaches( this, path ) );
+        getApplicationEventMulticaster().notifyProximityEventListeners( new RepositoryEventClearCaches( this, path ) );
     }
 
     public Collection<String> evictUnusedItems( final long timestamp )
@@ -521,7 +605,7 @@ public abstract class AbstractRepository
         // and let it loose
         walker.walk( ctx );
 
-        notifyProximityEventListeners( new RepositoryEventEvictUnusedItems( this ) );
+        getApplicationEventMulticaster().notifyProximityEventListeners( new RepositoryEventEvictUnusedItems( this ) );
 
         return walkerProcessor.getFiles();
     }
@@ -543,7 +627,7 @@ public abstract class AbstractRepository
 
         walker.walk( ctx, path );
 
-        notifyProximityEventListeners( new RepositoryEventRecreateAttributes( this ) );
+        getApplicationEventMulticaster().notifyProximityEventListeners( new RepositoryEventRecreateAttributes( this ) );
 
         return true;
     }
@@ -838,7 +922,8 @@ public abstract class AbstractRepository
                 }
             }
 
-            notifyProximityEventListeners( new RepositoryItemEventRetrieve( this, item ) );
+            getApplicationEventMulticaster().notifyProximityEventListeners(
+                new RepositoryItemEventRetrieve( this, item ) );
 
             if ( getLogger().isDebugEnabled() )
             {
@@ -958,7 +1043,7 @@ public abstract class AbstractRepository
         }
 
         // fire the event for file being deleted
-        notifyProximityEventListeners( new RepositoryItemEventDelete( this, item ) );
+        getApplicationEventMulticaster().notifyProximityEventListeners( new RepositoryItemEventDelete( this, item ) );
 
         if ( StorageCollectionItem.class.isAssignableFrom( item.getClass() ) )
         {
@@ -969,7 +1054,7 @@ public abstract class AbstractRepository
             }
 
             // it is collection, walk it and below and fire events for all files
-            DeletionNotifierWalker dnw = new DeletionNotifierWalker( this, context );
+            DeletionNotifierWalker dnw = new DeletionNotifierWalker( getApplicationEventMulticaster(), context );
 
             DefaultWalkerContext ctx = new DefaultWalkerContext( this );
 
@@ -1005,7 +1090,7 @@ public abstract class AbstractRepository
         // remove the "request" item from n-cache if there
         removeFromNotFoundCache( item.getRepositoryItemUid().getPath() );
 
-        notifyProximityEventListeners( new RepositoryItemEventStore( this, item ) );
+        getApplicationEventMulticaster().notifyProximityEventListeners( new RepositoryItemEventStore( this, item ) );
     }
 
     public Collection<StorageItem> list( RepositoryItemUid uid, Map<String, Object> context )

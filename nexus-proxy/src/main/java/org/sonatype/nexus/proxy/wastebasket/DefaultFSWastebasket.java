@@ -30,6 +30,7 @@ import org.sonatype.nexus.configuration.application.ApplicationConfiguration;
 import org.sonatype.nexus.proxy.ItemNotFoundException;
 import org.sonatype.nexus.proxy.StorageException;
 import org.sonatype.nexus.proxy.events.AbstractEvent;
+import org.sonatype.nexus.proxy.events.ApplicationEventMulticaster;
 import org.sonatype.nexus.proxy.events.EventListener;
 import org.sonatype.nexus.proxy.item.AbstractStorageItem;
 import org.sonatype.nexus.proxy.item.StorageCollectionItem;
@@ -49,6 +50,9 @@ public class DefaultFSWastebasket
     implements SmartWastebasket, EventListener, Initializable
 {
     @Requirement
+    private ApplicationEventMulticaster applicationEventMulticaster;
+
+    @Requirement
     private ApplicationConfiguration applicationConfiguration;
 
     private File wastebasketDirectory;
@@ -58,7 +62,7 @@ public class DefaultFSWastebasket
     public void initialize()
         throws InitializationException
     {
-        applicationConfiguration.addProximityEventListener( this );
+        applicationEventMulticaster.addProximityEventListener( this );
     }
 
     public void onProximityEvent( AbstractEvent evt )

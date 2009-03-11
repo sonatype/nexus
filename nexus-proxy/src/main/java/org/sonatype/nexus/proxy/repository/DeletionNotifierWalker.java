@@ -15,6 +15,7 @@ package org.sonatype.nexus.proxy.repository;
 
 import java.util.Map;
 
+import org.sonatype.nexus.proxy.events.ApplicationEventMulticaster;
 import org.sonatype.nexus.proxy.events.RepositoryItemEventDelete;
 import org.sonatype.nexus.proxy.item.StorageFileItem;
 import org.sonatype.nexus.proxy.walker.AbstractFileWalkerProcessor;
@@ -23,13 +24,14 @@ import org.sonatype.nexus.proxy.walker.WalkerContext;
 public class DeletionNotifierWalker
     extends AbstractFileWalkerProcessor
 {
-    private final Repository repository;
+    private final ApplicationEventMulticaster applicationEventMulticaster;
 
     private final Map<String, Object> context;
 
-    public DeletionNotifierWalker( Repository repository, Map<String, Object> context )
+    public DeletionNotifierWalker( ApplicationEventMulticaster applicationEventMulticaster,
+        Map<String, Object> context )
     {
-        this.repository = repository;
+        this.applicationEventMulticaster = applicationEventMulticaster;
 
         this.context = context;
     }
@@ -43,7 +45,9 @@ public class DeletionNotifierWalker
         }
 
         // just fire it, and someone will eventually catch it
-        repository.notifyProximityEventListeners( new RepositoryItemEventDelete( ctx.getRepository(), item ) );
+        applicationEventMulticaster.notifyProximityEventListeners( new RepositoryItemEventDelete(
+            ctx.getRepository(),
+            item ) );
     }
 
 }

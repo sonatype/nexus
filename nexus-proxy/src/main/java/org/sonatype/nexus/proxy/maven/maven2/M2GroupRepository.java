@@ -33,12 +33,9 @@ import org.codehaus.plexus.component.annotations.Requirement;
 import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 import org.sonatype.nexus.artifact.GavCalculator;
 import org.sonatype.nexus.artifact.M2ArtifactRecognizer;
-import org.sonatype.nexus.configuration.ConfigurationChangeEvent;
-import org.sonatype.nexus.configuration.application.ApplicationConfiguration;
 import org.sonatype.nexus.proxy.IllegalOperationException;
 import org.sonatype.nexus.proxy.ItemNotFoundException;
 import org.sonatype.nexus.proxy.StorageException;
-import org.sonatype.nexus.proxy.events.AbstractEvent;
 import org.sonatype.nexus.proxy.item.AbstractStorageItem;
 import org.sonatype.nexus.proxy.item.DefaultStorageFileItem;
 import org.sonatype.nexus.proxy.item.RepositoryItemUid;
@@ -46,6 +43,8 @@ import org.sonatype.nexus.proxy.item.StorageItem;
 import org.sonatype.nexus.proxy.maven.AbstractMavenGroupRepository;
 import org.sonatype.nexus.proxy.registry.ContentClass;
 import org.sonatype.nexus.proxy.repository.GroupRepository;
+import org.sonatype.nexus.proxy.repository.RepositoryConfigurationValidator;
+import org.sonatype.nexus.proxy.repository.RepositoryConfigurator;
 import org.sonatype.nexus.proxy.storage.UnsupportedStorageOperationException;
 
 @Component( role = GroupRepository.class, hint = "maven2", instantiationStrategy = "per-lookup", description = "Maven2 Repository Group" )
@@ -64,7 +63,20 @@ public class M2GroupRepository
     @Requirement( hint = "maven2" )
     private ContentClass contentClass;
 
+    @Requirement
+    private M2GroupRepositoryConfigurator m2GroupRepositoryConfigurator;
+
     private boolean mergeMetadata = true;
+
+    public boolean isMergeMetadata()
+    {
+        return mergeMetadata;
+    }
+
+    public void setMergeMetadata( boolean mergeMetadata )
+    {
+        this.mergeMetadata = mergeMetadata;
+    }
 
     public ContentClass getRepositoryContentClass()
     {
@@ -74,6 +86,19 @@ public class M2GroupRepository
     public GavCalculator getGavCalculator()
     {
         return gavCalculator;
+    }
+
+    @Override
+    public RepositoryConfigurationValidator getRepositoryConfigurationValidator()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public RepositoryConfigurator getRepositoryConfigurator()
+    {
+        return m2GroupRepositoryConfigurator;
     }
 
     @Override
@@ -237,29 +262,4 @@ public class M2GroupRepository
 
         storeItem( item );
     }
-
-    public boolean isMergeMetadata()
-    {
-        return mergeMetadata;
-    }
-
-    public void setMergeMetadata( boolean mergeMetadata )
-    {
-        this.mergeMetadata = mergeMetadata;
-    }
-
-    @Override
-    public void onProximityEvent( AbstractEvent evt )
-    {
-        super.onProximityEvent( evt );
-
-        if ( evt instanceof ConfigurationChangeEvent )
-        {
-            ApplicationConfiguration cfg = (ApplicationConfiguration) ( (ConfigurationChangeEvent) evt )
-                .getNotifiableConfiguration();
-
-            mergeMetadata = cfg.getConfiguration().getRouting().getGroups().isMergeMetadata();
-        }
-    }
-
 }

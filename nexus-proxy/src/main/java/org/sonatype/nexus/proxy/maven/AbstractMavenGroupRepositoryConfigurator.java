@@ -11,17 +11,11 @@
  * Sonatype Nexus (TM) Professional Version is available from Sonatype, Inc.
  * "Sonatype" and "Sonatype Nexus" are trademarks of Sonatype, Inc.
  */
-package org.sonatype.nexus.proxy.repository;
+package org.sonatype.nexus.proxy.maven;
 
-import org.sonatype.nexus.configuration.application.ApplicationConfiguration;
-import org.sonatype.nexus.configuration.model.CRepositoryGroup;
-import org.sonatype.nexus.configuration.validator.InvalidConfigurationException;
-import org.sonatype.nexus.proxy.storage.local.LocalRepositoryStorage;
+import org.sonatype.nexus.proxy.repository.AbstractGroupRepositoryConfigurator;
 
-public interface GroupRepositoryConfigurator
+public class AbstractMavenGroupRepositoryConfigurator
+    extends AbstractGroupRepositoryConfigurator
 {
-
-    GroupRepository updateRepositoryFromModel( GroupRepository old, ApplicationConfiguration nexusConfiguration,
-        CRepositoryGroup group, LocalRepositoryStorage ls ) throws InvalidConfigurationException;
-
 }

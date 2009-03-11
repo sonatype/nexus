@@ -90,6 +90,24 @@
               <goal>xpp3-writer</goal>
             </goals>
             <configuration>
+              <useJava5>true</useJava5>
+              <version>1.4.0</version>
+              <packagedVersions>
+              </packagedVersions>
+              <models>
+                <model>src/main/mdo/nexus.xml</model>
+              </models>
+            </configuration>
+          </execution>
+          <execution>
+            <id>nexus-old.xml</id>
+            <goals>
+              <goal>java</goal>
+              <goal>xpp3-reader</goal>
+              <goal>xpp3-writer</goal>
+            </goals>
+            <configuration>
+              <packageWithVersion>true</packageWithVersion>
               <version>1.0.8</version>
               <packagedVersions>
                 <packagedVersion>1.0.0</packagedVersion>
@@ -102,7 +120,7 @@
                 <packagedVersion>1.0.7</packagedVersion>
               </packagedVersions>
               <models>
-                <model>src/main/mdo/nexus.xml</model>
+                <model>src/main/mdo/nexus-old.xml</model>
               </models>
             </configuration>
           </execution>
@@ -144,12 +162,13 @@
               <goal>upgrade</goal>
             </goals>
             <configuration>
+              <packageWithVersion>true</packageWithVersion>
               <version>1.0.8</version>
               <packagedVersions>
                 <packagedVersion>1.0.7</packagedVersion>
               </packagedVersions>
               <models>
-                <model>src/main/mdo/nexus.xml</model>
+                <model>src/main/mdo/nexus-old.xml</model>
               </models>
             </configuration>
           </execution>

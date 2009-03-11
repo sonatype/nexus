@@ -24,6 +24,8 @@ import org.sonatype.nexus.proxy.maven.AbstractMavenRepository;
 import org.sonatype.nexus.proxy.maven.RepositoryPolicy;
 import org.sonatype.nexus.proxy.registry.ContentClass;
 import org.sonatype.nexus.proxy.repository.Repository;
+import org.sonatype.nexus.proxy.repository.RepositoryConfigurationValidator;
+import org.sonatype.nexus.proxy.repository.RepositoryConfigurator;
 
 /**
  * The default M1Repository. This class adds snapshot/release sensing and differentiated expiration handling and repo
@@ -44,6 +46,9 @@ public class M1Repository
     @Requirement( hint = "maven1" )
     private ContentClass contentClass;
 
+    @Requirement
+    private M1RepositoryConfigurator m1RepositoryConfigurator;
+
     public ContentClass getRepositoryContentClass()
     {
         return contentClass;
@@ -52,6 +57,19 @@ public class M1Repository
     public GavCalculator getGavCalculator()
     {
         return gavCalculator;
+    }
+
+    @Override
+    public RepositoryConfigurationValidator getRepositoryConfigurationValidator()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public RepositoryConfigurator getRepositoryConfigurator()
+    {
+        return m1RepositoryConfigurator;
     }
 
     /**
@@ -118,7 +136,7 @@ public class M1Repository
         // it is a release
         return isOld( getReleaseMaxAge(), item );
     }
-    
+
     // not available on maven1 repo
     public boolean recreateMavenMetadata( String path )
     {

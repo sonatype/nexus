@@ -71,8 +71,6 @@ public abstract class AbstractShadowRepository
         if ( getMasterRepositoryContentClass().getId().equals( masterRepository.getRepositoryContentClass().getId() ) )
         {
             this.masterRepository = masterRepository;
-
-            getMasterRepository().addProximityEventListener( this );
         }
         else
         {
@@ -133,7 +131,6 @@ public abstract class AbstractShadowRepository
         throws UnsupportedStorageOperationException,
             IllegalOperationException,
             StorageException;
-
 
     protected void synchronizeLink( StorageItem item, Map<String, Object> context )
         throws UnsupportedStorageOperationException,

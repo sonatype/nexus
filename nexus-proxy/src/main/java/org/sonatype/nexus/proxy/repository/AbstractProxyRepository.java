@@ -22,7 +22,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import org.codehaus.plexus.component.annotations.Requirement;
-import org.sonatype.nexus.configuration.model.CRemoteConnectionSettings;
+import org.sonatype.nexus.configuration.modello.CRemoteConnectionSettings;
 import org.sonatype.nexus.feeds.FeedRecorder;
 import org.sonatype.nexus.feeds.NexusArtifactEvent;
 import org.sonatype.nexus.proxy.IllegalOperationException;
@@ -241,7 +241,8 @@ public abstract class AbstractProxyRepository
 
         if ( sendNotification && !proxyMode.equals( oldProxyMode ) )
         {
-            notifyProximityEventListeners( new RepositoryEventProxyModeChanged( this, oldProxyMode, proxyMode, cause ) );
+            getApplicationEventMulticaster().notifyProximityEventListeners(
+                new RepositoryEventProxyModeChanged( this, oldProxyMode, proxyMode, cause ) );
         }
     }
 
@@ -374,7 +375,8 @@ public abstract class AbstractProxyRepository
             result = getLocalStorage()
                 .retrieveItem( this, item.getItemContext(), item.getRepositoryItemUid().getPath() );
 
-            notifyProximityEventListeners( new RepositoryItemEventCache( this, result ) );
+            getApplicationEventMulticaster()
+                .notifyProximityEventListeners( new RepositoryItemEventCache( this, result ) );
 
             result.getItemContext().putAll( item.getItemContext() );
         }

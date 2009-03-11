@@ -19,8 +19,8 @@ import java.net.URL;
 import java.util.Map;
 
 import org.codehaus.plexus.component.annotations.Requirement;
+import org.codehaus.plexus.logging.AbstractLogEnabled;
 import org.sonatype.nexus.proxy.ItemNotFoundException;
-import org.sonatype.nexus.proxy.LoggingComponent;
 import org.sonatype.nexus.proxy.StorageException;
 import org.sonatype.nexus.proxy.attributes.AttributesHandler;
 import org.sonatype.nexus.proxy.item.AbstractStorageItem;
@@ -37,7 +37,7 @@ import org.sonatype.nexus.proxy.wastebasket.Wastebasket;
  * @author cstamas
  */
 public abstract class AbstractLocalRepositoryStorage
-    extends LoggingComponent
+    extends AbstractLogEnabled
     implements LocalRepositoryStorage
 {
 

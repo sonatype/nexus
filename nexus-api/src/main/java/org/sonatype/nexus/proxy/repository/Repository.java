@@ -17,6 +17,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+import org.sonatype.nexus.configuration.ValidatingConfigurable;
 import org.sonatype.nexus.proxy.IllegalOperationException;
 import org.sonatype.nexus.proxy.ItemNotFoundException;
 import org.sonatype.nexus.proxy.ResourceStore;
@@ -25,8 +26,6 @@ import org.sonatype.nexus.proxy.StorageException;
 import org.sonatype.nexus.proxy.access.AccessManager;
 import org.sonatype.nexus.proxy.access.Action;
 import org.sonatype.nexus.proxy.cache.PathCache;
-import org.sonatype.nexus.proxy.events.EventListener;
-import org.sonatype.nexus.proxy.events.EventMulticaster;
 import org.sonatype.nexus.proxy.item.RepositoryItemUid;
 import org.sonatype.nexus.proxy.item.StorageCollectionItem;
 import org.sonatype.nexus.proxy.item.StorageItem;
@@ -43,7 +42,7 @@ import org.sonatype.nexus.scheduling.RepositoryTaskFilter;
  * @author cstamas
  */
 public interface Repository
-    extends ResourceStore, EventMulticaster, EventListener
+    extends ResourceStore, ValidatingConfigurable<Object>
 {
     /**
      * Returns the ID of the resourceStore.
@@ -146,7 +145,7 @@ public interface Repository
      * @param t
      * @return the facet requested, otherwise null.
      */
-    <T> T adaptToFacet( Class<T> t );
+    <F> F adaptToFacet( Class<F> t );
 
     // ==================================================
     // NFC et al
@@ -421,5 +420,4 @@ public interface Repository
         throws IllegalOperationException,
             ItemNotFoundException,
             StorageException;
-
 }

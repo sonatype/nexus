@@ -43,6 +43,8 @@ import org.sonatype.nexus.proxy.maven.AbstractMavenRepository;
 import org.sonatype.nexus.proxy.maven.RepositoryPolicy;
 import org.sonatype.nexus.proxy.registry.ContentClass;
 import org.sonatype.nexus.proxy.repository.Repository;
+import org.sonatype.nexus.proxy.repository.RepositoryConfigurationValidator;
+import org.sonatype.nexus.proxy.repository.RepositoryConfigurator;
 import org.sonatype.nexus.util.AlphanumComparator;
 
 /**
@@ -63,6 +65,9 @@ public class M2Repository
     @Requirement( hint = "maven2" )
     private ContentClass contentClass;
 
+    @Requirement
+    private M2RepositoryConfigurator m2RepositoryConfigurator;
+
     public ContentClass getRepositoryContentClass()
     {
         return contentClass;
@@ -71,6 +76,19 @@ public class M2Repository
     public GavCalculator getGavCalculator()
     {
         return gavCalculator;
+    }
+
+    @Override
+    public RepositoryConfigurationValidator getRepositoryConfigurationValidator()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public RepositoryConfigurator getRepositoryConfigurator()
+    {
+        return m2RepositoryConfigurator;
     }
 
     /**
@@ -221,5 +239,4 @@ public class M2Repository
 
         return versions.get( versions.size() - 1 );
     }
-
 }

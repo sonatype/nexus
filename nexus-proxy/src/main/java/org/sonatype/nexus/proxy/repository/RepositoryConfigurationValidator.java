@@ -13,27 +13,12 @@
  */
 package org.sonatype.nexus.proxy.repository;
 
+import org.sonatype.nexus.configuration.ConfigurationException;
+import org.sonatype.nexus.configuration.application.ApplicationConfiguration;
+import org.sonatype.nexus.configuration.modello.CRepository;
 
-/**
- * This is default implementation of a repository. It supports age calculation, a repeated retrieval if item is found
- * locally but it's age is more then allowed.
- * 
- * @author cstamas
- */
-public abstract class DefaultRepository
-    extends AbstractProxyRepository
+public interface RepositoryConfigurationValidator
 {
-    private MutableProxyRepositoryKind repositoryKind;
-
-    public RepositoryKind getRepositoryKind()
-    {
-        if ( repositoryKind == null )
-        {
-            repositoryKind = new MutableProxyRepositoryKind( this, null, new DefaultRepositoryKind(
-                HostedRepository.class,
-                null ), new DefaultRepositoryKind( ProxyRepository.class, null ) );
-        }
-
-        return repositoryKind;
-    }
+    public void validate( ApplicationConfiguration configuration, CRepository repo )
+        throws ConfigurationException;
 }

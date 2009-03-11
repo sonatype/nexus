@@ -33,7 +33,7 @@ public interface MavenRepository
     GavCalculator getGavCalculator();
 
     ArtifactPackagingMapper getArtifactPackagingMapper();
-    
+
     ArtifactStoreHelper getArtifactStoreHelper();
 
     MetadataManager getMetadataManager();

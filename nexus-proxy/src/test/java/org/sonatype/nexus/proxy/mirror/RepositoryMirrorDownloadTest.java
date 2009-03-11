@@ -24,7 +24,7 @@ import static org.easymock.EasyMock.same;
 
 import java.util.Map;
 
-import org.sonatype.nexus.configuration.model.CRemoteConnectionSettings;
+import org.sonatype.nexus.configuration.modello.CRemoteConnectionSettings;
 import org.sonatype.nexus.proxy.AbstractNexusTestEnvironment;
 import org.sonatype.nexus.proxy.InvalidItemContentException;
 import org.sonatype.nexus.proxy.ItemNotFoundException;

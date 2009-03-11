@@ -257,7 +257,7 @@ public class M2RepositoryTest
 
         M2Repository repository = (M2Repository) getResourceStore();
 
-        repository.addProximityEventListener( ch );
+        getApplicationEventMulticaster().addProximityEventListener( ch );
 
         File mdFile = new File( new File( getBasedir() ), "target/test-classes/repo1/spoof/maven-metadata.xml" );
 

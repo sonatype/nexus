@@ -42,7 +42,7 @@ import org.sonatype.nexus.proxy.item.StorageCollectionItem;
 import org.sonatype.nexus.proxy.item.StorageFileItem;
 import org.sonatype.nexus.proxy.item.StorageItem;
 import org.sonatype.nexus.proxy.maven.EvictUnusedMavenItemsWalkerProcessor.EvictUnusedMavenItemsWalkerFilter;
-import org.sonatype.nexus.proxy.repository.DefaultRepository;
+import org.sonatype.nexus.proxy.repository.AbstractProxyRepository;
 import org.sonatype.nexus.proxy.repository.DefaultRepositoryKind;
 import org.sonatype.nexus.proxy.repository.HostedRepository;
 import org.sonatype.nexus.proxy.repository.MutableProxyRepositoryKind;
@@ -58,7 +58,7 @@ import org.sonatype.nexus.util.ItemPathUtils;
  * @author cstamas
  */
 public abstract class AbstractMavenRepository
-    extends DefaultRepository
+    extends AbstractProxyRepository
     implements MavenRepository, MavenHostedRepository, MavenProxyRepository
 {
     /**
@@ -85,6 +85,8 @@ public abstract class AbstractMavenRepository
 
     /** Should repository provide correct checksums even if wrong ones are in repo? */
     private boolean fixRepositoryChecksums = false;
+
+    private boolean downloadRemoteIndexes;
 
     /**
      * The release max age (in minutes).
@@ -147,7 +149,7 @@ public abstract class AbstractMavenRepository
 
         getWalker().walk( ctx );
 
-        notifyProximityEventListeners( new RepositoryEventEvictUnusedItems( this ) );
+        getApplicationEventMulticaster().notifyProximityEventListeners( new RepositoryEventEvictUnusedItems( this ) );
 
         return walkerProcessor.getFiles();
     }
@@ -174,9 +176,20 @@ public abstract class AbstractMavenRepository
 
         getWalker().walk( ctx, path );
 
-        notifyProximityEventListeners( new RepositoryEventRecreateMavenMetadata( this ) );
+        getApplicationEventMulticaster()
+            .notifyProximityEventListeners( new RepositoryEventRecreateMavenMetadata( this ) );
 
         return !ctx.isStopped();
+    }
+
+    public boolean isDownloadRemoteIndexes()
+    {
+        return downloadRemoteIndexes;
+    }
+
+    public void setDownloadRemoteIndexes( boolean downloadRemoteIndexes )
+    {
+        this.downloadRemoteIndexes = downloadRemoteIndexes;
     }
 
     public RepositoryPolicy getRepositoryPolicy()
@@ -303,7 +316,7 @@ public abstract class AbstractMavenRepository
         {
             getLogger().debug( "deleteItemWithChecksums() :: " + uid.toString() );
         }
-        
+
         getArtifactStoreHelper().deleteItemWithChecksums( uid, context );
     }
 
