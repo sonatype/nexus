@@ -244,7 +244,7 @@ Sonatype.repoServer.ArtifactoryMigrationPanel = function( config ) {
               {
                 style: 'padding-bottom: 10px',
                 cls: 'x-form-item',
-                html: 'Select groups and repositories you wish to import:'
+                html: 'Select the Groups, Repositories, and User information you wish to import into Nexus:'
               },
               {
                 height: 164,
