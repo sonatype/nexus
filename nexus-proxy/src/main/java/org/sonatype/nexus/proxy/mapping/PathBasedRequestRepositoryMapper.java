@@ -27,9 +27,9 @@ import org.sonatype.nexus.configuration.modello.CPathMappingItem;
 import org.sonatype.nexus.proxy.NoSuchRepositoryException;
 import org.sonatype.nexus.proxy.events.AbstractEvent;
 import org.sonatype.nexus.proxy.events.ApplicationEventMulticaster;
-import org.sonatype.nexus.proxy.item.RepositoryItemUid;
 import org.sonatype.nexus.proxy.registry.RepositoryRegistry;
 import org.sonatype.nexus.proxy.repository.Repository;
+import org.sonatype.nexus.proxy.repository.RepositoryRequest;
 
 /**
  * The Class PathBasedRequestRepositoryMapper filters repositories to search using supplied list of filter expressions.
@@ -86,7 +86,7 @@ public class PathBasedRequestRepositoryMapper
         return applicationConfiguration;
     }
 
-    public List<Repository> getMappedRepositories( RepositoryRegistry registry, RepositoryItemUid uid,
+    public List<Repository> getMappedRepositories( RepositoryRegistry registry, RepositoryRequest request,
         List<Repository> resolvedRepositories )
         throws NoSuchRepositoryException
     {
@@ -104,13 +104,13 @@ public class PathBasedRequestRepositoryMapper
 
         for ( RepositoryPathMapping mapping : blockings )
         {
-            if ( mapping.matches( uid ) )
+            if ( mapping.matches( request ) )
             {
                 reposList.clear();
 
                 getLogger().info(
-                    "The request path [" + uid.getPath() + "] is blocked by rule " + mapping.getPatterns().toString()
-                        + " defined for group='" + mapping.getGroupId() + "'" );
+                    "The request path [" + request.toString() + "] is blocked by rule "
+                        + mapping.getPatterns().toString() + " defined for group='" + mapping.getGroupId() + "'" );
 
                 return reposList;
             }
@@ -119,7 +119,7 @@ public class PathBasedRequestRepositoryMapper
         // include, if found a match
         for ( RepositoryPathMapping mapping : inclusions )
         {
-            if ( mapping.matches( uid ) )
+            if ( mapping.matches( request ) )
             {
                 if ( firstAdd )
                 {
@@ -145,7 +145,7 @@ public class PathBasedRequestRepositoryMapper
         // then, if exlude found, remove those
         for ( RepositoryPathMapping mapping : exclusions )
         {
-            if ( mapping.matches( uid ) )
+            if ( mapping.matches( request ) )
             {
                 mapped = true;
 
@@ -165,7 +165,7 @@ public class PathBasedRequestRepositoryMapper
         {
             if ( getLogger().isDebugEnabled() )
             {
-                getLogger().debug( "No mapping exists for request path [" + uid.getPath() + "]" );
+                getLogger().debug( "No mapping exists for request path [" + request.toString() + "]" );
             }
         }
         else
@@ -175,11 +175,12 @@ public class PathBasedRequestRepositoryMapper
                 if ( reposList.size() == 0 )
                 {
                     getLogger().debug(
-                        "Mapping for path [" + uid.getPath() + "] excluded all storages from servicing the request." );
+                        "Mapping for path [" + request.toString()
+                            + "] excluded all storages from servicing the request." );
                 }
                 else
                 {
-                    getLogger().debug( "Request path for [" + uid.getPath() + "] is MAPPED!" );
+                    getLogger().debug( "Request path for [" + request.toString() + "] is MAPPED!" );
                 }
             }
         }

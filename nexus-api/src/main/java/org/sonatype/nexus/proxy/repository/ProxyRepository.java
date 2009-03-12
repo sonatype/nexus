@@ -117,7 +117,17 @@ public interface ProxyRepository
      */
     void setRemoteStorage( RemoteRepositoryStorage storage );
 
+    /**
+     * Gets the mirrors.
+     * 
+     * @return
+     */
     DownloadMirrors getDownloadMirrors();
 
+    /**
+     * Sets mirrors.
+     * 
+     * @param mirrors
+     */
     void setMirrors( List<Mirror> mirrors );
 }

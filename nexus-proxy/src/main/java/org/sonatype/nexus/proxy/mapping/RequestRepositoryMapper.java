@@ -17,9 +17,9 @@ import java.util.List;
 
 import org.sonatype.nexus.proxy.NoSuchResourceStoreException;
 import org.sonatype.nexus.proxy.events.EventListener;
-import org.sonatype.nexus.proxy.item.RepositoryItemUid;
 import org.sonatype.nexus.proxy.registry.RepositoryRegistry;
 import org.sonatype.nexus.proxy.repository.Repository;
+import org.sonatype.nexus.proxy.repository.RepositoryRequest;
 
 /**
  * The Interface RequestRepositoryMapper. These mappers are used in Routers, to narrow the number of searched
@@ -35,7 +35,7 @@ public interface RequestRepositoryMapper
      * @param resolvedRepositories the resolved repositories, possibly a bigger set
      * @return the mapped repositories repoIds
      */
-    List<Repository> getMappedRepositories( RepositoryRegistry registry, RepositoryItemUid uid,
+    List<Repository> getMappedRepositories( RepositoryRegistry registry, RepositoryRequest request,
         List<Repository> resolvedRepositories )
         throws NoSuchResourceStoreException;
 

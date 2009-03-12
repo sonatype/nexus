@@ -109,12 +109,20 @@ public interface Repository
     RepositoryTaskFilter getRepositoryTaskFilter();
 
     /**
-     * Gets the target set for UID.
+     * Gets the target set for request.
      * 
      * @param uid
      * @return
      */
-    TargetSet getTargetsForRequest( String path, Map<String, Object> context );
+    TargetSet getTargetsForRequest( ResourceStoreRequest request );
+
+    /**
+     * Checks is there at all any target for the given request.
+     * 
+     * @param uid
+     * @return
+     */
+    boolean hasAnyTargetsForRequest( ResourceStoreRequest request );
 
     /**
      * Creates an UID within this Repository.
@@ -342,21 +350,21 @@ public interface Repository
      * 
      * @param path a path from to start descending. If null, it is taken as "root".
      */
-    void clearCaches( String path );
+    void clearCaches( ResourceStoreRequest request );
 
     /**
      * Purges the NFC caches from path and below.
      * 
      * @param path
      */
-    void clearNotFoundCaches( String path );
+    void clearNotFoundCaches( ResourceStoreRequest request );
 
     /**
      * Evicts items that were last used before timestamp.
      * 
      * @param timestamp
      */
-    Collection<String> evictUnusedItems( long timestamp );
+    Collection<String> evictUnusedItems( ResourceStoreRequest request, long timestamp );
 
     /**
      * Forces the recreation of attributes on this repository.
@@ -364,7 +372,7 @@ public interface Repository
      * @param initialData the initial data
      * @return true, if recreate attributes
      */
-    boolean recreateAttributes( String fromPath, Map<String, String> initialData );
+    boolean recreateAttributes( ResourceStoreRequest request, Map<String, String> initialData );
 
     /**
      * Returns the repository level AccessManager. Per repository instance may exists.
@@ -383,24 +391,24 @@ public interface Repository
     // ==================================================
     // Alternative (and unprotected) Content access
 
-    StorageItem retrieveItem( RepositoryItemUid uid, Map<String, Object> context )
+    StorageItem retrieveItem( RepositoryRequest request )
         throws IllegalOperationException,
             ItemNotFoundException,
             StorageException;
 
-    void copyItem( RepositoryItemUid from, RepositoryItemUid to, Map<String, Object> context )
+    void copyItem( RepositoryRequest from, RepositoryRequest to )
         throws UnsupportedStorageOperationException,
             IllegalOperationException,
             ItemNotFoundException,
             StorageException;
 
-    void moveItem( RepositoryItemUid from, RepositoryItemUid to, Map<String, Object> context )
+    void moveItem( RepositoryRequest from, RepositoryRequest to )
         throws UnsupportedStorageOperationException,
             IllegalOperationException,
             ItemNotFoundException,
             StorageException;
 
-    void deleteItem( RepositoryItemUid uid, Map<String, Object> context )
+    void deleteItem( RepositoryRequest request )
         throws UnsupportedStorageOperationException,
             IllegalOperationException,
             ItemNotFoundException,
@@ -411,7 +419,7 @@ public interface Repository
             IllegalOperationException,
             StorageException;
 
-    Collection<StorageItem> list( RepositoryItemUid uid, Map<String, Object> context )
+    Collection<StorageItem> list( RepositoryRequest request )
         throws IllegalOperationException,
             ItemNotFoundException,
             StorageException;

@@ -17,6 +17,7 @@ import java.util.Map;
 
 import org.sonatype.nexus.proxy.IllegalOperationException;
 import org.sonatype.nexus.proxy.ItemNotFoundException;
+import org.sonatype.nexus.proxy.ResourceStoreRequest;
 import org.sonatype.nexus.proxy.StorageException;
 import org.sonatype.nexus.proxy.events.AbstractEvent;
 import org.sonatype.nexus.proxy.events.RepositoryItemEvent;
@@ -147,7 +148,9 @@ public abstract class AbstractShadowRepository
     {
         getLogger().info( "Syncing shadow " + getId() + " with master repository " + getMasterRepository().getId() );
 
-        clearCaches( RepositoryItemUid.PATH_ROOT );
+        ResourceStoreRequest root = new ResourceStoreRequest( RepositoryItemUid.PATH_ROOT, true );
+
+        clearCaches( root );
 
         AbstractFileWalkerProcessor sw = new AbstractFileWalkerProcessor()
         {
@@ -159,19 +162,19 @@ public abstract class AbstractShadowRepository
             }
         };
 
-        DefaultWalkerContext ctx = new DefaultWalkerContext( getMasterRepository() );
+        DefaultWalkerContext ctx = new DefaultWalkerContext( getMasterRepository(), root );
 
         ctx.getProcessors().add( sw );
 
         getWalker().walk( ctx );
     }
 
-    protected StorageItem doRetrieveItemFromMaster( RepositoryItemUid tuid, Map<String, Object> context )
+    protected StorageItem doRetrieveItemFromMaster( RepositoryRequest request )
         throws IllegalOperationException,
             ItemNotFoundException,
             StorageException
     {
-        return ( (AbstractRepository) getMasterRepository() ).doRetrieveItem( tuid, context );
+        return ( (AbstractRepository) getMasterRepository() ).doRetrieveItem( request );
     }
 
 }

@@ -56,6 +56,13 @@ public interface RepositoryRouter
             IllegalOperationException,
             StorageException;
 
+    /**
+     * Calculates the RequestRoute for the given request.
+     * 
+     * @param request
+     * @return
+     * @throws ItemNotFoundException
+     */
     RequestRoute getRequestRouteForRequest( ResourceStoreRequest request )
         throws ItemNotFoundException;
 }

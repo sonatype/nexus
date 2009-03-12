@@ -17,7 +17,6 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Map;
 
 import org.codehaus.plexus.component.annotations.Component;
 import org.codehaus.plexus.component.annotations.Requirement;
@@ -28,6 +27,7 @@ import org.codehaus.plexus.util.IOUtil;
 import org.sonatype.nexus.configuration.ConfigurationChangeEvent;
 import org.sonatype.nexus.configuration.application.ApplicationConfiguration;
 import org.sonatype.nexus.proxy.ItemNotFoundException;
+import org.sonatype.nexus.proxy.ResourceStoreRequest;
 import org.sonatype.nexus.proxy.StorageException;
 import org.sonatype.nexus.proxy.events.AbstractEvent;
 import org.sonatype.nexus.proxy.events.ApplicationEventMulticaster;
@@ -133,14 +133,14 @@ public class DefaultFSWastebasket
         removeForever( getWastebasketDirectory(), age );
     }
 
-    public void delete( LocalRepositoryStorage ls, Repository repository, Map<String, Object> context, String path )
+    public void delete( LocalRepositoryStorage ls, Repository repository, ResourceStoreRequest request )
         throws StorageException
     {
         try
         {
             if ( DeleteOperation.MOVE_TO_TRASH.equals( getDeleteOperation() ) )
             {
-                AbstractStorageItem item = ls.retrieveItem( repository, context, path );
+                AbstractStorageItem item = ls.retrieveItem( repository, request );
 
                 // not deleting virtual items
                 if ( item.isVirtual() )
@@ -184,10 +184,7 @@ public class DefaultFSWastebasket
                     if ( DefaultFSLocalRepositoryStorage.class.isAssignableFrom( ls.getClass() ) )
                     {
                         // an easy way, we have a File
-                        File itemFile = ( (DefaultFSLocalRepositoryStorage) ls ).getFileFromBase(
-                            repository,
-                            context,
-                            path );
+                        File itemFile = ( (DefaultFSLocalRepositoryStorage) ls ).getFileFromBase( repository, request );
 
                         FileUtils.copyDirectory( itemFile, basketFile );
                     }
@@ -200,7 +197,7 @@ public class DefaultFSWastebasket
                 }
             }
 
-            ls.shredItem( repository, context, path );
+            ls.shredItem( repository, request );
         }
         catch ( ItemNotFoundException e )
         {

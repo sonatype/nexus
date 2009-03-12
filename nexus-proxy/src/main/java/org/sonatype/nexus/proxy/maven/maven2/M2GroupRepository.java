@@ -22,7 +22,6 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 import org.apache.commons.codec.binary.Hex;
 import org.apache.maven.artifact.repository.metadata.Metadata;
@@ -45,6 +44,7 @@ import org.sonatype.nexus.proxy.registry.ContentClass;
 import org.sonatype.nexus.proxy.repository.GroupRepository;
 import org.sonatype.nexus.proxy.repository.RepositoryConfigurationValidator;
 import org.sonatype.nexus.proxy.repository.RepositoryConfigurator;
+import org.sonatype.nexus.proxy.repository.RepositoryRequest;
 import org.sonatype.nexus.proxy.storage.UnsupportedStorageOperationException;
 
 @Component( role = GroupRepository.class, hint = "maven2", instantiationStrategy = "per-lookup", description = "Maven2 Repository Group" )
@@ -102,19 +102,20 @@ public class M2GroupRepository
     }
 
     @Override
-    protected StorageItem doRetrieveItem( RepositoryItemUid uid, Map<String, Object> context )
+    protected StorageItem doRetrieveItem( RepositoryRequest request )
         throws IllegalOperationException,
             ItemNotFoundException,
             StorageException
     {
-        if ( M2ArtifactRecognizer.isMetadata( uid.getPath() ) && !M2ArtifactRecognizer.isChecksum( uid.getPath() ) )
+        if ( M2ArtifactRecognizer.isMetadata( request.getResourceStoreRequest().getRequestPath() )
+            && !M2ArtifactRecognizer.isChecksum( request.getResourceStoreRequest().getRequestPath() ) )
         {
             // metadata checksum files are calculated and cached as side-effect
             // of doRetrieveMetadata.
 
             try
             {
-                return doRetrieveMetadata( uid, context );
+                return doRetrieveMetadata( request );
             }
             catch ( UnsupportedStorageOperationException e )
             {
@@ -122,24 +123,24 @@ public class M2GroupRepository
             }
         }
 
-        return super.doRetrieveItem( uid, context );
+        return super.doRetrieveItem( request );
     }
 
     /**
      * Aggregates metadata from all member repositories
      */
-    private StorageItem doRetrieveMetadata( RepositoryItemUid uid, Map<String, Object> context )
+    private StorageItem doRetrieveMetadata( RepositoryRequest request )
         throws StorageException,
             IllegalOperationException,
             UnsupportedStorageOperationException,
             ItemNotFoundException
     {
-        List<StorageItem> listOfStorageItems = doRetrieveItems( uid, context );
+        List<StorageItem> listOfStorageItems = doRetrieveItems( request );
 
         if ( listOfStorageItems.isEmpty() )
         {
             // empty: not found
-            throw new ItemNotFoundException( uid );
+            throw new ItemNotFoundException( request );
         }
 
         if ( !mergeMetadata )
@@ -205,7 +206,7 @@ public class M2GroupRepository
         if ( mergedMetadata == null )
         {
             // may happen if only one or all metadatas are unparseable
-            throw new ItemNotFoundException( uid );
+            throw new ItemNotFoundException( request );
         }
 
         try
@@ -223,17 +224,20 @@ public class M2GroupRepository
             metadataWriter.write( osw, mergedMetadata );
             osw.flush();
             osw.close();
-            storeDigest( uid, md5alg, context );
-            storeDigest( uid, sha1alg, context );
+            storeDigest( request, md5alg );
+            storeDigest( request, sha1alg );
 
             if ( getLogger().isDebugEnabled() )
             {
                 getLogger().debug(
-                    "Item for path " + uid.getPath() + " merged from " + Integer.toString( listOfStorageItems.size() )
-                        + " found items." );
+                    "Item for path " + request.toString() + " merged from "
+                        + Integer.toString( listOfStorageItems.size() ) + " found items." );
             }
 
-            AbstractStorageItem item = createStorageItem( uid, bos.toByteArray(), context );
+            AbstractStorageItem item = createStorageItem(
+                createUid( request.getResourceStoreRequest().getRequestPath() ),
+                bos.toByteArray(),
+                request.getResourceStoreRequest().getRequestContext() );
 
             item.getItemContext().put( CTX_TRANSITIVE_ITEM, Boolean.TRUE );
 
@@ -249,16 +253,18 @@ public class M2GroupRepository
         }
     }
 
-    protected void storeDigest( RepositoryItemUid uid, MessageDigest digest, Map<String, Object> context )
+    protected void storeDigest( RepositoryRequest request, MessageDigest digest )
         throws IOException,
             UnsupportedStorageOperationException,
             IllegalOperationException
     {
         byte[] bytes = ( new String( Hex.encodeHex( digest.digest() ) ) + "\n" ).getBytes();
 
-        RepositoryItemUid csuid = createUid( uid.getPath() + "." + digest.getAlgorithm().toLowerCase() );
+        RepositoryItemUid csuid = createUid( request.getResourceStoreRequest().getRequestPath() + "."
+            + digest.getAlgorithm().toLowerCase() );
 
-        AbstractStorageItem item = createStorageItem( csuid, bytes, context );
+        AbstractStorageItem item = createStorageItem( csuid, bytes, request
+            .getResourceStoreRequest().getRequestContext() );
 
         storeItem( item );
     }

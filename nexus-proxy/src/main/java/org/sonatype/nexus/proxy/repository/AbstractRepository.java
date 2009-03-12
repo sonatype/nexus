@@ -72,7 +72,6 @@ import org.sonatype.nexus.proxy.walker.Walker;
 import org.sonatype.nexus.scheduling.DefaultRepositoryTaskActivityDescriptor;
 import org.sonatype.nexus.scheduling.DefaultRepositoryTaskFilter;
 import org.sonatype.nexus.scheduling.RepositoryTaskFilter;
-import org.sonatype.nexus.util.ContextUtils;
 
 /**
  * <p>
@@ -382,7 +381,7 @@ public abstract class AbstractRepository
      * 
      * @return the cache manager
      */
-    public CacheManager getCacheManager()
+    protected CacheManager getCacheManager()
     {
         return cacheManager;
     }
@@ -392,7 +391,7 @@ public abstract class AbstractRepository
      * 
      * @param cacheManager the new cache manager
      */
-    public void setCacheManager( CacheManager cacheManager )
+    protected void setCacheManager( CacheManager cacheManager )
     {
         this.cacheManager = cacheManager;
     }
@@ -538,41 +537,41 @@ public abstract class AbstractRepository
         this.accessManager = accessManager;
     }
 
-    public void clearCaches( String path )
+    public void clearCaches( ResourceStoreRequest request )
     {
-        if ( StringUtils.isEmpty( path ) )
+        if ( StringUtils.isEmpty( request.getRequestPath() ) )
         {
-            path = RepositoryItemUid.PATH_ROOT;
+            request.setRequestPath( RepositoryItemUid.PATH_ROOT );
         }
 
-        getLogger().info( "Expiring local cache in repository ID='" + getId() + "' from path='" + path + "'" );
+        getLogger().info(
+            "Expiring local cache in repository ID='" + getId() + "' from path='" + request.getRequestPath() + "'" );
 
         // 1st, expire all the files below path
-        DefaultWalkerContext ctx = new DefaultWalkerContext( this );
+        DefaultWalkerContext ctx = new DefaultWalkerContext( this, request );
 
         ctx.getProcessors().add( new ClearCacheWalker( this ) );
 
-        walker.walk( ctx, path );
+        walker.walk( ctx );
 
         // 2nd, remove the items from NFC
-        clearNotFoundCaches( path );
+        clearNotFoundCaches( request );
     }
 
-    public void clearNotFoundCaches( String path )
+    public void clearNotFoundCaches( ResourceStoreRequest request )
     {
-        if ( StringUtils.isBlank( path ) )
+        if ( StringUtils.isBlank( request.getRequestPath() ) )
         {
-            path = RepositoryItemUid.PATH_ROOT;
+            request.setRequestPath( RepositoryItemUid.PATH_ROOT );
         }
 
-        getLogger().info( "Clearing NFC cache in repository ID='" + getId() + "' from path='" + path + "'" );
+        getLogger().info(
+            "Clearing NFC cache in repository ID='" + getId() + "' from path='" + request.getRequestPath() + "'" );
 
         // remove the items from NFC
-        if ( RepositoryItemUid.PATH_ROOT.equals( path ) )
+        if ( RepositoryItemUid.PATH_ROOT.equals( request.getRequestPath() ) )
         {
             // purge all
-            path = RepositoryItemUid.PATH_ROOT;
-
             if ( getNotFoundCache() != null )
             {
                 getNotFoundCache().purge();
@@ -583,22 +582,24 @@ public abstract class AbstractRepository
             // purge below and above path only
             if ( getNotFoundCache() != null )
             {
-                getNotFoundCache().removeWithParents( path );
+                getNotFoundCache().removeWithParents( request.getRequestPath() );
 
-                getNotFoundCache().removeWithChildren( path );
+                getNotFoundCache().removeWithChildren( request.getRequestPath() );
             }
         }
 
-        getApplicationEventMulticaster().notifyProximityEventListeners( new RepositoryEventClearCaches( this, path ) );
+        getApplicationEventMulticaster().notifyProximityEventListeners(
+            new RepositoryEventClearCaches( this, request.getRequestPath() ) );
     }
 
-    public Collection<String> evictUnusedItems( final long timestamp )
+    public Collection<String> evictUnusedItems( ResourceStoreRequest request, final long timestamp )
     {
-        getLogger().info( "Evicting unused items from repository " + getId() );
+        getLogger()
+            .info( "Evicting unused items from repository " + getId() + " from path " + request.getRequestPath() );
 
         EvictUnusedItemsWalkerProcessor walkerProcessor = new EvictUnusedItemsWalkerProcessor( timestamp );
 
-        DefaultWalkerContext ctx = new DefaultWalkerContext( this );
+        DefaultWalkerContext ctx = new DefaultWalkerContext( this, request );
 
         ctx.getProcessors().add( walkerProcessor );
 
@@ -610,22 +611,23 @@ public abstract class AbstractRepository
         return walkerProcessor.getFiles();
     }
 
-    public boolean recreateAttributes( String path, final Map<String, String> initialData )
+    public boolean recreateAttributes( ResourceStoreRequest request, final Map<String, String> initialData )
     {
-        if ( StringUtils.isEmpty( path ) )
+        if ( StringUtils.isEmpty( request.getRequestPath() ) )
         {
-            path = RepositoryItemUid.PATH_ROOT;
+            request.setRequestPath( RepositoryItemUid.PATH_ROOT );
         }
 
-        getLogger().info( "Rebuilding attributes in repository ID='" + getId() + "' from path='" + path + "'" );
+        getLogger().info(
+            "Rebuilding attributes in repository ID='" + getId() + "' from path='" + request.getRequestPath() + "'" );
 
         RecreateAttributesWalker walkerProcessor = new RecreateAttributesWalker( this, initialData );
 
-        DefaultWalkerContext ctx = new DefaultWalkerContext( this );
+        DefaultWalkerContext ctx = new DefaultWalkerContext( this, request );
 
         ctx.getProcessors().add( walkerProcessor );
 
-        walker.walk( ctx, path );
+        walker.walk( ctx );
 
         getApplicationEventMulticaster().notifyProximityEventListeners( new RepositoryEventRecreateAttributes( this ) );
 
@@ -651,14 +653,16 @@ public abstract class AbstractRepository
             StorageException,
             AccessDeniedException
     {
-        if ( !checkConditions( request, Action.read ) )
+        RepositoryRequest req = new RepositoryRequest( this, request );
+
+        if ( !checkConditions( req, Action.read ) )
         {
             throw new ItemNotFoundException( request.getRequestPath(), this.getId() );
         }
 
         RepositoryItemUid uid = createUid( request.getRequestPath() );
 
-        StorageItem item = retrieveItem( uid, request.getRequestContext() );
+        StorageItem item = retrieveItem( req );
 
         if ( StorageCollectionItem.class.isAssignableFrom( item.getClass() ) && !isBrowseable() )
         {
@@ -679,20 +683,20 @@ public abstract class AbstractRepository
             StorageException,
             AccessDeniedException
     {
-        if ( !checkConditions( from, Action.read ) )
+        RepositoryRequest fromreq = new RepositoryRequest( this, from );
+
+        RepositoryRequest toreq = new RepositoryRequest( this, to );
+
+        if ( !checkConditions( fromreq, Action.read ) )
         {
             throw new IllegalRequestException( from, "copyItem: Operation does not fills needed requirements!" );
         }
-        if ( !checkConditions( to, getResultingActionOnWrite( to ) ) )
+        if ( !checkConditions( toreq, getResultingActionOnWrite( to ) ) )
         {
             throw new IllegalRequestException( to, "copyItem: Operation does not fills needed requirements!" );
         }
 
-        RepositoryItemUid fromUid = createUid( from.getRequestPath() );
-
-        RepositoryItemUid toUid = createUid( to.getRequestPath() );
-
-        copyItem( fromUid, toUid, to.getRequestContext() );
+        copyItem( fromreq, toreq );
     }
 
     public void moveItem( ResourceStoreRequest from, ResourceStoreRequest to )
@@ -702,24 +706,24 @@ public abstract class AbstractRepository
             StorageException,
             AccessDeniedException
     {
-        if ( !checkConditions( from, Action.read ) )
+        RepositoryRequest fromreq = new RepositoryRequest( this, from );
+
+        RepositoryRequest toreq = new RepositoryRequest( this, to );
+
+        if ( !checkConditions( fromreq, Action.read ) )
         {
             throw new AccessDeniedException( from, "Operation does not fills needed requirements!" );
         }
-        if ( !checkConditions( from, Action.delete ) )
+        if ( !checkConditions( fromreq, Action.delete ) )
         {
             throw new AccessDeniedException( from, "Operation does not fills needed requirements!" );
         }
-        if ( !checkConditions( to, getResultingActionOnWrite( to ) ) )
+        if ( !checkConditions( toreq, getResultingActionOnWrite( to ) ) )
         {
             throw new AccessDeniedException( to, "Operation does not fills needed requirements!" );
         }
 
-        RepositoryItemUid fromUid = createUid( from.getRequestPath() );
-
-        RepositoryItemUid toUid = createUid( to.getRequestPath() );
-
-        moveItem( fromUid, toUid, to.getRequestContext() );
+        moveItem( fromreq, toreq );
     }
 
     public void deleteItem( ResourceStoreRequest request )
@@ -729,14 +733,14 @@ public abstract class AbstractRepository
             StorageException,
             AccessDeniedException
     {
-        if ( !checkConditions( request, Action.delete ) )
+        RepositoryRequest req = new RepositoryRequest( this, request );
+
+        if ( !checkConditions( req, Action.delete ) )
         {
             throw new AccessDeniedException( request, "Operation does not fills needed requirements!" );
         }
 
-        RepositoryItemUid uid = createUid( request.getRequestPath() );
-
-        deleteItem( uid, request.getRequestContext() );
+        deleteItem( req );
     }
 
     public void storeItem( ResourceStoreRequest request, InputStream is, Map<String, String> userAttributes )
@@ -745,7 +749,9 @@ public abstract class AbstractRepository
             StorageException,
             AccessDeniedException
     {
-        if ( !checkConditions( request, getResultingActionOnWrite( request ) ) )
+        RepositoryRequest req = new RepositoryRequest( this, request );
+
+        if ( !checkConditions( req, getResultingActionOnWrite( request ) ) )
         {
             throw new AccessDeniedException( request, "Operation does not fills needed requirements!" );
         }
@@ -773,7 +779,9 @@ public abstract class AbstractRepository
             StorageException,
             AccessDeniedException
     {
-        if ( !checkConditions( request, getResultingActionOnWrite( request ) ) )
+        RepositoryRequest req = new RepositoryRequest( this, request );
+
+        if ( !checkConditions( req, getResultingActionOnWrite( request ) ) )
         {
             throw new AccessDeniedException( request, "Operation does not fills needed requirements!" );
         }
@@ -800,18 +808,18 @@ public abstract class AbstractRepository
             StorageException,
             AccessDeniedException
     {
-        if ( !checkConditions( request, Action.read ) )
+        RepositoryRequest req = new RepositoryRequest( this, request );
+
+        if ( !checkConditions( req, Action.read ) )
         {
             throw new ItemNotFoundException( request.getRequestPath(), this.getId() );
         }
-
-        RepositoryItemUid uid = createUid( request.getRequestPath() );
 
         Collection<StorageItem> items = null;
 
         if ( isBrowseable() )
         {
-            items = list( uid, request.getRequestContext() );
+            items = list( req );
         }
         else
         {
@@ -823,16 +831,29 @@ public abstract class AbstractRepository
 
     public TargetSet getTargetsForRequest( ResourceStoreRequest request )
     {
-        return getTargetsForRequest( request.getRequestPath(), request.getRequestContext() );
+        if ( getLogger().isDebugEnabled() )
+        {
+            getLogger().debug( "getTargetsForRequest() :: " + this.getId() + ":" + request.getRequestPath() );
+        }
+
+        return targetRegistry.getTargetsForRepositoryPath( this, request.getRequestPath() );
+    }
+
+    public boolean hasAnyTargetsForRequest( ResourceStoreRequest request )
+    {
+        if ( getLogger().isDebugEnabled() )
+        {
+            getLogger().debug( "hasAnyTargetsForRequest() :: " + this.getId() );
+        }
+
+        return targetRegistry.hasAnyApplicableTarget( this );
     }
 
     public Action getResultingActionOnWrite( ResourceStoreRequest rsr )
     {
         try
         {
-            RepositoryItemUid uid = createUid( rsr.getRequestPath() );
-
-            retrieveItem( uid, rsr.getRequestContext() );
+            retrieveItem( new RepositoryRequest( this, rsr ) );
 
             return Action.update;
         }
@@ -857,14 +878,14 @@ public abstract class AbstractRepository
     // ===================================================================================
     // Repositry store-like
 
-    public StorageItem retrieveItem( RepositoryItemUid uid, Map<String, Object> context )
+    public StorageItem retrieveItem( RepositoryRequest request )
         throws IllegalOperationException,
             ItemNotFoundException,
             StorageException
     {
         if ( getLogger().isDebugEnabled() )
         {
-            getLogger().debug( "retrieveItem() :: " + uid.toString() );
+            getLogger().debug( "retrieveItem() :: " + request.toString() );
         }
 
         if ( !getLocalStatus().shouldServiceRequest() )
@@ -872,9 +893,11 @@ public abstract class AbstractRepository
             throw new RepositoryNotAvailableException( this );
         }
 
-        ContextUtils.collAdd( context, ResourceStoreRequest.CTX_PROCESSED_REPOSITORIES, this.getId() );
+        request.getResourceStoreRequest().getProcessedRepositories().add( this.getId() );
 
-        maintainNotFoundCache( uid.getPath() );
+        maintainNotFoundCache( request.getResourceStoreRequest().getRequestPath() );
+
+        RepositoryItemUid uid = createUid( request.getResourceStoreRequest().getRequestPath() );
 
         try
         {
@@ -884,7 +907,7 @@ public abstract class AbstractRepository
 
             try
             {
-                item = doRetrieveItem( uid, context );
+                item = doRetrieveItem( request );
             }
             finally
             {
@@ -940,8 +963,8 @@ public abstract class AbstractRepository
             }
 
             // if not local/remote only, add it to NFC
-            if ( !ContextUtils.isFlagTrue( context, ResourceStoreRequest.CTX_LOCAL_ONLY_FLAG )
-                && !ContextUtils.isFlagTrue( context, ResourceStoreRequest.CTX_REMOTE_ONLY_FLAG ) )
+            if ( !request.getResourceStoreRequest().isRequestLocalOnly()
+                && !request.getResourceStoreRequest().isRequestRemoteOnly() )
             {
                 addToNotFoundCache( uid.getPath() );
             }
@@ -950,7 +973,7 @@ public abstract class AbstractRepository
         }
     }
 
-    public void copyItem( RepositoryItemUid from, RepositoryItemUid to, Map<String, Object> context )
+    public void copyItem( RepositoryRequest from, RepositoryRequest to )
         throws UnsupportedStorageOperationException,
             IllegalOperationException,
             ItemNotFoundException,
@@ -966,20 +989,17 @@ public abstract class AbstractRepository
             throw new RepositoryNotAvailableException( this );
         }
 
-        maintainNotFoundCache( from.getPath() );
+        maintainNotFoundCache( from.getResourceStoreRequest().getRequestPath() );
 
-        StorageItem item = retrieveItem( from, context );
+        StorageItem item = retrieveItem( from );
 
         if ( StorageFileItem.class.isAssignableFrom( item.getClass() ) )
         {
             try
             {
-                DefaultStorageFileItem target = new DefaultStorageFileItem(
-                    this,
-                    to.getPath(),
-                    true,
-                    true,
-                    new PreparedContentLocator( ( (StorageFileItem) item ).getInputStream() ) );
+                DefaultStorageFileItem target = new DefaultStorageFileItem( this, to
+                    .getResourceStoreRequest().getRequestPath(), true, true, new PreparedContentLocator(
+                    ( (StorageFileItem) item ).getInputStream() ) );
 
                 target.getItemContext().putAll( item.getItemContext() );
 
@@ -992,10 +1012,10 @@ public abstract class AbstractRepository
         }
 
         // remove the "to" item from n-cache if there
-        removeFromNotFoundCache( to.getPath() );
+        removeFromNotFoundCache( to.getResourceStoreRequest().getRequestPath() );
     }
 
-    public void moveItem( RepositoryItemUid from, RepositoryItemUid to, Map<String, Object> context )
+    public void moveItem( RepositoryRequest from, RepositoryRequest to )
         throws UnsupportedStorageOperationException,
             IllegalOperationException,
             ItemNotFoundException,
@@ -1011,12 +1031,12 @@ public abstract class AbstractRepository
             throw new RepositoryNotAvailableException( this );
         }
 
-        copyItem( from, to, context );
+        copyItem( from, to );
 
-        deleteItem( from, context );
+        deleteItem( from );
     }
 
-    public void deleteItem( RepositoryItemUid uid, Map<String, Object> context )
+    public void deleteItem( RepositoryRequest request )
         throws UnsupportedStorageOperationException,
             IllegalOperationException,
             ItemNotFoundException,
@@ -1024,7 +1044,7 @@ public abstract class AbstractRepository
     {
         if ( getLogger().isDebugEnabled() )
         {
-            getLogger().debug( "deleteItem() :: " + uid.toString() );
+            getLogger().debug( "deleteItem() :: " + request.toString() );
         }
 
         if ( !getLocalStatus().shouldServiceRequest() )
@@ -1032,15 +1052,10 @@ public abstract class AbstractRepository
             throw new RepositoryNotAvailableException( this );
         }
 
-        maintainNotFoundCache( uid.getPath() );
+        maintainNotFoundCache( request.getResourceStoreRequest().getRequestPath() );
 
         // determine is the thing to be deleted a collection or not
-        StorageItem item = getLocalStorage().retrieveItem( this, context, uid.getPath() );
-
-        if ( context != null )
-        {
-            item.getItemContext().putAll( context );
-        }
+        StorageItem item = getLocalStorage().retrieveItem( this, request.getResourceStoreRequest() );
 
         // fire the event for file being deleted
         getApplicationEventMulticaster().notifyProximityEventListeners( new RepositoryItemEventDelete( this, item ) );
@@ -1054,16 +1069,17 @@ public abstract class AbstractRepository
             }
 
             // it is collection, walk it and below and fire events for all files
-            DeletionNotifierWalker dnw = new DeletionNotifierWalker( getApplicationEventMulticaster(), context );
+            DeletionNotifierWalker dnw = new DeletionNotifierWalker( getApplicationEventMulticaster(), request
+                .getResourceStoreRequest() );
 
-            DefaultWalkerContext ctx = new DefaultWalkerContext( this );
+            DefaultWalkerContext ctx = new DefaultWalkerContext( this, request.getResourceStoreRequest() );
 
             ctx.getProcessors().add( dnw );
 
-            walker.walk( ctx, uid.getPath() );
+            walker.walk( ctx );
         }
 
-        doDeleteItem( uid, context );
+        doDeleteItem( request );
     }
 
     public void storeItem( StorageItem item )
@@ -1085,7 +1101,7 @@ public abstract class AbstractRepository
         item.setRepositoryItemUid( createUid( item.getPath() ) );
 
         // store it
-        getLocalStorage().storeItem( this, item.getItemContext(), item );
+        getLocalStorage().storeItem( this, item );
 
         // remove the "request" item from n-cache if there
         removeFromNotFoundCache( item.getRepositoryItemUid().getPath() );
@@ -1093,14 +1109,14 @@ public abstract class AbstractRepository
         getApplicationEventMulticaster().notifyProximityEventListeners( new RepositoryItemEventStore( this, item ) );
     }
 
-    public Collection<StorageItem> list( RepositoryItemUid uid, Map<String, Object> context )
+    public Collection<StorageItem> list( RepositoryRequest request )
         throws IllegalOperationException,
             ItemNotFoundException,
             StorageException
     {
         if ( getLogger().isDebugEnabled() )
         {
-            getLogger().debug( "list() :: " + uid.toString() );
+            getLogger().debug( "list() :: " + request.toString() );
         }
 
         if ( !getLocalStatus().shouldServiceRequest() )
@@ -1108,39 +1124,45 @@ public abstract class AbstractRepository
             throw new RepositoryNotAvailableException( this );
         }
 
-        ContextUtils.collAdd( context, ResourceStoreRequest.CTX_PROCESSED_REPOSITORIES, this.getId() );
+        request.getResourceStoreRequest().getProcessedRepositories().add( getId() );
 
-        maintainNotFoundCache( uid.getPath() );
+        StorageItem item = retrieveItem( request );
 
-        Collection<StorageItem> items = doListItems( uid, context );
-
-        if ( context != null )
+        if ( item instanceof StorageCollectionItem )
         {
-            for ( StorageItem item : items )
-            {
-                item.getItemContext().putAll( context );
-            }
+            return list( (StorageCollectionItem) item );
         }
-
-        return items;
+        else
+        {
+            throw new ItemNotFoundException( request.getResourceStoreRequest().getRequestPath(), getId() );
+        }
     }
 
-    public Collection<StorageItem> list( StorageCollectionItem item )
+    public Collection<StorageItem> list( StorageCollectionItem coll )
         throws IllegalOperationException,
             ItemNotFoundException,
             StorageException
     {
-        return list( item.getRepositoryItemUid(), item.getItemContext() );
-    }
-
-    public TargetSet getTargetsForRequest( String path, Map<String, Object> context )
-    {
         if ( getLogger().isDebugEnabled() )
         {
-            getLogger().debug( "getTargetsForRequest() :: " + this.getId() + ":" + path );
+            getLogger().debug( "list() :: " + coll.getRepositoryItemUid().toString() );
         }
 
-        return targetRegistry.getTargetsForRepositoryPath( this, path );
+        if ( !getLocalStatus().shouldServiceRequest() )
+        {
+            throw new RepositoryNotAvailableException( this );
+        }
+
+        maintainNotFoundCache( coll.getPath() );
+
+        Collection<StorageItem> items = doListItems( new RepositoryRequest( this, new ResourceStoreRequest( coll ) ) );
+
+        for ( StorageItem item : items )
+        {
+            item.getItemContext().putAll( coll.getItemContext() );
+        }
+
+        return items;
     }
 
     public RepositoryItemUid createUid( String path )
@@ -1230,32 +1252,27 @@ public abstract class AbstractRepository
      * @throws RepositoryNotAvailableException the repository not available exception
      * @throws AccessDeniedException the access denied exception
      */
-    protected boolean checkConditions( ResourceStoreRequest request, Action action )
-        throws IllegalOperationException,
-            AccessDeniedException
-    {
-        return checkConditions( this, request, action );
-    }
 
-    protected boolean checkConditions( Repository repository, ResourceStoreRequest request, Action action )
+    protected boolean checkConditions( RepositoryRequest request, Action action )
         throws IllegalOperationException,
             AccessDeniedException
     {
-        if ( !repository.getLocalStatus().shouldServiceRequest() )
+        if ( !request.getRepository().getLocalStatus().shouldServiceRequest() )
         {
-            throw new IllegalRequestException( request, "Repository with ID='" + repository.getId()
-                + "' is not available (localStatus=" + repository.getLocalStatus().toString() + ")!" );
+            throw new IllegalRequestException( request.getResourceStoreRequest(), "Repository with ID='"
+                + request.getRepository().getId() + "' is not available (localStatus="
+                + request.getRepository().getLocalStatus().toString() + ")!" );
         }
 
-        if ( !repository.isAllowWrite() && ( action.isWritingAction() ) )
+        if ( !request.getRepository().isAllowWrite() && ( action.isWritingAction() ) )
         {
-            throw new IllegalRequestException( request, "Repository with ID='" + repository.getId()
-                + "' is Read Only, but action was '" + action.toString() + "'!" );
+            throw new IllegalRequestException( request.getResourceStoreRequest(), "Repository with ID='"
+                + request.getRepository().getId() + "' is Read Only, but action was '" + action.toString() + "'!" );
         }
 
         if ( isExposed() )
         {
-            getAccessManager().decide( repository, request.getRequestPath(), request.getRequestContext(), action );
+            getAccessManager().decide( request.getRepository(), request.getResourceStoreRequest(), action );
         }
 
         boolean shouldProcess = true;
@@ -1264,7 +1281,7 @@ public abstract class AbstractRepository
         {
             for ( RequestProcessor processor : getRequestProcessors() )
             {
-                shouldProcess = shouldProcess && processor.process( repository, request, action );
+                shouldProcess = shouldProcess && processor.process( request, action );
             }
         }
 
@@ -1293,22 +1310,22 @@ public abstract class AbstractRepository
         return result;
     }
 
-    protected void doDeleteItem( RepositoryItemUid uid, Map<String, Object> context )
+    protected void doDeleteItem( RepositoryRequest request )
         throws UnsupportedStorageOperationException,
             ItemNotFoundException,
             StorageException
     {
-        getLocalStorage().deleteItem( this, context, uid.getPath() );
+        getLocalStorage().deleteItem( this, request.getResourceStoreRequest() );
     }
 
-    protected Collection<StorageItem> doListItems( RepositoryItemUid uid, Map<String, Object> context )
+    protected Collection<StorageItem> doListItems( RepositoryRequest request )
         throws ItemNotFoundException,
             StorageException
     {
-        return getLocalStorage().listItems( this, context, uid.getPath() );
+        return getLocalStorage().listItems( this, request.getResourceStoreRequest() );
     }
 
-    protected StorageItem doRetrieveItem( RepositoryItemUid uid, Map<String, Object> context )
+    protected StorageItem doRetrieveItem( RepositoryRequest request )
         throws IllegalOperationException,
             ItemNotFoundException,
             StorageException
@@ -1317,31 +1334,26 @@ public abstract class AbstractRepository
 
         try
         {
-            localItem = getLocalStorage().retrieveItem( this, context, uid.getPath() );
-
-            if ( context != null )
-            {
-                localItem.getItemContext().putAll( context );
-            }
+            localItem = getLocalStorage().retrieveItem( this, request.getResourceStoreRequest() );
 
             if ( getLogger().isDebugEnabled() )
             {
-                getLogger().debug( "Item " + uid.toString() + " found in local storage." );
+                getLogger().debug( "Item " + request.toString() + " found in local storage." );
             }
 
             // this "self correction" is needed to nexus build for himself the needed metadata
             if ( localItem.getRemoteChecked() == 0 )
             {
-                getLocalStorage().touchItemRemoteChecked( this, context, uid.getPath() );
+                getLocalStorage().touchItemRemoteChecked( this, request.getResourceStoreRequest() );
 
-                localItem = getLocalStorage().retrieveItem( this, context, uid.getPath() );
+                localItem = getLocalStorage().retrieveItem( this, request.getResourceStoreRequest() );
             }
         }
         catch ( ItemNotFoundException ex )
         {
             if ( getLogger().isDebugEnabled() )
             {
-                getLogger().debug( "Item " + uid.toString() + " not found in local storage." );
+                getLogger().debug( "Item " + request.toString() + " not found in local storage." );
             }
 
             throw ex;

@@ -17,24 +17,20 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 
 import org.codehaus.plexus.component.annotations.Requirement;
 import org.sonatype.nexus.proxy.IllegalOperationException;
 import org.sonatype.nexus.proxy.ItemNotFoundException;
 import org.sonatype.nexus.proxy.NoSuchRepositoryException;
 import org.sonatype.nexus.proxy.NoSuchResourceStoreException;
-import org.sonatype.nexus.proxy.ResourceStoreRequest;
 import org.sonatype.nexus.proxy.StorageException;
 import org.sonatype.nexus.proxy.events.AbstractEvent;
 import org.sonatype.nexus.proxy.events.RepositoryRegistryEventRemove;
 import org.sonatype.nexus.proxy.item.DefaultStorageCollectionItem;
-import org.sonatype.nexus.proxy.item.RepositoryItemUid;
 import org.sonatype.nexus.proxy.item.StorageCollectionItem;
 import org.sonatype.nexus.proxy.item.StorageItem;
 import org.sonatype.nexus.proxy.mapping.RequestRepositoryMapper;
 import org.sonatype.nexus.proxy.registry.RepositoryRegistry;
-import org.sonatype.nexus.util.ContextUtils;
 
 /**
  * An abstract group repository. The specific behaviour (ie. metadata merge) should be implemented in subclases.
@@ -69,7 +65,7 @@ public abstract class AbstractGroupRepository
     }
 
     @Override
-    protected Collection<StorageItem> doListItems( RepositoryItemUid uid, Map<String, Object> context )
+    protected Collection<StorageItem> doListItems( RepositoryRequest request )
         throws ItemNotFoundException,
             StorageException
     {
@@ -78,7 +74,7 @@ public abstract class AbstractGroupRepository
         boolean found = false;
         try
         {
-            addItems( names, result, getLocalStorage().listItems( this, context, uid.getPath() ) );
+            addItems( names, result, getLocalStorage().listItems( this, request.getResourceStoreRequest() ) );
 
             found = true;
         }
@@ -89,13 +85,11 @@ public abstract class AbstractGroupRepository
 
         for ( Repository repo : getMemberRepositories() )
         {
-            if ( !ContextUtils.collContains( context, ResourceStoreRequest.CTX_PROCESSED_REPOSITORIES, repo.getId() ) )
+            if ( !request.getResourceStoreRequest().getProcessedRepositories().contains( repo.getId() ) )
             {
                 try
                 {
-                    RepositoryItemUid memberUid = repo.createUid( uid.getPath() );
-
-                    addItems( names, result, repo.list( memberUid, context ) );
+                    addItems( names, result, repo.list( request ) );
 
                     found = true;
                 }
@@ -123,14 +117,14 @@ public abstract class AbstractGroupRepository
                                 + "'. The repository with ID='"
                                 + repo.getId()
                                 + "' was already processed during this request! This repository is skipped from processing. Request: "
-                                + uid.toString() );
+                                + request.toString() );
                 }
             }
         }
 
         if ( !found )
         {
-            throw new ItemNotFoundException( uid );
+            throw new ItemNotFoundException( request.getResourceStoreRequest().getRequestPath(), getId() );
         }
 
         return result;
@@ -149,7 +143,7 @@ public abstract class AbstractGroupRepository
     }
 
     @Override
-    protected StorageItem doRetrieveItem( RepositoryItemUid uid, Map<String, Object> context )
+    protected StorageItem doRetrieveItem( RepositoryRequest request )
         throws IllegalOperationException,
             ItemNotFoundException,
             StorageException
@@ -157,26 +151,25 @@ public abstract class AbstractGroupRepository
         try
         {
             // local always wins
-            return super.doRetrieveItem( uid, context );
+            return super.doRetrieveItem( request );
         }
         catch ( ItemNotFoundException ignored )
         {
             // ignored
         }
 
-        for ( Repository repo : getRequestRepositories( uid ) )
+        for ( Repository repo : getRequestRepositories( request ) )
         {
-            if ( !ContextUtils.collContains( context, ResourceStoreRequest.CTX_PROCESSED_REPOSITORIES, repo.getId() ) )
+            if ( !request.getResourceStoreRequest().getProcessedRepositories().contains( repo.getId() ) )
             {
                 try
                 {
-                    RepositoryItemUid memberUid = repo.createUid( uid.getPath() );
-
-                    StorageItem item = repo.retrieveItem( memberUid, context );
+                    StorageItem item = repo.retrieveItem( request );
 
                     if ( item instanceof StorageCollectionItem )
                     {
-                        item = new DefaultStorageCollectionItem( this, uid.getPath(), true, false );
+                        item = new DefaultStorageCollectionItem( this, request
+                            .getResourceStoreRequest().getRequestPath(), true, false );
                     }
 
                     return item;
@@ -203,11 +196,11 @@ public abstract class AbstractGroupRepository
                             + "'. The repository with ID='"
                             + repo.getId()
                             + "' was already processed during this request! This repository is skipped from processing. Request: "
-                            + uid.toString() );
+                            + request.toString() );
             }
         }
 
-        throw new ItemNotFoundException( uid );
+        throw new ItemNotFoundException( request.getResourceStoreRequest().getRequestPath(), getId() );
     }
 
     public List<Repository> getMemberRepositories()
@@ -231,14 +224,14 @@ public abstract class AbstractGroupRepository
         return result;
     }
 
-    protected List<Repository> getRequestRepositories( RepositoryItemUid uid )
+    protected List<Repository> getRequestRepositories( RepositoryRequest request )
         throws StorageException
     {
         List<Repository> members = getMemberRepositories();
 
         try
         {
-            return requestRepositoryMapper.getMappedRepositories( repoRegistry, uid, members );
+            return requestRepositoryMapper.getMappedRepositories( repoRegistry, request, members );
         }
         catch ( NoSuchResourceStoreException e )
         {
@@ -256,21 +249,18 @@ public abstract class AbstractGroupRepository
         memberRepoIds.remove( repositoryId );
     }
 
-    public List<StorageItem> doRetrieveItems( RepositoryItemUid uid, Map<String, Object> context )
+    public List<StorageItem> doRetrieveItems( RepositoryRequest request )
         throws StorageException
     {
         ArrayList<StorageItem> items = new ArrayList<StorageItem>();
 
-        for ( Repository repository : getRequestRepositories( uid ) )
+        for ( Repository repository : getRequestRepositories( request ) )
         {
-            if ( !ContextUtils.collContains( context, ResourceStoreRequest.CTX_PROCESSED_REPOSITORIES, repository
-                .getId() ) )
+            if ( !request.getResourceStoreRequest().getProcessedRepositories().contains( repository.getId() ) )
             {
-                RepositoryItemUid muid = repository.createUid( uid.getPath() );
-
                 try
                 {
-                    StorageItem item = repository.retrieveItem( muid, context );
+                    StorageItem item = repository.retrieveItem( request );
 
                     items.add( item );
                 }
@@ -298,7 +288,7 @@ public abstract class AbstractGroupRepository
                                 + "'. The repository with ID='"
                                 + repository.getId()
                                 + "' was already processed during this request! This repository is skipped from processing. Request: "
-                                + uid.toString() );
+                                + request.toString() );
                 }
             }
         }
