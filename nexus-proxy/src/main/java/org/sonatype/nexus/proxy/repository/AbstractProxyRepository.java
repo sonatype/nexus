@@ -66,6 +66,9 @@ public abstract class AbstractProxyRepository
     @Requirement
     private FeedRecorder feedRecorder;
 
+    @Requirement
+    private DownloadMirrors dMirrors;
+
     /** The proxy mode */
     private volatile ProxyMode proxyMode = ProxyMode.ALLOW;
 
@@ -91,9 +94,6 @@ public abstract class AbstractProxyRepository
      * The item max age.
      */
     private int itemMaxAge = 24 * 60;
-
-    @Requirement
-    private DownloadMirrors dMirrors;
 
     protected void resetRemoteStatus()
     {
@@ -341,11 +341,6 @@ public abstract class AbstractProxyRepository
     public DownloadMirrors getDownloadMirrors()
     {
         return dMirrors;
-    }
-
-    public void setMirrors( List<Mirror> mirrors )
-    {
-        dMirrors.setMirrors( mirrors );
     }
 
     protected AbstractStorageItem doCacheItem( AbstractStorageItem item )

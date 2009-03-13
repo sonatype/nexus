@@ -2,6 +2,8 @@ package org.sonatype.nexus.proxy.repository;
 
 import java.io.File;
 import java.net.MalformedURLException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import org.codehaus.plexus.PlexusContainer;
@@ -13,6 +15,7 @@ import org.codehaus.plexus.util.StringUtils;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 import org.sonatype.nexus.configuration.ConfigurationException;
 import org.sonatype.nexus.configuration.application.ApplicationConfiguration;
+import org.sonatype.nexus.configuration.modello.CMirror;
 import org.sonatype.nexus.configuration.modello.CRepository;
 import org.sonatype.nexus.configuration.validator.ApplicationValidationResponse;
 import org.sonatype.nexus.configuration.validator.InvalidConfigurationException;
@@ -71,6 +74,24 @@ public class AbstractRepositoryConfigurator
         repository.setExposed( repo.isExposed() );
         repository.setNotFoundCacheActive( repo.isNotFoundCacheActive() );
 
+        List<CMirror> mirrors = (List<CMirror>) repo.getMirrors();
+        
+        if ( mirrors != null && mirrors.size() > 0 )
+        {
+            List<Mirror> runtimeMirrors = new ArrayList<Mirror>();
+
+            for ( CMirror mirror : mirrors )
+            {
+                runtimeMirrors.add( new Mirror( mirror.getId(), mirror.getUrl() ) );
+            }
+
+            repository.getPublishedMirrors().setMirrors( runtimeMirrors );
+        }
+        else
+        {
+            repository.getPublishedMirrors().setMirrors( null );
+        }
+        
         // Setting common things on a repository
 
         // NX-198: filling up the default variable to store the "default" local URL

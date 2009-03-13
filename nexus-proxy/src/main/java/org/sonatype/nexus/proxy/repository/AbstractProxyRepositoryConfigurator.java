@@ -68,11 +68,11 @@ public class AbstractProxyRepositoryConfigurator
                             runtimeMirrors.add( new Mirror( mirror.getId(), mirror.getUrl() ) );
                         }
 
-                        prepository.setMirrors( runtimeMirrors );
+                        prepository.getDownloadMirrors().setMirrors( runtimeMirrors );
                     }
                     else
                     {
-                        prepository.setMirrors( null );
+                        prepository.getDownloadMirrors().setMirrors( null );
                     }
 
                     DefaultRemoteStorageContext ctx = new DefaultRemoteStorageContext( globalRemoteStorageContext );

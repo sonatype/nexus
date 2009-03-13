@@ -380,7 +380,7 @@ public class RepositoryMirrorDownloadTest
 
         repo.setRemoteUrl( CANONICAL_URL );
 
-        repo.setMirrors( Arrays.asList( mirrors ) );
+        repo.getDownloadMirrors().setMirrors( Arrays.asList( mirrors ) );
         return repo;
     }
 

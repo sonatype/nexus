@@ -18,25 +18,14 @@ import java.util.List;
 import org.sonatype.nexus.proxy.repository.Mirror;
 
 /**
- * Download mirrors of a Proxy repository. Set of mirrors used by Proxy repositories to download stuff from.
+ * Published mirrors of a repository. Set of mirrors used by all repository types to publish downstream (using
+ * metadata).
  * 
- * @author damian
+ * @author cstamas
  */
-public interface DownloadMirrors
+public interface PublishedMirrors
 {
-    /**
-     * Sets the mirrors.
-     * 
-     * @param mirrors
-     */
     void setMirrors( List<Mirror> mirrors );
 
-    /**
-     * Returns list of all configured mirror urls, including urls of mirrors added to the blacklist.
-     */
     List<Mirror> getMirrors();
-
-    boolean isBlacklisted( Mirror mirror );
-
-    DownloadMirrorSelector openSelector();
 }

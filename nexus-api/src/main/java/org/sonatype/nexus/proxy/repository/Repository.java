@@ -29,6 +29,7 @@ import org.sonatype.nexus.proxy.cache.PathCache;
 import org.sonatype.nexus.proxy.item.RepositoryItemUid;
 import org.sonatype.nexus.proxy.item.StorageCollectionItem;
 import org.sonatype.nexus.proxy.item.StorageItem;
+import org.sonatype.nexus.proxy.mirror.PublishedMirrors;
 import org.sonatype.nexus.proxy.registry.ContentClass;
 import org.sonatype.nexus.proxy.storage.UnsupportedStorageOperationException;
 import org.sonatype.nexus.proxy.storage.local.LocalRepositoryStorage;
@@ -257,6 +258,13 @@ public interface Repository
      * @param storage the storage
      */
     void setLocalStorage( LocalRepositoryStorage storage );
+
+    /**
+     * Gets the published mirrors.
+     * 
+     * @return
+     */
+    PublishedMirrors getPublishedMirrors();
 
     // ==================================================
     // Behaviour

@@ -13,30 +13,33 @@
  */
 package org.sonatype.nexus.proxy.mirror;
 
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 
+import org.codehaus.plexus.component.annotations.Component;
 import org.sonatype.nexus.proxy.repository.Mirror;
 
-/**
- * Download mirrors of a Proxy repository. Set of mirrors used by Proxy repositories to download stuff from.
- * 
- * @author damian
- */
-public interface DownloadMirrors
+@Component( role = PublishedMirrors.class, instantiationStrategy = "per-lookup" )
+public class DefaultPublishedMirrors
+    implements PublishedMirrors
 {
-    /**
-     * Sets the mirrors.
-     * 
-     * @param mirrors
-     */
-    void setMirrors( List<Mirror> mirrors );
+    private LinkedHashSet<Mirror> mirrors = new LinkedHashSet<Mirror>();
 
-    /**
-     * Returns list of all configured mirror urls, including urls of mirrors added to the blacklist.
-     */
-    List<Mirror> getMirrors();
+    public void setMirrors( List<Mirror> mirrors )
+    {
+        if ( mirrors == null || mirrors.isEmpty() )
+        {
+            this.mirrors.clear();
+        }
+        else
+        {
+            this.mirrors = new LinkedHashSet<Mirror>( mirrors );
+        }
+    }
 
-    boolean isBlacklisted( Mirror mirror );
-
-    DownloadMirrorSelector openSelector();
+    public List<Mirror> getMirrors()
+    {
+        return new ArrayList<Mirror>( mirrors );
+    }
 }

@@ -63,6 +63,7 @@ import org.sonatype.nexus.proxy.item.RepositoryItemUidFactory;
 import org.sonatype.nexus.proxy.item.StorageCollectionItem;
 import org.sonatype.nexus.proxy.item.StorageFileItem;
 import org.sonatype.nexus.proxy.item.StorageItem;
+import org.sonatype.nexus.proxy.mirror.PublishedMirrors;
 import org.sonatype.nexus.proxy.storage.UnsupportedStorageOperationException;
 import org.sonatype.nexus.proxy.storage.local.LocalRepositoryStorage;
 import org.sonatype.nexus.proxy.target.TargetRegistry;
@@ -136,6 +137,12 @@ public abstract class AbstractRepository
      */
     @Requirement
     private Walker walker;
+
+    /**
+     * The published mirrros.
+     */
+    @Requirement
+    private PublishedMirrors pMirrors;
 
     /**
      * The known ContentGenerators.
@@ -499,6 +506,11 @@ public abstract class AbstractRepository
         {
             this.localUrl = trstr.substring( 0, trstr.length() - 1 );
         }
+    }
+
+    public PublishedMirrors getPublishedMirrors()
+    {
+        return pMirrors;
     }
 
     @SuppressWarnings( "unchecked" )
