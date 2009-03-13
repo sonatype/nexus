@@ -21,6 +21,7 @@ import java.util.List;
 import org.codehaus.plexus.component.annotations.Component;
 import org.codehaus.plexus.component.annotations.Requirement;
 import org.codehaus.plexus.logging.AbstractLogEnabled;
+import org.codehaus.plexus.personality.plexus.lifecycle.phase.Startable;
 import org.codehaus.plexus.personality.plexus.lifecycle.phase.StartingException;
 import org.codehaus.plexus.personality.plexus.lifecycle.phase.StoppingException;
 import org.codehaus.plexus.util.StringUtils;
@@ -46,12 +47,13 @@ import org.sonatype.nexus.configuration.ConfigurationException;
 import org.sonatype.nexus.configuration.security.source.SecurityConfigurationSource;
 import org.sonatype.nexus.email.NexusEmailer;
 import org.sonatype.nexus.proxy.events.AbstractEvent;
+import org.sonatype.nexus.proxy.events.ApplicationEventMulticaster;
 import org.sonatype.nexus.proxy.events.EventListener;
 
 @Component( role = NexusSecurity.class )
 public class DefaultNexusSecurity
     extends AbstractLogEnabled
-    implements NexusSecurity
+    implements NexusSecurity, Startable
 {
     @Requirement( role = ConfigurationManager.class, hint = "resourceMerging" )
     private ConfigurationManager manager;
@@ -67,13 +69,16 @@ public class DefaultNexusSecurity
 
     @Requirement
     private NexusEmailer emailer;
-    
+
     @Requirement
     private RealmLocator realmLocator;
 
+    @Requirement
+    private ApplicationEventMulticaster applicationEventMulticaster;
+
     private List<EventListener> listeners = new ArrayList<EventListener>();
 
-    public void startService()
+    public void start()
         throws StartingException
     {
         // Do this simply to upgrade the configuration if necessary
@@ -95,7 +100,7 @@ public class DefaultNexusSecurity
         getLogger().info( "Started Nexus Security" );
     }
 
-    public void stopService()
+    public void stop()
         throws StoppingException
     {
         getLogger().info( "Stopped Nexus Security" );
@@ -240,18 +245,19 @@ public class DefaultNexusSecurity
         manager.save();
 
         // TODO: can we do the same here as with nexus config?
-        notifyProximityEventListeners( new ConfigurationChangeEvent( this, null ) );
-        
+        // XXXXX aaargh!
+        // applicationEventMulticaster.notifyProximityEventListeners( new ConfigurationChangeEvent( this, null ) );
+
         for ( Realm realm : realmLocator.getRealms() )
         {
             if ( XmlAuthenticatingRealm.class.isAssignableFrom( realm.getClass() ) )
             {
-                ( ( XmlAuthenticatingRealm ) realm ).getConfigurationManager().clearCache();
+                ( (XmlAuthenticatingRealm) realm ).getConfigurationManager().clearCache();
             }
-            
+
             if ( XmlAuthorizingRealm.class.isAssignableFrom( realm.getClass() ) )
             {
-                ( ( XmlAuthorizingRealm ) realm ).getAuthorizationCache().clear();
+                ( (XmlAuthorizingRealm) realm ).getAuthorizationCache().clear();
             }
         }
     }
@@ -518,7 +524,7 @@ public class DefaultNexusSecurity
     public SecurityUserRoleMapping readUserRoleMapping( String userId, String source )
         throws NoSuchRoleMappingException
     {
-       return this.manager.readUserRoleMapping( userId, source );
+        return this.manager.readUserRoleMapping( userId, source );
     }
 
     public void updateUserRoleMapping( SecurityUserRoleMapping userRoleMapping, ValidationContext context )
@@ -541,12 +547,12 @@ public class DefaultNexusSecurity
     {
         return this.manager.listPrivilegeDescriptors();
     }
-    
+
     public void cleanRemovedPrivilege( String privilegeId )
     {
         this.manager.cleanRemovedPrivilege( privilegeId );
     }
-    
+
     public void cleanRemovedRole( String roleId )
     {
         this.manager.cleanRemovedRole( roleId );

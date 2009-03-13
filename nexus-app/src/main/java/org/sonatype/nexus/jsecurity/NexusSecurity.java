@@ -13,14 +13,22 @@
  */
 package org.sonatype.nexus.jsecurity;
 
+import java.io.IOException;
+
 import org.sonatype.jsecurity.realms.tools.ConfigurationManager;
 import org.sonatype.jsecurity.realms.tools.NoSuchUserException;
-import org.sonatype.nexus.NexusService;
-import org.sonatype.nexus.configuration.NotifiableConfiguration;
 
 public interface NexusSecurity
-    extends ConfigurationManager, NexusService, NotifiableConfiguration
+    extends ConfigurationManager
 {
+    /**
+     * Saves the configuration.
+     * 
+     * @throws IOException
+     */
+    void saveConfiguration()
+        throws IOException;
+
     void forgotPassword( String userId, String email )
         throws NoSuchUserException,
             NoSuchEmailException;
