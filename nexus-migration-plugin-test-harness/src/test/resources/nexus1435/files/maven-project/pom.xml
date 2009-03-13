@@ -11,12 +11,12 @@
       <groupId>nxcm255</groupId>
       <artifactId>released</artifactId>
       <version>1.0</version>
-    </dependency>
+    </dependency><!--
     <dependency>
       <groupId>nxcm255</groupId>
       <artifactId>snapshot</artifactId>
       <version>1.0-SNAPSHOT</version>
     </dependency>
-  </dependencies>
+  --></dependencies>
 
 </project>
