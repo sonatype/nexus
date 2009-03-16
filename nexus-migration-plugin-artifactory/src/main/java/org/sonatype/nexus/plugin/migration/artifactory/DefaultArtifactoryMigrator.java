@@ -503,6 +503,7 @@ public class DefaultArtifactoryMigrator
             }
 
             nexusRepo.setRemoteStorage( remote );
+            nexusRepo.setDownloadRemoteIndexes( true );
         }
 
         try
@@ -828,6 +829,7 @@ public class DefaultArtifactoryMigrator
         File artifactoryBackup = new File( tempDir, FilenameUtils.getBaseName( fileItem.getName() ) + "content" );
         artifactoryBackup.mkdirs();
 
+        //TODO include a filter to extract only repositories marked with copy-cache
         zipUnArchiver.setSourceFile( fileItem );
         zipUnArchiver.setDestDirectory( artifactoryBackup );
         zipUnArchiver.extract();
