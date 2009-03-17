@@ -57,7 +57,7 @@ public class ArtifactoryRedirectorPlexusResource
     @Override
     public PathProtectionDescriptor getResourceProtection()
     {
-        return new PathProtectionDescriptor( "/**", "authcBasic,perms[nexus:artifactoryredirect]" );
+        return null;
     }
 
     @Override
