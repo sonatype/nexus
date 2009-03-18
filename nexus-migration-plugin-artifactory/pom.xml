@@ -66,6 +66,15 @@
       <testResource>
         <filtering>true</filtering>
         <directory>src/test/resources</directory>
+        <includes>
+        	<include>log4j.properties</include>
+        </includes>
+      </testResource>
+      <testResource>
+      	<directory>src/test/resources</directory>
+      	<excludes>
+      		<exclude>log4j.properties</exclude>
+      	</excludes>
       </testResource>
     </testResources>
     
