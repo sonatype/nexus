@@ -10,6 +10,7 @@
 
   <name>Nexus Migration Plugin - Artifactory</name>
 
+
   <dependencies>
     <dependency>
       <groupId>org.sonatype.nexus.plugins</groupId>
@@ -59,14 +60,20 @@
       <artifactId>commons-io</artifactId>
     </dependency>
   </dependencies>
-  
+
   <build>
+    <testResources>
+      <testResource>
+        <filtering>true</filtering>
+        <directory>src/test/resources</directory>
+      </testResource>
+    </testResources>
     <plugins>
-		<plugin>
-			<groupId>org.codehaus.plexus</groupId>
-			<artifactId>plexus-component-metadata</artifactId>
-		</plugin>
-    </plugins>       
+      <plugin>
+        <groupId>org.codehaus.plexus</groupId>
+        <artifactId>plexus-component-metadata</artifactId>
+      </plugin>
+    </plugins>
   </build>
 
 </project>
