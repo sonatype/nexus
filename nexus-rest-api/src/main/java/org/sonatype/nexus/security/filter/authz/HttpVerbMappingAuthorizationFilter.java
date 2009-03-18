@@ -162,6 +162,8 @@ public class HttpVerbMappingAuthorizationFilter
         {
             return;
         }
+        
+        getLogger().info( msg );
 
         AuthcAuthzEvent authzEvt = new AuthcAuthzEvent( FeedRecorder.SYSTEM_AUTHZ, msg );
 
