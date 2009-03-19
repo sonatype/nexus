@@ -17,6 +17,7 @@ import java.io.IOException;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.sonatype.nexus.configuration.PasswordHelper;
 import org.sonatype.nexus.configuration.model.Configuration;
 import org.sonatype.nexus.integrationtests.AbstractNexusIntegrationTest;
 import org.sonatype.nexus.integrationtests.TestContainer;
@@ -40,19 +41,23 @@ public class Nexus652Beta5To10UpgradeTest
 
     @Test
     public void checkNexusConfig()
-        throws IOException
+        throws Exception
     {
         // if we made it this far the upgrade worked...
+        PasswordHelper passwordHelper = this.getContainer().lookup( PasswordHelper.class );// 1.3.2 +
 
         Configuration nexusConfig = NexusConfigUtil.getNexusConfig();
 
         Assert.assertEquals( "Smtp host:", "foo.org", nexusConfig.getSmtpConfiguration().getHost() );
-        Assert.assertEquals( "Smtp password:", "now", nexusConfig.getSmtpConfiguration().getPassword() );
+//        Assert.assertEquals( "Smtp password:", "now", nexusConfig.getSmtpConfiguration().getPassword() ); // before 1.3.2
+        Assert.assertEquals( "Smtp password:", "now",  passwordHelper.decrypt(nexusConfig.getSmtpConfiguration().getPassword() )); //1.3.2 +
+        
         Assert.assertEquals( "Smtp username:", "void", nexusConfig.getSmtpConfiguration().getUsername() );
         Assert.assertEquals( "Smtp port:", 465, nexusConfig.getSmtpConfiguration().getPort() );
 
         Assert.assertEquals( "Security anon username:", "User3", nexusConfig.getSecurity().getAnonymousUsername() );
-        Assert.assertEquals( "Security anon password:", "y6i0t9q1e3", nexusConfig.getSecurity().getAnonymousPassword() );
+//        Assert.assertEquals( "Security anon password:", "y6i0t9q1e3", nexusConfig.getSecurity().getAnonymousPassword() ); // before 1.3.2
+        Assert.assertEquals( "Security anon password:", "y6i0t9q1e3", passwordHelper.decrypt(nexusConfig.getSecurity().getAnonymousPassword()) ); // 1.3.2 +
         Assert.assertEquals( "Security anon access:", true, nexusConfig.getSecurity().isAnonymousAccessEnabled() );
         Assert.assertEquals( "Security enabled:", true, nexusConfig.getSecurity().isEnabled() );
         Assert.assertEquals( "Security realm size:", 2, nexusConfig.getSecurity().getRealms().size() );

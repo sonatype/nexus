@@ -52,7 +52,7 @@ public class DefaultApplicationConfigurationUpgraderTest
 
         String shouldBe = IOUtil.toString( getClass().getResourceAsStream( path + ".result" ) );
 
-        assertEquals( shouldBe, sw.toString() );
+        assertEquals("expected:\n"+ shouldBe +"\nactual:\n"+ sw.toString(), shouldBe, sw.toString() );
     }
 
     public void testFromDEC()
