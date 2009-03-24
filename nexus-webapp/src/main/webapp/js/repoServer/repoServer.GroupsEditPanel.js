@@ -1083,12 +1083,24 @@ Sonatype.repoServer.RepositoryGroupEditor = function( config ) {
 };
 
 Ext.extend( Sonatype.repoServer.RepositoryGroupEditor, Sonatype.ext.FormPanel, {
+	
+	isValid: function(){
+		if ( ! this.form.isValid() ){
+			return false;
+		}
+		var repoBox = this.find( 'name', 'repositories' )[0];
+		if ( ! repoBox.validate() ){
+			return false;
+		}
+		return true;
+	},
+	
   loadRepositories: function( arr, srcObject, fpanel ) {
     var repoBox = fpanel.find( 'name', 'repositories' )[0];
     this.repoStore.filterBy( function( rec, id ) {
       return rec.data.format == srcObject.format;
     } );
-
+    
     repoBox.setValue( arr );
   },
 
