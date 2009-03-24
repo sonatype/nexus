@@ -84,7 +84,7 @@ public abstract class AbstractArtifactPlexusResource
                 "Deployment tried with both 'packaging' and/or 'extension' being empty! One of these values is mandatory!" );
         }
 
-        MavenRepository mavenRepository = getMavenRepository( repositoryId );
+        MavenRepository mavenRepository = getMavenRepository( null, repositoryId );
 
         // if extension is not given, fall-back to packaging and apply mapper
         if ( StringUtils.isBlank( e ) )
@@ -171,7 +171,7 @@ public abstract class AbstractArtifactPlexusResource
 
         try
         {
-            MavenRepository mavenRepository = getMavenRepository( repositoryId );
+            MavenRepository mavenRepository = getMavenRepository( gavRequest, repositoryId );
 
             ArtifactStoreHelper helper = mavenRepository.getArtifactStoreHelper();
 
@@ -259,7 +259,7 @@ public abstract class AbstractArtifactPlexusResource
 
         try
         {
-            MavenRepository mavenRepository = getMavenRepository( repositoryId );
+            MavenRepository mavenRepository = getMavenRepository( gavRequest, repositoryId );
 
             ArtifactStoreHelper helper = mavenRepository.getArtifactStoreHelper();
 
@@ -451,7 +451,7 @@ public abstract class AbstractArtifactPlexusResource
 
                         try
                         {
-                            MavenRepository mr = getMavenRepository( repositoryId );
+                            MavenRepository mr = getMavenRepository( gavRequest,  repositoryId );
 
                             ArtifactStoreHelper helper = mr.getArtifactStoreHelper();
 
@@ -611,7 +611,7 @@ public abstract class AbstractArtifactPlexusResource
         }
     }
 
-    protected MavenRepository getMavenRepository( String id )
+    protected MavenRepository getMavenRepository( ArtifactStoreRequest gavRequest,  String id )
         throws ResourceException
     {
         try

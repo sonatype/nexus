@@ -58,7 +58,7 @@ Sonatype.repoServer.ArtifactUploadPanel = function(config){
           {
             hideLabel: true,
             xtype: 'browsebutton',
-            text: 'Select Artifact to Upload...',
+            text: 'Select Artifact(s) to Upload...',
             style :'margin-bottom: 5px;',
             uploadPanel: this,
             handler: function( b ) {
