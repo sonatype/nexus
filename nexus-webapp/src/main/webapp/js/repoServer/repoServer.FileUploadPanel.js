@@ -28,6 +28,10 @@ Sonatype.repoServer.ArtifactUploadPanel = function(config){
     fields: ['value'], 
     data: [['pom'], ['jar'], ['ejb'], ['war'], ['ear'], ['rar'], ['par'], ['maven-archetype'], ['maven-plugin']]
   } );
+  
+  if ( this.extraItems == undefined ) {
+    this.extraItems = {};
+  }    
 
   Sonatype.repoServer.ArtifactUploadPanel.superclass.constructor.call(this, {
     border: false,
@@ -327,6 +331,7 @@ Sonatype.repoServer.ArtifactUploadPanel = function(config){
               }
             ]
           },
+          this.extraItems,
           {
             xtype: 'button',
             id: 'upload-button',
