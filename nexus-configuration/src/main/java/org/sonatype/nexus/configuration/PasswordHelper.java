@@ -25,8 +25,11 @@ public class PasswordHelper
     {
         if ( password != null )
         {
+            return password;
 
-            return plexusCipher.encrypt( password, ENC );
+            // TURNED OFF, on Linux causes trouble
+            // http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6521844
+            // return plexusCipher.encrypt( password, ENC );
         }
         return null;
     }
@@ -36,7 +39,11 @@ public class PasswordHelper
     {
         if ( encodedPassword != null )
         {
-            return plexusCipher.decrypt( encodedPassword, ENC );
+            return encodedPassword;
+            
+            // TURNED OFF, on Linux causes trouble
+            // http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6521844
+            // return plexusCipher.decrypt( encodedPassword, ENC );
         }
         return null;
     }
