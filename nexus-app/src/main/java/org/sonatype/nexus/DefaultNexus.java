@@ -555,19 +555,12 @@ public class DefaultNexus
     {
         Repository repository = repositoryRegistry.getRepository( id );
 
-        File defaultStorageFile = new File( new File( nexusConfiguration.getWorkingDirectory(), "storage" ), repository
-            .getId() );
+        // remove the storage folders for the repository
+        RemoveRepoFolderTask task = nexusScheduler.createTaskInstance( RemoveRepoFolderTask.class );
 
-        // only remove the storage folder when in default storage case
-        if ( defaultStorageFile.toURL().toString().equals( repository.getLocalUrl() + "/" ) )
-        {
-            // remove the storage folders for the repository
-            RemoveRepoFolderTask task = nexusScheduler.createTaskInstance( RemoveRepoFolderTask.class );
+        task.setRepository( repository );
 
-            task.setRepository( repository );
-
-            nexusScheduler.submit( "Remove repository folder", task );
-        }
+        nexusScheduler.submit( "Remove repository folder", task );
 
         // delete the configuration
         nexusConfiguration.deleteRepository( id );
