@@ -403,7 +403,7 @@ Ext.extend( Sonatype.panels.GridViewer, Ext.Panel, {
       }
 
       if ( this.rowClickEvent ) {
-        Sonatype.Events.fireEvent( this.rowClickEvent, panel, rec );
+        Sonatype.Events.fireEvent( this.rowClickEvent, panel, rec, this );
       }
 
       if ( panel.items ) {
