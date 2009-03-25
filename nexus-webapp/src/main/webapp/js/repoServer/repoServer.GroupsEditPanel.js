@@ -204,6 +204,23 @@ Ext.extend( Sonatype.repoServer.RepositoryGroupEditor, Sonatype.ext.FormPanel, {
     rec.set( 'displayStatus', Sonatype.utils.joinArrayObject( action.output.data.repositories, 'name' ) ); 
     rec.commit();
     rec.endEdit();
+  },
+
+  //@override
+  addSorted : function(store, rec) {
+	var insertIndex;
+	for (var i=0 ; i < store.getTotalCount() ; i++) {
+	  var tempRec = store.getAt(i);
+	  if (tempRec.get('repoType') != 'group') {
+	    insertIndex = i;
+	    break;
+	  }
+	  if (tempRec.get('name').toLowerCase() > rec.get('name').toLowerCase() ) {
+	  	insertIndex = i;
+	  	break;
+	  }
+	}
+	store.insert( insertIndex, [rec] );
   }
 
 } );
