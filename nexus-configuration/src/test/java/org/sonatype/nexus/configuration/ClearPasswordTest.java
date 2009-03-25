@@ -1,13 +1,11 @@
 package org.sonatype.nexus.configuration;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.List;
 
 import junit.framework.Assert;
 
 import org.codehaus.plexus.util.FileUtils;
-import org.codehaus.plexus.util.IOUtil;
 import org.sonatype.nexus.configuration.application.source.ApplicationConfigurationSource;
 import org.sonatype.nexus.configuration.model.CRemoteAuthentication;
 import org.sonatype.nexus.configuration.model.CRemoteHttpProxySettings;
@@ -34,7 +32,7 @@ public class ClearPasswordTest
 
         this.doTestLogic();
     }
-    
+
     public void testUpgrade()
         throws Exception
     {
@@ -94,11 +92,9 @@ public class ClearPasswordTest
         // now get the file and look for the "clear-text"
         String configString = FileUtils.fileRead( this.getNexusConfiguration() );
 
-        // TURNED OFF, on Linux causes trouble
-        // http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6521844
-        //Assert.assertFalse( "Clear text password found in nexus.xml:\n" + configString, configString
-        //    .contains( password ) );
-        
+        Assert.assertFalse( "Clear text password found in nexus.xml:\n" + configString, configString
+            .contains( password ) );
+
         // make sure we do not have the default smtp password either
         Assert.assertFalse( "Old SMTP password found in nexus.xml", configString.contains( "smtp-password" ) );
 
