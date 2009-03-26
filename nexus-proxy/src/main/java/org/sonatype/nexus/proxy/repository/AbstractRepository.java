@@ -64,6 +64,7 @@ import org.sonatype.nexus.proxy.target.TargetRegistry;
 import org.sonatype.nexus.proxy.target.TargetSet;
 import org.sonatype.nexus.proxy.walker.DefaultWalkerContext;
 import org.sonatype.nexus.proxy.walker.Walker;
+import org.sonatype.nexus.proxy.walker.WalkerException;
 import org.sonatype.nexus.scheduling.DefaultRepositoryTaskActivityDescriptor;
 import org.sonatype.nexus.scheduling.DefaultRepositoryTaskFilter;
 import org.sonatype.nexus.scheduling.RepositoryTaskFilter;
@@ -468,7 +469,19 @@ public abstract class AbstractRepository
 
         ctx.getProcessors().add( new ClearCacheWalker( this ) );
 
-        walker.walk( ctx, path );
+        try
+        {
+            walker.walk( ctx, path );
+        }
+        catch ( WalkerException e )
+        {
+            if ( !( e.getWalkerContext().getStopCause() instanceof ItemNotFoundException ) )
+            {
+                // everything that is not ItemNotFound should be reported,
+                // otherwise just neglect it
+                throw e;
+            }
+        }
 
         // 2nd, remove the items from NFC
         clearNotFoundCaches( path );

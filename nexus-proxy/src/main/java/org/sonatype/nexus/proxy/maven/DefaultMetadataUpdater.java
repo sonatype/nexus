@@ -53,6 +53,12 @@ public class DefaultMetadataUpdater
             return;
         }
 
+        if ( request.getGav().isHash() || request.getGav().isSignature() )
+        {
+            // hashes and signatures are "meta"
+            return;
+        }
+
         try
         {
             List<MetadataOperation> operations = null;
@@ -77,7 +83,7 @@ public class DefaultMetadataUpdater
             {
                 operations.add( new SetSnapshotOperation( new SnapshotOperand( MetadataBuilder.createSnapshot( request
                     .getVersion() ) ) ) );
-                
+
                 MetadataBuilder.changeMetadata( gavMd, operations );
 
                 locator.storeGAVMetadata( request, gavMd );
@@ -128,6 +134,12 @@ public class DefaultMetadataUpdater
         if ( !StringUtils.isEmpty( request.getClassifier() ) )
         {
             // artifacts with classifiers have no metadata
+            return;
+        }
+
+        if ( request.getGav().isHash() || request.getGav().isSignature() )
+        {
+            // hashes and signatures are "meta"
             return;
         }
 
