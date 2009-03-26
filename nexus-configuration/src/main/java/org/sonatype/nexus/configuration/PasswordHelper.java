@@ -23,19 +23,32 @@ public class PasswordHelper
     public String encrypt( String password )
         throws PlexusCipherException
     {
+        return encrypt( password, ENC );
+    }
+    
+    public String encrypt( String password, String encoding )
+        throws PlexusCipherException
+    {
         if ( password != null )
         {
-            return plexusCipher.encrypt( password, ENC );
+            return plexusCipher.encrypt( password, encoding );
         }
+        
         return null;
     }
 
     public String decrypt( String encodedPassword )
         throws PlexusCipherException
     {
+        return decrypt( encodedPassword, ENC );
+    }
+    
+    public String decrypt( String encodedPassword, String encoding )
+        throws PlexusCipherException
+    {
         if ( encodedPassword != null )
         {
-            return plexusCipher.decrypt( encodedPassword, ENC );
+            return plexusCipher.decrypt( encodedPassword, encoding );
         }
         return null;
     }
