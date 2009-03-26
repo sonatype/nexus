@@ -118,6 +118,8 @@ public class RecreateMavenMetadataWalkerTest
         "/com/mycom/group1/maven-metadata.xml",
         "/com/mycom/group2/maven-p1-plugin/1.0/maven-p1-plugin-1.0.jar",
         "/com/mycom/group2/maven-p1-plugin/1.0/maven-p1-plugin-1.0.pom",
+        "/com/mycom/group2/maven-p1-plugin/2.0/maven-p1-plugin-2.0.jar",
+        "/com/mycom/group2/maven-p1-plugin/2.0/maven-p1-plugin-2.0.pom",
         "/com/mycom/group2/maven-p2-plugin/1.0/maven-p2-plugin-1.0.jar",
         "/com/mycom/group2/maven-p2-plugin/1.0/maven-p2-plugin-1.0.pom",
         "/com/mycom/group2/maven-metadata.xml" };
