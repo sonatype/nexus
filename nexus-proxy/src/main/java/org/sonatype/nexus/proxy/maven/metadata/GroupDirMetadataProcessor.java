@@ -43,7 +43,7 @@ public class GroupDirMetadataProcessor
     {
         Metadata md = new Metadata();
 
-        for ( Plugin plugin : metadataHelper.currentPlugins )
+        for ( Plugin plugin : metadataHelper.currentPlugins.values() )
         {
             md.addPlugin( plugin );
         }

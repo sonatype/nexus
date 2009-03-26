@@ -92,6 +92,26 @@ public class MavenRepositoryMetadataLocator
         return plugin;
     }
 
+    protected Gav getPomGav( ArtifactStoreRequest request )
+    {
+        Gav pomGav = new Gav( request.getGav().getGroupId(), // groupId
+            request.getGav().getArtifactId(), // artifactId
+            request.getGav().getVersion(), // version
+            null, // classifier
+            "pom", // extension
+            request.getGav().getSnapshotBuildNumber(), // snapshotBuildNumber
+            request.getGav().getSnapshotTimeStamp(), // snapshotTimeStamp
+            null, // name
+            request.getGav().isSnapshot(), // snapshot
+            false, // hash
+            null, // hashType
+            false, // signature
+            null // signatureType
+        );
+
+        return pomGav;
+    }
+
     public String retrievePackagingFromPom( ArtifactStoreRequest request )
         throws IOException
     {
@@ -99,32 +119,16 @@ public class MavenRepositoryMetadataLocator
 
         GavCalculator gavCalculator = request.getMavenRepository().getGavCalculator();
 
-        Gav gav = gavCalculator.pathToGav( request.getRequestPath() );
-
-        if ( gav == null )
-        {
-            return null;
-        }
-        
         Reader reader = null;
 
         try
         {
-            Gav pomGav = new Gav( 
-                gav.getGroupId(), // groupId
-                gav.getArtifactId(), // artifactId
-                gav.getVersion(), // version
-                null, // classifier
-                "pom", // extension 
-                gav.getSnapshotBuildNumber(), // snapshotBuildNumber
-                gav.getSnapshotTimeStamp(), // snapshotTimeStamp
-                gav.getName(), // name
-                gav.isSnapshot(), // snapshot
-                false, // hash
-                null,  // hashType
-                false, // signature
-                null // signatureType 
-            );
+            Gav pomGav = getPomGav( request );
+
+            if ( pomGav == null )
+            {
+                return null;
+            }
 
             String pomPath = gavCalculator.gavToPath( pomGav );
 
@@ -200,7 +204,12 @@ public class MavenRepositoryMetadataLocator
     {
         try
         {
-            Gav gav = request.getGav();
+            Gav gav = getPomGav( request );
+
+            if ( gav == null )
+            {
+                return null;
+            }
 
             String pomPath = request.getMavenRepository().getGavCalculator().gavToPath( gav );
 

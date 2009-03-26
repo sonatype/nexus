@@ -50,6 +50,7 @@ import org.sonatype.nexus.proxy.walker.DefaultWalkerContext;
 import org.sonatype.nexus.proxy.walker.DottedStoreWalkerFilter;
 import org.sonatype.nexus.proxy.walker.Walker;
 import org.sonatype.nexus.proxy.walker.WalkerContext;
+import org.sonatype.nexus.proxy.walker.WalkerException;
 import org.sonatype.nexus.util.ItemPathUtils;
 
 /**
@@ -201,7 +202,18 @@ public class DefaultSnapshotRemover
 
         for ( String path : request.getMetadataRebuildPaths() )
         {
-            walker.walk( ctx, path );
+            try
+            {
+                walker.walk( ctx, path );
+            }
+            catch ( WalkerException e )
+            {
+                if ( !( e.getWalkerContext().getStopCause() instanceof ItemNotFoundException ) )
+                {
+                    // neglect itemNotFound, all others should be thrown
+                    throw e;
+                }
+            }
         }
 
         return result;

@@ -25,7 +25,8 @@ public interface Walker
      * 
      * @throws WalkerException
      */
-    void walk( WalkerContext context );
+    void walk( WalkerContext context )
+        throws WalkerException;
 
     /**
      * Walks from the path given on resource store, local only and not only collections.
@@ -33,5 +34,6 @@ public interface Walker
      * @param fromPath
      * @throws WalkerException
      */
-    void walk( WalkerContext context, String fromPath );
+    void walk( WalkerContext context, String fromPath )
+        throws WalkerException;
 }
