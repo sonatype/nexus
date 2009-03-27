@@ -159,11 +159,18 @@ public class DefaultTimeline
                 running = true;
             }
         }
-        catch ( IOException e )
+        catch ( Exception e )
         {
+            getLogger().warn( "TimeLine index is corrupted, trying to create new index files." );
+
+            if ( getLogger().isDebugEnabled() )
+            {
+                getLogger().debug( "Caused by: ", e );
+            }
+            
             try
             {
-                handleCrashedTimeLine( e );
+                handleCrashedTimeLine();
             }
             catch ( IOException ioe )
             {
@@ -178,16 +185,9 @@ public class DefaultTimeline
         }
     }
 
-    private void handleCrashedTimeLine( IOException e )
+    private void handleCrashedTimeLine()
         throws IOException
     {
-        getLogger().warn( "TimeLine index is corrupted, trying to create new index files." );
-
-        if ( getLogger().isDebugEnabled() )
-        {
-            getLogger().debug( "Caused by: ", e );
-        }
-
         try
         {
             closeWriter();
