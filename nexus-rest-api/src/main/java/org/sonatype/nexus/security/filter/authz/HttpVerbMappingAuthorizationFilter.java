@@ -40,7 +40,7 @@ public class HttpVerbMappingAuthorizationFilter
     extends PermissionsAuthorizationFilter
 {
     private final Log logger = LogFactory.getLog( this.getClass() );
-    
+
     private AuthcAuthzEvent currentAuthzEvt;
 
     private Map<String, String> mapping = new HashMap<String, String>();
@@ -57,9 +57,9 @@ public class HttpVerbMappingAuthorizationFilter
         return logger;
     }
 
-    protected Nexus getNexus( ServletRequest request )
+    protected Nexus getNexus()
     {
-        return (Nexus) request.getAttribute( Nexus.class.getName() );
+        return (Nexus) getAttribute( Nexus.class.getName() );
     }
 
     protected Action getActionFromHttpVerb( String method )
@@ -145,7 +145,7 @@ public class HttpVerbMappingAuthorizationFilter
 
     private void recordAuthzFailureEvent( ServletRequest request, ServletResponse response )
     {
-        Nexus nexus = getNexus( request );
+        Nexus nexus = getNexus();
 
         Subject subject = getSubject( request, response );
 
@@ -162,7 +162,7 @@ public class HttpVerbMappingAuthorizationFilter
         {
             return;
         }
-        
+
         getLogger().info( msg );
 
         AuthcAuthzEvent authzEvt = new AuthcAuthzEvent( FeedRecorder.SYSTEM_AUTHZ, msg );
