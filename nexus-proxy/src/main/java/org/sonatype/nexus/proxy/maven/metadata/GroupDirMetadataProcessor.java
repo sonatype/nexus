@@ -1,7 +1,10 @@
 package org.sonatype.nexus.proxy.maven.metadata;
 
 import java.io.ByteArrayOutputStream;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.maven.mercury.repository.metadata.Metadata;
 import org.apache.maven.mercury.repository.metadata.MetadataBuilder;
@@ -38,12 +41,28 @@ public class GroupDirMetadataProcessor
         metadataHelper.store( mdString, path + AbstractMetadataHelper.METADATA_SUFFIX );
 
     }
+    
+    private List<SortablePlugin> sortPlugins( Map<String, Plugin> plugins )
+    {
+        List<SortablePlugin> result = new ArrayList<SortablePlugin>( plugins.size() );
+        
+        for( Plugin plugin : plugins.values())
+        {
+            result.add( new SortablePlugin(plugin) );
+        }
+
+        Collections.sort( result );
+
+        return result;
+    }
 
     private Metadata createMetadata( String path )
     {
         Metadata md = new Metadata();
 
-        for ( Plugin plugin : metadataHelper.currentPlugins.values() )
+        List<SortablePlugin> plugins = sortPlugins( metadataHelper.currentPlugins );
+
+        for ( Plugin plugin : plugins )
         {
             md.addPlugin( plugin );
         }
@@ -150,5 +169,28 @@ public class GroupDirMetadataProcessor
         }
 
         return false;
+    }
+    
+    class SortablePlugin
+        extends Plugin
+        implements Comparable<Plugin>
+    {
+        private static final long serialVersionUID = -8433277055194909767L;
+
+        public SortablePlugin( Plugin plugin )
+        {
+            this.setArtifactId( plugin.getArtifactId() );
+
+            this.setPrefix( plugin.getPrefix() );
+
+            this.setName( plugin.getName() );
+
+            this.setModelEncoding( plugin.getModelEncoding() );
+        }
+
+        public int compareTo( Plugin plugin )
+        {
+            return this.getArtifactId().compareTo( plugin.getArtifactId() );
+        }
     }
 }
