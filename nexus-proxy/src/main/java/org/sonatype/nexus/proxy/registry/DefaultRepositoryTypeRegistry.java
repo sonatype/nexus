@@ -50,6 +50,7 @@ public class DefaultRepositoryTypeRegistry
             repositoryRoles.add( new RepositoryTypeDescriptor( Repository.class.getName(), "repositories" ) );
             repositoryRoles.add( new RepositoryTypeDescriptor( ShadowRepository.class.getName(), "shadows" ) );
             repositoryRoles.add( new RepositoryTypeDescriptor( GroupRepository.class.getName(), "groups" ) );
+            repositoryRoles.add( new RepositoryTypeDescriptor( GroupRepository.class.getName(), "repo_groups" ) );
             repositoryRoles.add( new RepositoryTypeDescriptor( WebSiteRepository.class.getName(), "sites" ) );
         }
 
