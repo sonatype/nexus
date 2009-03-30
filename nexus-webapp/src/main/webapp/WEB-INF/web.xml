@@ -51,7 +51,7 @@
 
             tgiperms = org.sonatype.nexus.security.filter.authz.NexusTargetMappingAuthorizationFilter
             tgiperms.pathPrefix = /service/local/repo_groups/(.*)/index_content(.*)
-            tgiperms.pathReplacement = /repo_groups/@1@2
+            tgiperms.pathReplacement = /groups/@1@2
 
 			contentAuthcBasic = org.sonatype.nexus.security.filter.authc.NexusHttpAuthenticationFilter
 			contentAuthcBasic.applicationName = Sonatype Nexus Repository Manager
