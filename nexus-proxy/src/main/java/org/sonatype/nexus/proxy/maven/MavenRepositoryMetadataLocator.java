@@ -25,7 +25,6 @@ import org.apache.maven.mercury.repository.metadata.MetadataException;
 import org.apache.maven.mercury.repository.metadata.Plugin;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
-import org.apache.maven.plugin.descriptor.PluginDescriptor;
 import org.codehaus.plexus.component.annotations.Component;
 import org.codehaus.plexus.util.IOUtil;
 import org.codehaus.plexus.util.ReaderFactory;
@@ -87,7 +86,14 @@ public class MavenRepositoryMetadataLocator
 
         plugin.setName( pom.getName() );
 
-        plugin.setPrefix( PluginDescriptor.getGoalPrefixFromArtifactId( pom.getArtifactId() ) );
+        if ( "maven-plugin-plugin".equals( pom.getArtifactId() ) )
+        {
+            plugin.setPrefix( "plugin" );
+        }
+        else
+        {
+            plugin.setPrefix( pom.getArtifactId().replaceAll( "-?maven-?", "" ).replaceAll( "-?plugin-?", "" ) );
+        }
 
         return plugin;
     }
