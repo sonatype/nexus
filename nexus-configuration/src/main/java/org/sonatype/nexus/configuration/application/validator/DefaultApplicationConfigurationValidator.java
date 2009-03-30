@@ -376,7 +376,7 @@ public class DefaultApplicationConfigurationValidator
             if ( context.getExistingRepositoryShadowIds().contains( repo.getId() ) )
             {
                 response.addValidationError( "Repository " + repo.getId()
-                    + " conflicts woth existing Shadow with same ID='" + repo.getId() + "'!" );
+                    + " conflicts with existing Shadow with same ID='" + repo.getId() + "'!" );
             }
         }
 
@@ -385,7 +385,7 @@ public class DefaultApplicationConfigurationValidator
             if ( context.getExistingRepositoryGroupIds().contains( repo.getId() ) )
             {
                 response.addValidationError( "Repository " + repo.getId()
-                    + " conflicts woth existing Group with same ID='" + repo.getId() + "'!" );
+                    + " conflicts with existing Group with same ID='" + repo.getId() + "'!" );
             }
         }
 
@@ -464,7 +464,7 @@ public class DefaultApplicationConfigurationValidator
             if ( context.getExistingRepositoryGroupIds().contains( shadow.getId() ) )
             {
                 response.addValidationError( "Repository shadow " + shadow.getId()
-                    + " conflicts woth existing Group with same ID='" + shadow.getId() + "'!" );
+                    + " conflicts with existing Group with same ID='" + shadow.getId() + "'!" );
             }
         }
 
