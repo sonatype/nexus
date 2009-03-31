@@ -22,9 +22,11 @@ import java.util.List;
 import org.codehaus.plexus.component.annotations.Component;
 import org.codehaus.plexus.logging.AbstractLogEnabled;
 import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
+import org.sonatype.nexus.configuration.model.CProps;
 import org.sonatype.nexus.configuration.model.CRepository;
 import org.sonatype.nexus.configuration.model.CRepositoryGroup;
 import org.sonatype.nexus.configuration.model.CRepositoryShadow;
+import org.sonatype.nexus.configuration.model.CScheduledTask;
 import org.sonatype.nexus.configuration.model.CSecurity;
 import org.sonatype.nexus.configuration.model.v1_0_8.upgrade.BasicVersionUpgrade;
 import org.sonatype.nexus.configuration.upgrade.ConfigurationIsCorruptedException;
@@ -135,9 +137,12 @@ public class Upgrade107to108
                 // need to check case insensitive for windows
                 if ( repoIds.contains( group.getGroupId().toLowerCase() ) )
                 {
+                    String groupId = group.getGroupId();
                     // if duped only
-                    group.setPathPrefix( group.getGroupId() );
-                    group.setGroupId( group.getGroupId() + "-group" );
+                    group.setPathPrefix( groupId );
+                    group.setGroupId( groupId + "-group" );
+
+                    upgradeGroupRefsInTask( newc, groupId );
                 }
             }
         }
@@ -145,5 +150,20 @@ public class Upgrade107to108
         newc.setVersion( org.sonatype.nexus.configuration.model.Configuration.MODEL_VERSION );
         message.setModelVersion( org.sonatype.nexus.configuration.model.Configuration.MODEL_VERSION );
         message.setConfiguration( newc );
+    }
+    
+    @SuppressWarnings( "unchecked" )
+    private void upgradeGroupRefsInTask( org.sonatype.nexus.configuration.model.Configuration conf, String groupId )
+    {
+        for ( CScheduledTask task : (List<CScheduledTask>) conf.getTasks() )
+        {
+            for ( CProps prop : (List<CProps>) task.getProperties() )
+            {
+                if ( prop.getKey().equals( "repositoryOrGroupId" ) && prop.getValue().equals( "group_" + groupId ) )
+                {
+                    prop.setValue( "group_" + groupId + "-group" );
+                }
+            }
+        }
     }
 }
