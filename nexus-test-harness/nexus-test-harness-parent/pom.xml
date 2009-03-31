@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.sonatype.nexus</groupId>
     <artifactId>nexus-test-harness</artifactId>
-    <version>1.3.2-SNAPSHOT</version>
+    <version>1.3.3-SNAPSHOT</version>
   </parent>
 
   <artifactId>nexus-test-harness-parent</artifactId>
@@ -101,6 +101,7 @@
         <directory>src/test/resources</directory>
         <filtering>true</filtering>
         <excludes>
+          <exclude>**/*.lic</exclude>
           <exclude>**/*.zip</exclude>
           <exclude>**/*.jar</exclude>
           <exclude>**/fake-central/**</exclude>
@@ -111,6 +112,7 @@
         <directory>src/test/resources</directory>
         <filtering>false</filtering>
         <includes>
+          <include>**/*.lic</include>
           <include>**/*.zip</include>
           <include>**/*.jar</include>
           <include>**/fake-central/**</include>
