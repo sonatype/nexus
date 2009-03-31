@@ -11,24 +11,15 @@
  * Sonatype Nexus (TM) Professional Version is available from Sonatype, Inc.
  * "Sonatype" and "Sonatype Nexus" are trademarks of Sonatype, Inc.
  */
-package org.sonatype.nexus.integrationtests.nexus450;
+package org.sonatype.nexus.test.utils;
 
 import java.io.IOException;
 
 import org.restlet.data.Status;
 import org.sonatype.nexus.integrationtests.RequestFacade;
-import org.sonatype.nexus.test.utils.XStreamFactory;
-
-import com.thoughtworks.xstream.XStream;
 
 public class UserCreationUtil
 {
-    private static XStream xstream;
-
-    static
-    {
-        xstream = XStreamFactory.getXmlXStream();
-    }
 
     public static Status login()
         throws IOException
