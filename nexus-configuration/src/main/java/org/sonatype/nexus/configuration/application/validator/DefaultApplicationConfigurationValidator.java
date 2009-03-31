@@ -303,15 +303,15 @@ public class DefaultApplicationConfigurationValidator
 
         if ( StringUtils.isEmpty( repo.getId() ) )
         {
-            response.addValidationError( "Repository ID  may not be empty!" );
+            response.addValidationError( new ValidationMessage( "id", "Repository ID  may not be empty!" ) );
         }
 
         if ( StringUtils.isEmpty( repo.getName() ) )
         {
             repo.setName( repo.getId() );
 
-            response.addValidationWarning( "Repository with ID='" + repo.getId()
-                + "' has no name, defaulted to it's ID." );
+            response.addValidationWarning( new ValidationMessage( "id", "Repository with ID='" + repo.getId()
+                + "' has no name, defaulted to it's ID." ) );
 
             response.setModified( true );
         }
@@ -325,8 +325,8 @@ public class DefaultApplicationConfigurationValidator
 
         if ( !validateRepositoryType( repo.getType() ) )
         {
-            response.addValidationError( "TYPE='" + repo.getType() + "' of repository with ID='" + repo.getId()
-                + "' is wrong!" );
+            response.addValidationError( new ValidationMessage( "repoType", "TYPE='" + repo.getType()
+                + "' of repository with ID='" + repo.getId() + "' is wrong!" ) );
         }
 
         if ( !CRepository.PROXY_MODE_ALLOW.equals( repo.getProxyMode() )
@@ -342,10 +342,10 @@ public class DefaultApplicationConfigurationValidator
             || ( !CRepository.REPOSITORY_POLICY_RELEASE.equals( repo.getRepositoryPolicy() ) && !CRepository.REPOSITORY_POLICY_SNAPSHOT
                 .equals( repo.getRepositoryPolicy() ) ) )
         {
-            response.addValidationError( "Repository " + repo.getId() + " have wrong repository policy: \""
-                + repo.getRepositoryPolicy() + "\". Repository policy may be \""
+            response.addValidationError( new ValidationMessage( "repoPolicy", "Repository " + repo.getId()
+                + " have wrong repository policy: \"" + repo.getRepositoryPolicy() + "\". Repository policy may be \""
                 + CRepository.REPOSITORY_POLICY_RELEASE + "\" or \"" + CRepository.REPOSITORY_POLICY_SNAPSHOT
-                + "\" only." );
+                + "\" only." ) );
         }
 
         if ( repo.getChecksumPolicy() == null
@@ -354,18 +354,19 @@ public class DefaultApplicationConfigurationValidator
                 && !CRepository.CHECKSUM_POLICY_STRICT.equals( repo.getChecksumPolicy() ) && !CRepository.CHECKSUM_POLICY_STRICT_IF_EXISTS
                 .equals( repo.getChecksumPolicy() ) ) )
         {
-            response.addValidationError( "Repository " + repo.getId() + " have wrong checksum policy: \""
-                + repo.getChecksumPolicy() + "\". Repository checksum policy may be \""
-                + CRepository.CHECKSUM_POLICY_IGNORE + "\", \"" + CRepository.CHECKSUM_POLICY_WARN + "\", \""
-                + CRepository.CHECKSUM_POLICY_STRICT_IF_EXISTS + "\" or \"" + CRepository.CHECKSUM_POLICY_STRICT
-                + "\" only." );
+            response.addValidationError( new ValidationMessage( "checksumPolicy", "Repository " + repo.getId()
+                + " have wrong checksum policy: \"" + repo.getChecksumPolicy()
+                + "\". Repository checksum policy may be \"" + CRepository.CHECKSUM_POLICY_IGNORE + "\", \""
+                + CRepository.CHECKSUM_POLICY_WARN + "\", \"" + CRepository.CHECKSUM_POLICY_STRICT_IF_EXISTS
+                + "\" or \"" + CRepository.CHECKSUM_POLICY_STRICT + "\" only." ) );
         }
 
         if ( context.getExistingRepositoryIds() != null )
         {
             if ( context.getExistingRepositoryIds().contains( repo.getId() ) )
             {
-                response.addValidationError( "The Repository ID '" + repo.getId() + "' is in use by another Repository" );
+                response.addValidationError( new ValidationMessage( "id", "The Repository ID '" + repo.getId()
+                    + "' is in use by another Repository" ) );
             }
 
             context.getExistingRepositoryIds().add( repo.getId() );
@@ -375,8 +376,8 @@ public class DefaultApplicationConfigurationValidator
         {
             if ( context.getExistingRepositoryShadowIds().contains( repo.getId() ) )
             {
-                response.addValidationError( "The Repository ID '" + repo.getId()
-                    + "' conflicts with an existing Shadow Repository ID" );
+                response.addValidationError( new ValidationMessage( "id", "The Repository ID '" + repo.getId()
+                    + "' conflicts with an existing Shadow Repository ID" ) );
             }
         }
 
@@ -384,8 +385,8 @@ public class DefaultApplicationConfigurationValidator
         {
             if ( context.getExistingRepositoryGroupIds().contains( repo.getId() ) )
             {
-                response.addValidationError( "The Repository ID '" + repo.getId()
-                    + "' conflicts with an existing Group ID" );
+                response.addValidationError( new ValidationMessage( "id", "The Repository ID '" + repo.getId()
+                    + "' conflicts with an existing Group ID" ) );
             }
         }
 
@@ -405,15 +406,15 @@ public class DefaultApplicationConfigurationValidator
 
         if ( StringUtils.isEmpty( shadow.getId() ) )
         {
-            response.addValidationError( "Virtual Repository ID may not be empty!" );
+            response.addValidationError( new ValidationMessage( "id", "Virtual Repository ID may not be empty!" ) );
         }
 
         if ( StringUtils.isEmpty( shadow.getName() ) )
         {
             shadow.setName( shadow.getId() );
 
-            response.addValidationWarning( "Virtual Repository with ID='" + shadow.getId()
-                + "' has no name, defaulted to it's ID." );
+            response.addValidationWarning( new ValidationMessage( "name", "Virtual Repository with ID='"
+                + shadow.getId() + "' has no name, defaulted to it's ID." ) );
 
             response.setModified( true );
         }
@@ -422,8 +423,9 @@ public class DefaultApplicationConfigurationValidator
         {
             if ( !context.getExistingRepositoryIds().contains( shadow.getShadowOf() ) )
             {
-                response.addValidationError( "The Virtual Repository with ID='" + shadow.getId() + "' of repository "
-                    + shadow.getShadowOf() + " of type " + shadow.getType() + " points to a nonexistent repository!" );
+                response.addValidationError( new ValidationMessage( "shadowOf", "The Virtual Repository with ID='"
+                    + shadow.getId() + "' of repository " + shadow.getShadowOf() + " of type " + shadow.getType()
+                    + " points to a nonexistent repository!" ) );
             }
         }
 
@@ -436,16 +438,16 @@ public class DefaultApplicationConfigurationValidator
 
         if ( !validateShadowRepositoryType( shadow.getType() ) )
         {
-            response.addValidationError( "TYPE='" + shadow.getType() + "' of shadow repository with ID='"
-                + shadow.getId() + "' is wrong!" );
+            response.addValidationError( new ValidationMessage( "repoType", "TYPE='" + shadow.getType()
+                + "' of shadow repository with ID='" + shadow.getId() + "' is wrong!" ) );
         }
 
         if ( context.getExistingRepositoryShadowIds() != null )
         {
             if ( context.getExistingRepositoryShadowIds().contains( shadow.getId() ) )
             {
-                response.addValidationError( "Virtual Repository ID '" + shadow.getId()
-                    + "' is in use by another Virtual Repository" );
+                response.addValidationError( new ValidationMessage( "id", "Virtual Repository ID '" + shadow.getId()
+                    + "' is in use by another Virtual Repository" ) );
             }
 
             context.getExistingRepositoryShadowIds().add( shadow.getId() );
@@ -455,8 +457,8 @@ public class DefaultApplicationConfigurationValidator
         {
             if ( context.getExistingRepositoryIds().contains( shadow.getId() ) )
             {
-                response.addValidationError( "Virtual Repository ID '" + shadow.getId()
-                    + "' conflicts with an existing Repository ID" );
+                response.addValidationError( new ValidationMessage( "id", "Virtual Repository ID '" + shadow.getId()
+                    + "' conflicts with an existing Repository ID" ) );
             }
         }
 
@@ -464,8 +466,8 @@ public class DefaultApplicationConfigurationValidator
         {
             if ( context.getExistingRepositoryGroupIds().contains( shadow.getId() ) )
             {
-                response.addValidationError( "Virtual Repository ID '" + shadow.getId()
-                    + "' conflicts with an existing Group ID" );
+                response.addValidationError( new ValidationMessage( "id", "Virtual Repository ID '" + shadow.getId()
+                    + "' conflicts with an existing Group ID" ) );
             }
         }
 
@@ -612,15 +614,15 @@ public class DefaultApplicationConfigurationValidator
 
         if ( StringUtils.isEmpty( group.getGroupId() ) )
         {
-            response.addValidationError( "Group ID may not be empty!" );
+            response.addValidationError( new ValidationMessage( "id", "Group ID may not be empty!" ) );
         }
 
         if ( StringUtils.isEmpty( group.getName() ) )
         {
             group.setName( group.getGroupId() );
 
-            response.addValidationWarning( "The Group with ID='" + group.getGroupId()
-                + "' has no name, defaulted to it's ID." );
+            response.addValidationWarning( new ValidationMessage( "name", "The Group with ID='" + group.getGroupId()
+                + "' has no name, defaulted to it's ID." ) );
 
             response.setModified( true );
         }
@@ -629,8 +631,8 @@ public class DefaultApplicationConfigurationValidator
         {
             if ( context.getExistingRepositoryGroupIds().contains( group.getGroupId() ) )
             {
-                response.addValidationError( "The Group ID  '" + group.getGroupId()
-                    + "' is in use by another Repository Group" );
+                response.addValidationError( new ValidationMessage( "id", "The Group ID  '" + group.getGroupId()
+                    + "' is in use by another Repository Group" ) );
             }
         }
 
@@ -638,8 +640,8 @@ public class DefaultApplicationConfigurationValidator
         {
             if ( context.getExistingRepositoryIds().contains( group.getGroupId() ) )
             {
-                response.addValidationError( "The Group ID '" + group.getGroupId()
-                    + "' conflicts with an existing Repository ID" );
+                response.addValidationError( new ValidationMessage( "id", "The Group ID '" + group.getGroupId()
+                    + "' conflicts with an existing Repository ID" ) );
             }
         }
 
@@ -647,8 +649,8 @@ public class DefaultApplicationConfigurationValidator
         {
             if ( context.getExistingRepositoryShadowIds().contains( group.getGroupId() ) )
             {
-                response.addValidationError( "The Group ID '" + group.getGroupId()
-                    + "' conflicts with an existing Virtual Repository ID" );
+                response.addValidationError( new ValidationMessage( "id", "The Group ID '" + group.getGroupId()
+                    + "' conflicts with an existing Virtual Repository ID" ) );
             }
         }
 
@@ -664,8 +666,9 @@ public class DefaultApplicationConfigurationValidator
             {
                 if ( !existingReposes.contains( repoId ) && !existingShadows.contains( repoId ) )
                 {
-                    response.addValidationError( "The group with Group ID '" + group.getGroupId()
-                        + "' refers to a nonexistent Repository with ID = " + repoId );
+                    response.addValidationError( new ValidationMessage( "repositories", "The group with Group ID '"
+                        + group.getGroupId() + "' refers to a nonexistent Repository with ID = '" + repoId )
+                        + "'" );
                 }
             }
         }
