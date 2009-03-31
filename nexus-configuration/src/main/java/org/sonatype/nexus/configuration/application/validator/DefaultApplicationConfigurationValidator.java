@@ -303,7 +303,7 @@ public class DefaultApplicationConfigurationValidator
 
         if ( StringUtils.isEmpty( repo.getId() ) )
         {
-            response.addValidationError( "Repository ID's may not be empty!" );
+            response.addValidationError( "Repository ID  may not be empty!" );
         }
 
         if ( StringUtils.isEmpty( repo.getName() ) )
@@ -365,7 +365,7 @@ public class DefaultApplicationConfigurationValidator
         {
             if ( context.getExistingRepositoryIds().contains( repo.getId() ) )
             {
-                response.addValidationError( "Repository " + repo.getId() + " declared more than once!" );
+                response.addValidationError( "The Repository ID '" + repo.getId() + "' is in use by another Repository" );
             }
 
             context.getExistingRepositoryIds().add( repo.getId() );
@@ -375,8 +375,8 @@ public class DefaultApplicationConfigurationValidator
         {
             if ( context.getExistingRepositoryShadowIds().contains( repo.getId() ) )
             {
-                response.addValidationError( "Repository " + repo.getId()
-                    + " conflicts with existing Shadow with same ID='" + repo.getId() + "'!" );
+                response.addValidationError( "The Repository ID '" + repo.getId()
+                    + "' conflicts with an existing Shadow Repository ID" );
             }
         }
 
@@ -384,8 +384,8 @@ public class DefaultApplicationConfigurationValidator
         {
             if ( context.getExistingRepositoryGroupIds().contains( repo.getId() ) )
             {
-                response.addValidationError( "Repository " + repo.getId()
-                    + " conflicts with existing Group with same ID='" + repo.getId() + "'!" );
+                response.addValidationError( "The Repository ID '" + repo.getId()
+                    + "' conflicts with an existing Group ID" );
             }
         }
 
@@ -405,14 +405,14 @@ public class DefaultApplicationConfigurationValidator
 
         if ( StringUtils.isEmpty( shadow.getId() ) )
         {
-            response.addValidationError( "Repository shadow ID's may not be empty!" );
+            response.addValidationError( "Virtual Repository ID may not be empty!" );
         }
 
         if ( StringUtils.isEmpty( shadow.getName() ) )
         {
             shadow.setName( shadow.getId() );
 
-            response.addValidationWarning( "Repository shadow with ID='" + shadow.getId()
+            response.addValidationWarning( "Virtual Repository with ID='" + shadow.getId()
                 + "' has no name, defaulted to it's ID." );
 
             response.setModified( true );
@@ -422,7 +422,7 @@ public class DefaultApplicationConfigurationValidator
         {
             if ( !context.getExistingRepositoryIds().contains( shadow.getShadowOf() ) )
             {
-                response.addValidationError( "The shadow with ID='" + shadow.getId() + "' of repository "
+                response.addValidationError( "The Virtual Repository with ID='" + shadow.getId() + "' of repository "
                     + shadow.getShadowOf() + " of type " + shadow.getType() + " points to a nonexistent repository!" );
             }
         }
@@ -444,7 +444,8 @@ public class DefaultApplicationConfigurationValidator
         {
             if ( context.getExistingRepositoryShadowIds().contains( shadow.getId() ) )
             {
-                response.addValidationError( "Repository shadow " + shadow.getId() + " declared more than once!" );
+                response.addValidationError( "Virtual Repository ID '" + shadow.getId()
+                    + "' is in use by another Virtual Repository" );
             }
 
             context.getExistingRepositoryShadowIds().add( shadow.getId() );
@@ -454,8 +455,8 @@ public class DefaultApplicationConfigurationValidator
         {
             if ( context.getExistingRepositoryIds().contains( shadow.getId() ) )
             {
-                response.addValidationError( "Repository shadow " + shadow.getId()
-                    + " conflicts with existing Repository with same ID='" + shadow.getId() + "'!" );
+                response.addValidationError( "Virtual Repository ID '" + shadow.getId()
+                    + "' conflicts with an existing Repository ID" );
             }
         }
 
@@ -463,8 +464,8 @@ public class DefaultApplicationConfigurationValidator
         {
             if ( context.getExistingRepositoryGroupIds().contains( shadow.getId() ) )
             {
-                response.addValidationError( "Repository shadow " + shadow.getId()
-                    + " conflicts with existing Group with same ID='" + shadow.getId() + "'!" );
+                response.addValidationError( "Virtual Repository ID '" + shadow.getId()
+                    + "' conflicts with an existing Group ID" );
             }
         }
 
@@ -611,14 +612,14 @@ public class DefaultApplicationConfigurationValidator
 
         if ( StringUtils.isEmpty( group.getGroupId() ) )
         {
-            response.addValidationError( "RepositoryGroup ID's may not be empty!" );
+            response.addValidationError( "Group ID may not be empty!" );
         }
 
         if ( StringUtils.isEmpty( group.getName() ) )
         {
             group.setName( group.getGroupId() );
 
-            response.addValidationWarning( "RepositoryGroup with ID='" + group.getGroupId()
+            response.addValidationWarning( "The Group with ID='" + group.getGroupId()
                 + "' has no name, defaulted to it's ID." );
 
             response.setModified( true );
@@ -628,8 +629,8 @@ public class DefaultApplicationConfigurationValidator
         {
             if ( context.getExistingRepositoryGroupIds().contains( group.getGroupId() ) )
             {
-                response.addValidationError( "The group with GroupID " + group.getGroupId()
-                    + " is defined more than once!" );
+                response.addValidationError( "The Group ID  '" + group.getGroupId()
+                    + "' is in use by another Repository Group" );
             }
         }
 
@@ -637,8 +638,8 @@ public class DefaultApplicationConfigurationValidator
         {
             if ( context.getExistingRepositoryIds().contains( group.getGroupId() ) )
             {
-                response.addValidationError( "The group with GroupID " + group.getGroupId()
-                    + " conflicts with Repository having same ID!" );
+                response.addValidationError( "The Group ID '" + group.getGroupId()
+                    + "' conflicts with an existing Repository ID" );
             }
         }
 
@@ -646,8 +647,8 @@ public class DefaultApplicationConfigurationValidator
         {
             if ( context.getExistingRepositoryShadowIds().contains( group.getGroupId() ) )
             {
-                response.addValidationError( "The group with GroupID " + group.getGroupId()
-                    + " conflicts with Shadow repository having same ID!" );
+                response.addValidationError( "The Group ID '" + group.getGroupId()
+                    + "' conflicts with an existing Virtual Repository ID" );
             }
         }
 
@@ -663,8 +664,8 @@ public class DefaultApplicationConfigurationValidator
             {
                 if ( !existingReposes.contains( repoId ) && !existingShadows.contains( repoId ) )
                 {
-                    response.addValidationError( "The group with GroupID " + group.getGroupId()
-                        + " refers to a nonexistent repository with ID = " + repoId );
+                    response.addValidationError( "The group with Group ID '" + group.getGroupId()
+                        + "' refers to a nonexistent Repository with ID = " + repoId );
                 }
             }
         }
