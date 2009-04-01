@@ -7,6 +7,7 @@ import org.jdom.output.Format;
 import org.jdom.output.XMLOutputter;
 import org.mortbay.jetty.Handler;
 import org.mortbay.jetty.Request;
+import org.mortbay.jetty.Server;
 import org.mortbay.jetty.handler.AbstractHandler;
 
 import java.io.IOException;
@@ -15,8 +16,15 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+/**
+ * {@link RESTTestFixture} implementation meant to capture a single HTTP GET exchange. It has the ability to capture
+ * expectations about the request URI (exact or via regex pattern) along with the base expectations captured in
+ * {@link AbstractRESTTestFixture}. It can also manage a response {@link Document} for sending back to the client upon
+ * successful request validation. This implementation also provides a GET-validating {@link Handler} implementation for
+ * use in the HTTP {@link Server} instance, which is managed by the abstract base class.
+ */
 public class GETFixture
-    extends AbstractRESTTestFixture
+extends AbstractRESTTestFixture
 {
 
     private Document responseDocument;
@@ -32,7 +40,7 @@ public class GETFixture
         return exactURI;
     }
 
-    public void setExactURI( String exactURI )
+    public void setExactURI( final String exactURI )
     {
         this.exactURI = exactURI;
     }
@@ -42,7 +50,7 @@ public class GETFixture
         return uriPattern;
     }
 
-    public void setURIPattern( String uriPattern )
+    public void setURIPattern( final String uriPattern )
     {
         this.uriPattern = uriPattern;
     }
@@ -52,7 +60,7 @@ public class GETFixture
         return responseDocument;
     }
 
-    public void setResponseDocument( Document doc )
+    public void setResponseDocument( final Document doc )
     {
         this.responseDocument = doc;
     }
@@ -62,7 +70,7 @@ public class GETFixture
         return strictHeaders;
     }
 
-    public void setStrictHeaders( boolean strictHeaders )
+    public void setStrictHeaders( final boolean strictHeaders )
     {
         this.strictHeaders = strictHeaders;
     }
@@ -71,22 +79,22 @@ public class GETFixture
     {
         Handler handler = new AbstractHandler()
         {
-            public void handle( String target, HttpServletRequest request, HttpServletResponse response, int dispatch )
-                throws IOException, ServletException
+            public void handle( final String target, final HttpServletRequest request, final HttpServletResponse response, final int dispatch )
+            throws IOException, ServletException
             {
                 Logger logger = LogManager.getLogger( GETFixture.class );
-                
+
                 if ( !"get".equalsIgnoreCase( request.getMethod() ) )
                 {
                     logger.error( "Not a GET method: " + request.getMethod() );
-                    
+
                     response.sendError( HttpServletResponse.SC_BAD_REQUEST, "Wrong method: " + request.getMethod() );
                 }
 
                 if ( !checkExpectedRequestHeaders( request, isHeaderCheckStrict() ) )
                 {
                     logger.error( "Wrong request headers." );
-                    
+
                     response.sendError( HttpServletResponse.SC_BAD_REQUEST, "Wrong headers." );
                 }
 
@@ -99,7 +107,7 @@ public class GETFixture
                     if ( !request.getRequestURI().equals( uri ) )
                     {
                         logger.error( "Exact URI check is wrong.\nExpected: " + uri + "\nActual: " + request.getRequestURI() );
-                        
+
                         response.sendError( HttpServletResponse.SC_NOT_FOUND );
                     }
                 }
@@ -108,7 +116,7 @@ public class GETFixture
                     if ( !request.getRequestURI().matches( matchUri ) )
                     {
                         logger.error( "URI pattern check is wrong.\nExpected: " + matchUri + "\nActual: " + request.getRequestURI() );
-                        
+
                         response.sendError( HttpServletResponse.SC_NOT_FOUND );
                     }
                 }
@@ -117,7 +125,7 @@ public class GETFixture
                 if ( doc == null )
                 {
                     logger.info( "No response document set. Returning HTTP 404 status." );
-                    
+
                     response.sendError( HttpServletResponse.SC_NOT_FOUND );
                 }
                 else
@@ -139,12 +147,12 @@ public class GETFixture
     public GETFixture copy()
     {
         GETFixture fixture = new GETFixture();
-        
+
         fixture.responseDocument = responseDocument;
         fixture.uriPattern = uriPattern;
         fixture.exactURI = exactURI;
         fixture.strictHeaders = strictHeaders;
-        
+
         return fixture;
     }
 

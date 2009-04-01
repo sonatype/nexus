@@ -20,8 +20,14 @@ import java.util.Set;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+/**
+ * Base implementation for {@link RESTTestFixture} that supplies the methods for managing and retrieving information
+ * about the test-harness HTTP {@link Server} instance, the debug flag, and basic expectations about the expected client
+ * request headers. Additionally, this base class manages the response headers which will be injected into the response
+ * if the client request validates.
+ */
 public abstract class AbstractRESTTestFixture
-    implements RESTTestFixture
+implements RESTTestFixture
 {
 
     private static final int MAX_PORT_TRIES = 10;
@@ -43,7 +49,7 @@ public abstract class AbstractRESTTestFixture
         return expectedRequestHeaders;
     }
 
-    public void setExpectedRequestHeaders( Map<String, Set<String>> requestHeaders )
+    public void setExpectedRequestHeaders( final Map<String, Set<String>> requestHeaders )
     {
         this.expectedRequestHeaders = requestHeaders;
     }
@@ -53,7 +59,7 @@ public abstract class AbstractRESTTestFixture
         return responseHeaders;
     }
 
-    public void setResponseHeaders( Map<String, Set<String>> responseHeaders )
+    public void setResponseHeaders( final Map<String, Set<String>> responseHeaders )
     {
         this.responseHeaders = responseHeaders;
     }
@@ -73,12 +79,12 @@ public abstract class AbstractRESTTestFixture
         return debugEnabled;
     }
 
-    public void setDebugEnabled( boolean debugEnabled )
+    public void setDebugEnabled( final boolean debugEnabled )
     {
         this.debugEnabled = debugEnabled;
     }
 
-    protected void addResponseHeaders( HttpServletResponse response )
+    protected void addResponseHeaders( final HttpServletResponse response )
     {
         if ( getResponseHeaders() != null )
         {
@@ -94,7 +100,7 @@ public abstract class AbstractRESTTestFixture
     }
 
     @SuppressWarnings( "unchecked" )
-    protected boolean checkExpectedRequestHeaders( HttpServletRequest request, boolean strict )
+    protected boolean checkExpectedRequestHeaders( final HttpServletRequest request, final boolean strict )
     {
         if ( getExpectedRequestHeaders() != null )
         {
@@ -143,7 +149,7 @@ public abstract class AbstractRESTTestFixture
     }
 
     public void startServer()
-        throws Exception
+    throws Exception
     {
         setupLogging();
 
@@ -167,7 +173,7 @@ public abstract class AbstractRESTTestFixture
                 port = ( Math.abs( new Random().nextInt() ) % 63000 ) + 1024;
 
                 logger.info( "(try " + ( tries + 1 ) + "/" + MAX_PORT_TRIES + ") Checking whether port: " + port
-                    + " is available..." );
+                             + " is available..." );
 
                 Socket sock = new Socket();
                 sock.setSoTimeout( 1 );
@@ -202,17 +208,17 @@ public abstract class AbstractRESTTestFixture
         logger.info( "Starting test server on port: " + port );
 
         server = new Server( port );
-        
+
         server.addHandler( getTestHandler() );
 
         server.start();
     }
 
     public void stopServer()
-        throws Exception
+    throws Exception
     {
         LogManager.getLogger( getClass() ).info( "Stopping test server." );
-        
+
         if ( server != null && server.isStarted() )
         {
             server.stop();

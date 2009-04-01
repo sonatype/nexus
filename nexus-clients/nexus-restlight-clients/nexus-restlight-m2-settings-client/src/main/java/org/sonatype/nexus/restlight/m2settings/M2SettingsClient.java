@@ -1,64 +1,65 @@
 package org.sonatype.nexus.restlight.m2settings;
 
-import org.apache.log4j.ConsoleAppender;
-import org.apache.log4j.Level;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.SimpleLayout;
 import org.jdom.Document;
-import org.jdom.JDOMException;
-import org.jdom.output.Format;
-import org.jdom.output.XMLOutputter;
-import org.sonatype.nexus.restlight.common.AbstractSimpleRESTClient;
-import org.sonatype.nexus.restlight.common.SimpleRESTClientException;
+import org.sonatype.nexus.restlight.common.AbstractRESTLightClient;
+import org.sonatype.nexus.restlight.common.RESTLightClientException;
 
-import java.io.IOException;
-
-
+/**
+ * <p>
+ * REST client for interacting with the nexus-m2-settings-template plugin, found in Nexus Professional 1.3.2+
+ * </p>
+ * <p>
+ * Currently, this client is capable of retrieving the settings.xml template in two ways:
+ * </p>
+ * <ul>
+ * <li>From an absolute URL pointing to a template location within a running Nexus Professional instance</li>
+ * <li>Given a template ID, at which point the client will construct the proper URL to access that template using the
+ * Nexus Professional base URL with which the client instance was constructed.</li>
+ * </ul>
+ */
 public class M2SettingsClient
-    extends AbstractSimpleRESTClient
+extends AbstractRESTLightClient
 {
 
+    /**
+     * Base URL used to construct URLs for retrieving a settings template based on a template ID.
+     */
     public static final String SETTINGS_TEMPLATE_BASE = SVC_BASE + "/templates/settings/";
+
+    /**
+     * Action URL suffix used to construct URLs for retrieving a settings template based on a template ID.
+     */
     public static final String GET_CONTENT_ACTION = "/content";
 
-    public M2SettingsClient( String baseUrl, String user, String password )
-        throws SimpleRESTClientException
+    public M2SettingsClient( final String baseUrl, final String user, final String password )
+    throws RESTLightClientException
     {
-        super( baseUrl, user, password );
+        super( baseUrl, user, password, "m2settings" );
     }
 
-    public Document getSettingsTemplateAbsolute( String url )
-        throws SimpleRESTClientException
+    /**
+     * Retrieve a Maven 2.x settings.xml template using an absolute URL referencing a running Nexus Professional instance.
+     * 
+     * @param url
+     *            The absolute URL to the settings template (normally copied from the Nexus UI).
+     */
+    public Document getSettingsTemplateAbsolute( final String url )
+    throws RESTLightClientException
     {
         return getAbsolute( url );
     }
 
-    public Document getSettingsTemplate( String templateName )
-        throws SimpleRESTClientException
+    /**
+     * Retrieve a Maven 2.x settings.xml template using the base URL used to construct this client instance, along with
+     * the supplied template ID.
+     * 
+     * @param templateName
+     *            The template ID to retrieve.
+     */
+    public Document getSettingsTemplate( final String templateName )
+    throws RESTLightClientException
     {
         return get( SETTINGS_TEMPLATE_BASE + templateName + GET_CONTENT_ACTION );
     }
 
-    public static void main( String[] args )
-        throws IOException, JDOMException
-    {
-        LogManager.getRootLogger().setLevel( Level.DEBUG );
-        LogManager.getRootLogger().addAppender( new ConsoleAppender( new SimpleLayout() ) );
-
-        String base = "http://localhost:8082/nexus";
-        String url = base + "/service/local/templates/settings/foo";
-        // String base = "https://damian.testing.sonatype.org/nexus";
-        try
-        {
-            M2SettingsClient client = new M2SettingsClient( base, "admin", "admin123" );
-
-            Document doc = client.getSettingsTemplateAbsolute( url );
-
-            System.out.println( new XMLOutputter( Format.getPrettyFormat() ).outputString( doc ) );
-        }
-        catch ( SimpleRESTClientException e )
-        {
-            e.printStackTrace();
-        }
-    }
 }
