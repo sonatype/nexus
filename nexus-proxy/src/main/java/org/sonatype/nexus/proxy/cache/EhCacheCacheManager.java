@@ -54,14 +54,11 @@ public class EhCacheCacheManager
     public void startService()
         throws Exception
     {
-        cacheManager.start();
     }
 
 
     public void stopService()
         throws Exception
-    {
-       cacheManager.stop();
-        
+    {   
     }
 }
