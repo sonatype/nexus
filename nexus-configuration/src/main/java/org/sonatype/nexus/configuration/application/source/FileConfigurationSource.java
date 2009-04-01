@@ -391,7 +391,7 @@ public class FileConfigurationSource
             }
             catch ( PlexusCipherException e )
             {
-                this.getLogger().warn( "Failed to encrypt password.", e );
+                this.getLogger().error( "Failed to encrypt password in nexus.xml.", e );
             }
         }
         else
@@ -402,7 +402,7 @@ public class FileConfigurationSource
             }
             catch ( PlexusCipherException e )
             {
-                this.getLogger().warn( "Failed to decrypt password.", e );
+                this.getLogger().error( "Failed to decrypt password in nexus.xml.", e );
             }
         }
 

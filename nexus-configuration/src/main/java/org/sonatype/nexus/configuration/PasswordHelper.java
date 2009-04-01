@@ -31,7 +31,7 @@ public class PasswordHelper
     {
         if ( password != null )
         {
-            return plexusCipher.encrypt( password, encoding );
+            return plexusCipher.encryptAndDecorate( password, encoding );
         }
         
         return null;
@@ -46,9 +46,15 @@ public class PasswordHelper
     public String decrypt( String encodedPassword, String encoding )
         throws PlexusCipherException
     {
+        // check if the password is encrypted
+        if( !plexusCipher.isEncryptedString( encodedPassword ))
+        {
+            return encodedPassword;
+        }
+        
         if ( encodedPassword != null )
         {
-            return plexusCipher.decrypt( encodedPassword, encoding );
+            return plexusCipher.decryptDecorated( encodedPassword, encoding );
         }
         return null;
     }
