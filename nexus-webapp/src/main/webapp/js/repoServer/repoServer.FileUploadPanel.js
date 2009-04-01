@@ -75,24 +75,24 @@ Sonatype.repoServer.ArtifactUploadPanel = function(config){
             xtype: 'textfield',
             fieldLabel: 'Filename',
             name: 'filenameField',
-            anchor: Sonatype.view.FIELD_OFFSET,
             readOnly: true,
+            width: '95%',
             allowBlank:true
           },
           {
             xtype: 'textfield',
             fieldLabel: 'Classifier',
             helpText: ht.classifier,
-            anchor: Sonatype.view.FIELD_OFFSET,
             name: 'classifier',
+            width: '95%',
             allowBlank:true
           },
           {
             xtype: 'textfield',
             fieldLabel: 'Extension',
             helpText: ht.extension,
-            anchor: Sonatype.view.FIELD_OFFSET,
             name: 'extension',
+            width: '95%',
             allowBlank:true
           },
           {
@@ -116,8 +116,8 @@ Sonatype.repoServer.ArtifactUploadPanel = function(config){
                   border :true,
                   bodyBorder :true,
                   bodyStyle :'background-color:#FFFFFF; border: 1px solid #B5B8C8',
-                  style :'padding: 0 10px 0 0',
-                  width :375,
+                  style :'padding: 0 10px 0 105',
+                  width :500,
                   height :100,
                   animate :true,
                   lines :false,
@@ -186,7 +186,8 @@ Sonatype.repoServer.ArtifactUploadPanel = function(config){
             layout: 'card',
             region: 'center',
             activeItem: 0,
-            bodyStyle: 'padding:15px',
+            bodyStyle: 'padding:5px 0px 15px 0px',
+            width: '96%',
             deferredRender: false,
             autoScroll: false,
             frame: false,
@@ -333,11 +334,31 @@ Sonatype.repoServer.ArtifactUploadPanel = function(config){
           },
           this.extraItems,
           {
-            xtype: 'button',
-            id: 'upload-button',
-            text: 'Upload Artifact(s)',
-            handler: this.uploadArtifacts,
-            scope: this
+            xtype: 'panel',
+            id: 'end-button-card-panel',
+            header: false,
+            deferredRender: false,
+            autoScroll: false,
+            layout: 'fit',
+            buttonAlign: 'center',
+            frame: false,
+            items: [ {} ],
+            buttons: [
+           		{
+		            xtype: 'button',
+		            id: 'upload-button',
+		            text: 'Upload Artifact(s)',
+		            handler: this.uploadArtifacts,
+		            scope: this
+		          },
+		          {
+		            xtype: 'button',
+		            id: 'reset-all-button',
+		            text: 'Reset',
+		            handler: this.resetFields,
+		            scope: this
+		          }
+            ]
           }
         ]
       }
@@ -346,6 +367,35 @@ Sonatype.repoServer.ArtifactUploadPanel = function(config){
 };
 
 Ext.extend(Sonatype.repoServer.ArtifactUploadPanel, Ext.FormPanel, {
+	resetFields : function() {
+	  //reset the artifact panels
+    var filenameField = this.find('name', 'filenameField')[0];
+    var classifierField = this.find('name', 'classifier')[0];
+    var extensionField = this.find('name', 'extension')[0];
+    filenameField.reset();
+    classifierField.reset();
+    extensionField.reset();
+    var addArtifactBtn = this.find('id', 'add-button')[0];
+    addArtifactBtn.setDisabled(true); 
+     
+    //clear the artifacts fields
+    this.removeAllArtifacts();
+    
+    //reset the gav panel
+    var g = this.find('name', 'g')[0];
+    var a = this.find('name', 'a')[0];
+    var v = this.find('name', 'v')[0];
+    g.reset();
+    a.reset();
+    v.reset();
+    var autoGuess = this.find('name', 'autoguess')[0];
+    autoGuess.reset();
+    
+    //the pom panel
+    var pomField = this.find('name', 'pomnameField')[0];
+    pomField.reset();
+	},
+	
   addArtifact : function() {
     var treePanel = this.find('name', 'artifact-list')[0];
     var filenameField = this.find('name', 'filenameField')[0];
