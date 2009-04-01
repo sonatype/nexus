@@ -10,15 +10,7 @@ import org.mortbay.jetty.Server;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketException;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
 import java.util.Random;
-import java.util.Set;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * Base implementation for {@link RESTTestFixture} that supplies the methods for managing and retrieving information
@@ -40,95 +32,36 @@ implements RESTTestFixture
 
     private boolean debugEnabled;
 
-    private Map<String, Set<String>> expectedRequestHeaders;
-
-    private Map<String, Set<String>> responseHeaders;
-
-    public Map<String, Set<String>> getExpectedRequestHeaders()
-    {
-        return expectedRequestHeaders;
-    }
-
-    public void setExpectedRequestHeaders( final Map<String, Set<String>> requestHeaders )
-    {
-        this.expectedRequestHeaders = requestHeaders;
-    }
-
-    public Map<String, Set<String>> getResponseHeaders()
-    {
-        return responseHeaders;
-    }
-
-    public void setResponseHeaders( final Map<String, Set<String>> responseHeaders )
-    {
-        this.responseHeaders = responseHeaders;
-    }
-
+    /**
+     * {@inheritDoc}
+     */
     public Server getServer()
     {
         return server;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public int getPort()
     {
         return port;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public boolean isDebugEnabled()
     {
         return debugEnabled;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void setDebugEnabled( final boolean debugEnabled )
     {
         this.debugEnabled = debugEnabled;
-    }
-
-    protected void addResponseHeaders( final HttpServletResponse response )
-    {
-        if ( getResponseHeaders() != null )
-        {
-            for ( Map.Entry<String, Set<String>> headers : getResponseHeaders().entrySet() )
-            {
-                String key = headers.getKey();
-                for ( String value : headers.getValue() )
-                {
-                    response.addHeader( key, value );
-                }
-            }
-        }
-    }
-
-    @SuppressWarnings( "unchecked" )
-    protected boolean checkExpectedRequestHeaders( final HttpServletRequest request, final boolean strict )
-    {
-        if ( getExpectedRequestHeaders() != null )
-        {
-            Map<String, Set<String>> requestHeaders = new HashMap<String, Set<String>>( getExpectedRequestHeaders() );
-            for ( Map.Entry<String, Set<String>> headerValues : requestHeaders.entrySet() )
-            {
-                Set<String> values = new HashSet<String>( headerValues.getValue() );
-
-                Enumeration<String> detected = request.getHeaders( headerValues.getKey() );
-                if ( detected != null )
-                {
-                    while ( detected.hasMoreElements() )
-                    {
-                        if ( strict && !values.remove( detected.nextElement() ) )
-                        {
-                            return false;
-                        }
-                    }
-
-                    if ( !values.isEmpty() )
-                    {
-                        return false;
-                    }
-                }
-            }
-        }
-
-        return true;
     }
 
     protected void setupLogging()
@@ -148,6 +81,9 @@ implements RESTTestFixture
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void startServer()
     throws Exception
     {
@@ -214,6 +150,9 @@ implements RESTTestFixture
         server.start();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void stopServer()
     throws Exception
     {
