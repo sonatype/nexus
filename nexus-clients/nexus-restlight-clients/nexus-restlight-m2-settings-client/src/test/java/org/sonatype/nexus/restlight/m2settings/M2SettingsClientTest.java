@@ -7,7 +7,7 @@ import org.jdom.JDOMException;
 import org.jdom.output.Format;
 import org.jdom.output.XMLOutputter;
 import org.junit.Test;
-import org.sonatype.nexus.restlight.common.SimpleRESTClientException;
+import org.sonatype.nexus.restlight.common.RESTLightClientException;
 import org.sonatype.nexus.restlight.m2settings.M2SettingsClient;
 import org.sonatype.nexus.restlight.testharness.AbstractRESTTest;
 import org.sonatype.nexus.restlight.testharness.ConversationalFixture;
@@ -28,7 +28,7 @@ public class M2SettingsClientTest
     
     @Test
     public void getSettingsTemplateUsingToken()
-        throws SimpleRESTClientException, JDOMException, IOException
+        throws RESTLightClientException, JDOMException, IOException
     {
         List<RESTTestFixture> conversation = new ArrayList<RESTTestFixture>();
         
@@ -57,7 +57,7 @@ public class M2SettingsClientTest
 
     @Test
     public void getSettingsTemplateUsingAbsoluteURL()
-        throws SimpleRESTClientException, JDOMException, IOException
+        throws RESTLightClientException, JDOMException, IOException
     {
         List<RESTTestFixture> conversation = new ArrayList<RESTTestFixture>();
         

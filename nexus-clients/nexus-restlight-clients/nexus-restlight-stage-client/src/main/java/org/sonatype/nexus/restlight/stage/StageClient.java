@@ -1,18 +1,13 @@
 package org.sonatype.nexus.restlight.stage;
 
-import org.apache.log4j.ConsoleAppender;
-import org.apache.log4j.Level;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.SimpleLayout;
 import org.jdom.Document;
 import org.jdom.Element;
 import org.jdom.JDOMException;
 import org.jdom.Text;
 import org.jdom.xpath.XPath;
-import org.sonatype.nexus.restlight.common.AbstractSimpleRESTClient;
-import org.sonatype.nexus.restlight.common.SimpleRESTClientException;
+import org.sonatype.nexus.restlight.common.AbstractRESTLightClient;
+import org.sonatype.nexus.restlight.common.RESTLightClientException;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -20,9 +15,11 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-
+/**
+ * REST client to access the functions of the nexus-staging-plugin, available in Nexus Professional.
+ */
 public class StageClient
-    extends AbstractSimpleRESTClient
+extends AbstractRESTLightClient
 {
 
     public static final String PROFILES_PATH = SVC_BASE + "/staging/profiles";
@@ -55,22 +52,34 @@ public class StageClient
 
     private static final String STAGE_REPO_DETAIL_XPATH = "//stagingProfileRepository";
 
-    public StageClient( String baseUrl, String user, String password )
-        throws SimpleRESTClientException
+    public StageClient( final String baseUrl, final String user, final String password )
+    throws RESTLightClientException
     {
-        super( baseUrl, user, password );
+        super( baseUrl, user, password, "stage/" );
     }
 
+    /**
+     * Retrieve the list of all open staging repositories (not finished) in all available profiles that are opened for
+     * the current user (the one specified in this client's constructor).
+     * 
+     * @return details about each open repository
+     */
     public List<StageRepository> getOpenStageRepositoriesForUser()
-        throws SimpleRESTClientException
+    throws RESTLightClientException
     {
         Document doc = get( PROFILES_PATH );
 
         return parseStageRepositories( doc, STAGE_REPO_LIST_XPATH, true );
     }
 
-    public StageRepository getOpenStageRepositoryForUser( String groupId, String artifactId, String version )
-        throws SimpleRESTClientException
+    /**
+     * Retrieve the details for the open staging repository which would be used for an artifact with the specified
+     * groupId, artifactId, and version if the current user deployed it. In the event Nexus returns multiple open
+     * staging repositories for the given user and GAV, this call will return details for the FIRST repository in that
+     * list.
+     */
+    public StageRepository getOpenStageRepositoryForUser( final String groupId, final String artifactId, final String version )
+    throws RESTLightClientException
     {
         Map<String, String> params = new HashMap<String, String>();
         mapCoord( groupId, artifactId, version, params );
@@ -88,16 +97,28 @@ public class StageClient
         }
     }
 
+    /**
+     * Retrieve the list of all closed (finished) staging repositories in all available profiles that are opened for the
+     * current user (the one specified in this client's constructor).
+     * 
+     * @return details about each closed repository
+     */
     public List<StageRepository> getClosedStageRepositoriesForUser()
-        throws SimpleRESTClientException
+    throws RESTLightClientException
     {
         Document doc = get( PROFILES_PATH );
 
         return parseStageRepositories( doc, STAGE_REPO_LIST_XPATH, false );
     }
 
-    public List<StageRepository> getClosedStageRepositoriesForUser( String groupId, String artifactId, String version )
-        throws SimpleRESTClientException
+    /**
+     * Retrieve the list of all closed (finished) staging repositories that may house artifacts with the specified
+     * groupId, artifactId, and version for the current user.
+     * 
+     * @return details about each closed repository
+     */
+    public List<StageRepository> getClosedStageRepositoriesForUser( final String groupId, final String artifactId, final String version )
+    throws RESTLightClientException
     {
         Map<String, String> params = new HashMap<String, String>();
         mapCoord( groupId, artifactId, version, params );
@@ -107,9 +128,57 @@ public class StageClient
         return parseStageRepositories( doc, STAGE_REPO_XPATH, false );
     }
 
+    /**
+     * Find the details for the open staging repository for the given groupId, artifactId, version, and the current
+     * user, using the same algorithm as {@link StageClient#getOpenStageRepositoryForUser(String, String, String)}. Once
+     * we have the details for this repository, submit those details to Nexus to convert the open repository to closed
+     * (finished) status. This will make the artifacts in the repository available for use in Maven, etc.
+     */
+    public void finishRepositoryForUser( final String groupId, final String artifactId, final String version )
+    throws RESTLightClientException
+    {
+        StageRepository repo = getOpenStageRepositoryForUser( groupId, artifactId, version );
+
+        finishRepository( repo );
+    }
+
+    /**
+     * Assuming the user has already queried Nexus for a valid {@link StageRepository} instance (details for an open
+     * staging repository), submit those details to Nexus to convert the open repository to closed (finished) status.
+     * This will make the artifacts in the repository available for use in Maven, etc.
+     */
+    public void finishRepository( final StageRepository repo )
+    throws RESTLightClientException
+    {
+        performStagingAction( repo, STAGE_REPO_FINISH_ACTION, null );
+    }
+
+    /**
+     * Assuming the user has already queried Nexus for a valid {@link StageRepository} instance (details for a staging
+     * repository), submit those details to Nexus to drop the repository.
+     */
+    public void dropRepository( final StageRepository repo )
+    throws RESTLightClientException
+    {
+        performStagingAction( repo, STAGE_REPO_DROP_ACTION, null );
+    }
+
+    /**
+     * Assuming the user has already queried Nexus for a valid {@link StageRepository} instance (details for a staging
+     * repository), submit those details to Nexus to promote the repository into the permanent repository with the
+     * specified targetRepositoryId.
+     */
+    public void promoteRepository( final StageRepository repo, final String targetRepositoryId )
+    throws RESTLightClientException
+    {
+        Element target = new Element( "targetRepositoryId" ).setText( targetRepositoryId );
+
+        performStagingAction( repo, STAGE_REPO_PROMOTE_ACTION, Collections.singletonList( target ) );
+    }
+
     @SuppressWarnings( "unchecked" )
-    private List<StageRepository> parseStageRepositories( Document doc, String profileXpath, Boolean findOpen )
-        throws SimpleRESTClientException
+    private List<StageRepository> parseStageRepositories( final Document doc, final String profileXpath, final Boolean findOpen )
+    throws RESTLightClientException
     {
         // System.out.println( new XMLOutputter().outputString( doc ) );
 
@@ -118,12 +187,12 @@ public class StageClient
         List<Element> profiles;
         try
         {
-            profiles = (List<Element>) profileXp.selectNodes( doc.getRootElement() );
+            profiles = profileXp.selectNodes( doc.getRootElement() );
         }
         catch ( JDOMException e )
         {
-            throw new SimpleRESTClientException( "XPath selection failed: '" + profileXpath + "' (Root node: "
-                + doc.getRootElement().getName() + ").", e );
+            throw new RESTLightClientException( "XPath selection failed: '" + profileXpath + "' (Root node: "
+                                                 + doc.getRootElement().getName() + ").", e );
         }
 
         List<StageRepository> result = new ArrayList<StageRepository>();
@@ -156,8 +225,8 @@ public class StageClient
                     }
                     catch ( JDOMException e )
                     {
-                        throw new SimpleRESTClientException( "XPath selection failed: '" + OPEN_STAGE_REPOS_XPATH
-                            + "' (Node: " + profile.getName() + ").", e );
+                        throw new RESTLightClientException( "XPath selection failed: '" + OPEN_STAGE_REPOS_XPATH
+                                                             + "' (Node: " + profile.getName() + ").", e );
                     }
                 }
 
@@ -177,8 +246,8 @@ public class StageClient
                     }
                     catch ( JDOMException e )
                     {
-                        throw new SimpleRESTClientException( "XPath selection failed: '" + CLOSED_STAGE_REPOS_XPATH
-                            + "' (Node: " + profile.getName() + ").", e );
+                        throw new RESTLightClientException( "XPath selection failed: '" + CLOSED_STAGE_REPOS_XPATH
+                                                             + "' (Node: " + profile.getName() + ").", e );
                     }
                 }
 
@@ -195,8 +264,8 @@ public class StageClient
     }
 
     @SuppressWarnings( "unchecked" )
-    private void parseStageRepositoryDetails( String profileId, Map<String, StageRepository> repoStubs )
-        throws SimpleRESTClientException
+    private void parseStageRepositoryDetails( final String profileId, final Map<String, StageRepository> repoStubs )
+    throws RESTLightClientException
     {
         // System.out.println( repoStubs );
 
@@ -213,7 +282,7 @@ public class StageClient
         }
         catch ( JDOMException e )
         {
-            throw new SimpleRESTClientException( "Failed to select detail sections for staging-profile repositories.",
+            throw new RESTLightClientException( "Failed to select detail sections for staging-profile repositories.",
                                                  e );
         }
 
@@ -223,14 +292,14 @@ public class StageClient
             {
                 String repoId = detail.getChild( REPO_ID_ELEMENT ).getText();
                 String key = profileId + "/" + repoId;
-                
+
                 StageRepository repo = repoStubs.get( key );
 
                 if ( repo == null )
                 {
                     continue;
                 }
-                
+
                 Element uid = detail.getChild( USER_ID_ELEMENT );
                 if ( uid != null && getUser() != null && getUser().equals( uid.getText().trim() ) )
                 {
@@ -240,7 +309,7 @@ public class StageClient
                 {
                     repoStubs.remove( key );
                 }
-                
+
                 Element url = detail.getChild( REPO_URI_ELEMENT );
                 if ( url != null )
                 {
@@ -250,8 +319,8 @@ public class StageClient
         }
     }
 
-    private XPath newXPath( String xpath )
-        throws SimpleRESTClientException
+    private XPath newXPath( final String xpath )
+    throws RESTLightClientException
     {
         try
         {
@@ -259,57 +328,19 @@ public class StageClient
         }
         catch ( JDOMException e )
         {
-            throw new SimpleRESTClientException( "Failed to build xpath: '" + xpath + "'.", e );
+            throw new RESTLightClientException( "Failed to build xpath: '" + xpath + "'.", e );
         }
     }
 
-    public void finishRepositoryForUser( String groupId, String artifactId, String version )
-        throws SimpleRESTClientException
+    private void performStagingAction( final StageRepository repo, final String actionSubpath, final List<Element> extraData )
+    throws RESTLightClientException
     {
-        StageRepository repo = getOpenStageRepositoryForUser( groupId, artifactId, version );
+        if ( repo == null )
+        {
+            throw new RESTLightClientException(
+                                                 "No staging-repository details specified. Please provide a valid StageRepository instance." );
+        }
 
-        finishRepository( repo );
-    }
-
-    public void finishRepository( StageRepository repo )
-        throws SimpleRESTClientException
-    {
-        performStagingAction( repo, STAGE_REPO_FINISH_ACTION, null );
-    }
-
-    public void dropRepositoryForUser( String groupId, String artifactId, String version )
-        throws SimpleRESTClientException
-    {
-        StageRepository repo = getOpenStageRepositoryForUser( groupId, artifactId, version );
-
-        dropRepository( repo );
-    }
-
-    public void dropRepository( StageRepository repo )
-        throws SimpleRESTClientException
-    {
-        performStagingAction( repo, STAGE_REPO_DROP_ACTION, null );
-    }
-
-    public void promoteRepositoryForUser( String groupId, String artifactId, String version, String targetRepositoryId )
-        throws SimpleRESTClientException
-    {
-        StageRepository repo = getOpenStageRepositoryForUser( groupId, artifactId, version );
-
-        promoteRepository( repo, targetRepositoryId );
-    }
-
-    public void promoteRepository( StageRepository repo, String targetRepositoryId )
-        throws SimpleRESTClientException
-    {
-        Element target = new Element( "targetRepositoryId" ).setText( targetRepositoryId );
-        
-        performStagingAction( repo, STAGE_REPO_PROMOTE_ACTION, Collections.singletonList( target ) );
-    }
-
-    private void performStagingAction( StageRepository repo, String actionSubpath, List<Element> extraData )
-        throws SimpleRESTClientException
-    {
         Map<String, String> params = new HashMap<String, String>();
         params.put( STAGE_REPO_ID_PARAM, repo.getRepositoryId() );
 
@@ -318,7 +349,7 @@ public class StageClient
 
         Element data = new Element( "data" );
         body.getRootElement().addContent( data );
-        
+
         data.addContent( new Element( "stagedRepositoryId" ).setText( repo.getRepositoryId() ) );
 
         if ( extraData != null && !extraData.isEmpty() )
@@ -330,75 +361,6 @@ public class StageClient
         }
 
         post( PROFILES_PATH + "/" + repo.getProfileId() + actionSubpath, null, body );
-    }
-
-    public static void main( String[] args )
-        throws IOException, JDOMException
-    {
-        LogManager.getRootLogger().setLevel( Level.DEBUG );
-        LogManager.getRootLogger().addAppender( new ConsoleAppender( new SimpleLayout() ) );
-
-        String base = "http://localhost:8082/nexus";
-        // String base = "https://damian.testing.sonatype.org/nexus";
-        try
-        {
-//            StageClient client = new StageClient( base, "admin", "admin123" );
-            StageClient client = new StageClient( base, "testuser", "admin123" );
-
-            String apiVersion = client.getApiVersion();
-            System.out.println( "API Version: " + apiVersion );
-
-//            List<StageRepository> all = client.getOpenStageRepositoriesForUser();
-//            System.out.println( "ALL OPEN:\n\n" + all + "\n\n" );
-//
-//            all = client.getClosedStageRepositories();
-//            System.out.println( "ALL CLOSED:\n\n" + all + "\n\n" );
-//            
-//            if ( all != null && !all.isEmpty() )
-//            {
-//                System.out.println( "Dropping pre-existing closed repos." );
-//                
-//                for ( StageRepository repo : all )
-//                {
-//                    client.dropRepository( repo );
-//                }
-//            }
-//
-            String groupId = "org.test";
-            String artifactId = "test-project";
-            String version = "3";
-
-            StageRepository openByGAV = client.getOpenStageRepositoryForUser( groupId, artifactId, version );
-            System.out.println( "OPEN:" + openByGAV + "\n\n" );
-//
-//            List<StageRepository> closedByGAV = client.getClosedStageRepositories( groupId, artifactId, version );
-//            System.out.println( "CLOSED:\n\n" + closedByGAV + "\n\n" );
-//
-            if ( openByGAV != null )
-            {
-                client.finishRepository( openByGAV );
-            }
-//
-//            openByGAV = client.getOpenStageRepository( groupId, artifactId, version );
-//            System.out.println( "OPEN:" + openByGAV + "\n\n" );
-//
-//            closedByGAV = client.getClosedStageRepositories( groupId, artifactId, version );
-//            System.out.println( "CLOSED:\n\n" + closedByGAV + "\n\n" );
-//            
-//            if ( closedByGAV != null && !closedByGAV.isEmpty() )
-//            {
-//                System.out.println( "Promoting freshly closed repos to repository 'releases'." );
-//                
-//                for ( StageRepository repo : closedByGAV )
-//                {
-//                    client.promoteRepository( repo, "releases" );
-//                }
-//            }
-        }
-        catch ( SimpleRESTClientException e )
-        {
-            e.printStackTrace();
-        }
     }
 
 }
