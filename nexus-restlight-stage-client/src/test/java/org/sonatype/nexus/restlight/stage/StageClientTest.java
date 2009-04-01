@@ -6,7 +6,7 @@ import static org.junit.Assert.fail;
 
 import org.jdom.JDOMException;
 import org.junit.Test;
-import org.sonatype.nexus.restlight.common.SimpleRESTClientException;
+import org.sonatype.nexus.restlight.common.RESTLightClientException;
 import org.sonatype.nexus.restlight.stage.StageClient;
 import org.sonatype.nexus.restlight.stage.StageRepository;
 import org.sonatype.nexus.restlight.testharness.AbstractRESTTest;
@@ -28,7 +28,7 @@ public class StageClientTest
 
     @Test
     public void queryAllOpenRepositoriesForUser()
-        throws JDOMException, IOException, SimpleRESTClientException
+        throws JDOMException, IOException, RESTLightClientException
     {
         setupOpenReposConversation();
 
@@ -56,7 +56,7 @@ public class StageClientTest
 
     @Test
     public void queryOpenRepositoryForGAVAndUser()
-        throws JDOMException, IOException, SimpleRESTClientException
+        throws JDOMException, IOException, RESTLightClientException
     {
         setupOpenReposConversation();
 
@@ -79,7 +79,7 @@ public class StageClientTest
 
     @Test
     public void finishRepository()
-        throws JDOMException, IOException, SimpleRESTClientException
+        throws JDOMException, IOException, RESTLightClientException
     {
         setupOpenReposConversation();
         
@@ -121,7 +121,7 @@ public class StageClientTest
 
     @Test
     public void queryClosedRepositoryForGAVAndUser()
-        throws JDOMException, IOException, SimpleRESTClientException
+        throws JDOMException, IOException, RESTLightClientException
     {
         setupClosedReposConversation();
 
@@ -148,7 +148,7 @@ public class StageClientTest
 
     @Test
     public void queryClosedRepositoryForUser()
-        throws JDOMException, IOException, SimpleRESTClientException
+        throws JDOMException, IOException, RESTLightClientException
     {
         setupClosedReposConversation();
 
