@@ -29,7 +29,7 @@ Sonatype.Events.addListener( 'nexusStatus', function() {
           '<span style="color:#000">' +
           '<b>UPGRADE AVAILABLE:</b> ' +
           'Nexus ' + Sonatype.utils.edition + ' ' + r.response.version + ' is now available. ' +
-          '<a href="' + r.response.url + '">Download now!</a>' +
+          '<a href="' + r.response.url + '" target="_blank">Download now!</a>' +
           '</span>' 
         );
       }
