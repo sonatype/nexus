@@ -54,106 +54,11 @@ Sonatype.repoServer.ArtifactUploadPanel = function(config){
       {
         xtype: 'fieldset',
         checkboxToggle:false,
-        title: 'Select Artifact(s) for Upload',
+        title: 'Select GAV Definition Source',
         collapsible: false,
         autoHeight:true,
         width: '95%',
         items: [
-          {
-            hideLabel: true,
-            xtype: 'browsebutton',
-            text: 'Select Artifact(s) to Upload...',
-            style :'margin-bottom: 5px;',
-            uploadPanel: this,
-            handler: function( b ) {
-              b.uploadPanel.fileInput = b.detachInputFile(); 
-              var filename = b.uploadPanel.fileInput.getValue();
-              b.uploadPanel.updateFilename( b.uploadPanel, filename );
-            }
-          },
-          {
-            xtype: 'textfield',
-            fieldLabel: 'Filename',
-            name: 'filenameField',
-            readOnly: true,
-            width: '95%',
-            allowBlank:true
-          },
-          {
-            xtype: 'textfield',
-            fieldLabel: 'Classifier',
-            helpText: ht.classifier,
-            name: 'classifier',
-            width: '95%',
-            allowBlank:true
-          },
-          {
-            xtype: 'textfield',
-            fieldLabel: 'Extension',
-            helpText: ht.extension,
-            name: 'extension',
-            width: '95%',
-            allowBlank:true
-          },
-          {
-            xtype: 'button',
-            id: 'add-button',
-            text: 'Add Artifact',
-            handler: this.addArtifact,
-            scope: this,
-            disabled: true
-          },
-          {
-            xtype :'panel',
-            layout :'column',
-            autoHeight :true,
-            style :'padding-top: 5px; padding-bottom: 5px;',
-            items : [
-                {
-                  xtype :'treepanel',
-                  name :'artifact-list',
-                  title :'Artifacts',
-                  border :true,
-                  bodyBorder :true,
-                  bodyStyle :'background-color:#FFFFFF; border: 1px solid #B5B8C8',
-                  style :'padding: 0 10px 0 105',
-                  width :500,
-                  height :100,
-                  animate :true,
-                  lines :false,
-                  autoScroll :true,
-                  containerScroll :true,
-                  rootVisible :false,
-                  ddScroll: true,
-                  enableDD: true,
-                  root :new Ext.tree.TreeNode( {
-                    text :'root',
-                    draggable: false
-                  })
-                }, {
-                  xtype :'panel',
-                  width :120,
-                  items : [
-                      {
-                        xtype :'button',
-                        text :'Remove',
-                        minWidth :100,
-                        id :'button-remove',
-                        handler :this.removeArtifact,
-                        scope :this
-                      }, {
-                        xtype :'button',
-                        text :'Remove All',
-                        style :'margin-top: 5px',
-                        minWidth :100,
-                        id :'button-remove-all',
-                        handler :this.removeAllArtifacts,
-                        scope :this
-                      }
-                  ]
-                }
-            ]
-          },
           {
             xtype: 'combo',
             lazyInit: false,
@@ -179,15 +84,13 @@ Sonatype.repoServer.ArtifactUploadPanel = function(config){
               }
             }
           },
-          {
+					{
             xtype: 'panel',
             id: 'gav-definition-card-panel',
-            header: false,
+						header: false,
             layout: 'card',
             region: 'center',
             activeItem: 0,
-            bodyStyle: 'padding:5px 0px 15px 0px',
-            width: '96%',
             deferredRender: false,
             autoScroll: false,
             frame: false,
@@ -195,7 +98,7 @@ Sonatype.repoServer.ArtifactUploadPanel = function(config){
               {
                   xtype: 'fieldset',
                   checkboxToggle:false,
-                  title: 'GAV Details',
+                  border: false,
                   anchor: Sonatype.view.FIELDSET_OFFSET,
                   collapsible: false,
                   autoHeight:true,
@@ -205,16 +108,17 @@ Sonatype.repoServer.ArtifactUploadPanel = function(config){
                   items: [
                   {
                     xtype: 'label',
-                    text: 'Select a GAV Definition to enter details.'
+                    text: 'Select a source for the GAV definition. GAV can be specified either manually or from a POM file. These settings will be applied to all artifacts specified below.'
                   }
                 ]
               },
               {
                 xtype: 'fieldset',
+                border: false,
                 checkboxToggle:false,
-                title: 'GAV details',
                 collapsible: false,
                 autoHeight:true,
+                style:'margin-right:7px;',
                 items: [
                   {
                     hideLabel: true,
@@ -242,9 +146,10 @@ Sonatype.repoServer.ArtifactUploadPanel = function(config){
               },
               {
                 xtype: 'fieldset',
+                border: false,
                 checkboxToggle:false,
-                title: 'GAV details',
                 collapsible: false,
+                style:'margin-right:7px;',
                 autoHeight:true,
                 items: [
                   {
@@ -331,6 +236,122 @@ Sonatype.repoServer.ArtifactUploadPanel = function(config){
                 ]
               }
             ]
+          }       
+        ]      
+      },
+      
+      {
+        xtype: 'fieldset',
+        checkboxToggle:false,
+        title: 'Select Artifact(s) for Upload',
+        collapsible: false,
+        autoHeight:true,
+        width: '95%',
+        items: [
+          {
+            hideLabel: true,
+            xtype: 'browsebutton',
+            text: 'Select Artifact(s) to Upload...',
+            style :'margin-bottom: 5px;',
+            uploadPanel: this,
+            handler: function( b ) {
+              b.uploadPanel.fileInput = b.detachInputFile(); 
+              var filename = b.uploadPanel.fileInput.getValue();
+              var endStr = '.pom';
+              if(filename == "pom.xml" || (filename.match(endStr+"$")==endStr)){
+								Ext.Msg.show({
+							  	title:'Error',
+							   	msg: "Select the POM file as part of the GAV Definition.",
+							   	buttons: Ext.Msg.OK,
+							   	icon: Ext.MessageBox.ERROR
+								});
+								return;              
+              }
+              b.uploadPanel.updateFilename( b.uploadPanel, filename );
+            }
+          },
+          {
+            xtype: 'textfield',
+            fieldLabel: 'Filename',
+            name: 'filenameField',
+            readOnly: true,
+            width: '95%',
+            allowBlank:true
+          },
+          {
+            xtype: 'textfield',
+            fieldLabel: 'Classifier',
+            helpText: ht.classifier,
+            name: 'classifier',
+            width: '95%',
+            allowBlank:true
+          },
+          {
+            xtype: 'textfield',
+            fieldLabel: 'Extension',
+            helpText: ht.extension,
+            name: 'extension',
+            width: '95%',
+            allowBlank:true
+          },
+          {
+            xtype: 'button',
+            id: 'add-button',
+            text: 'Add Artifact',
+            handler: this.addArtifact,
+            scope: this,
+            disabled: true
+          },
+          {
+            xtype :'panel',
+            layout :'column',
+            autoHeight :true,
+            style :'padding-top: 5px; padding-bottom: 5px;',
+            items : [
+                {
+                  xtype :'treepanel',
+                  name :'artifact-list',
+                  title :'Artifacts',
+                  border :true,
+                  bodyBorder :true,
+                  bodyStyle :'background-color:#FFFFFF; border: 1px solid #B5B8C8',
+                  style :'padding: 0px 10px 0px 105px',
+                  width :500,
+                  height :100,
+                  animate :true,
+                  lines :false,
+                  autoScroll :true,
+                  containerScroll :true,
+                  rootVisible :false,
+                  ddScroll: true,
+                  enableDD: true,
+                  root :new Ext.tree.TreeNode( {
+                    text :'root',
+                    draggable: false
+                  })
+                }, {
+                  xtype :'panel',
+                  width :120,
+                  items : [
+                      {
+                        xtype :'button',
+                        text :'Remove',
+                        minWidth :100,
+                        id :'button-remove',
+                        handler :this.removeArtifact,
+                        scope :this
+                      }, {
+                        xtype :'button',
+                        text :'Remove All',
+                        style :'margin-top: 5px',
+                        minWidth :100,
+                        id :'button-remove-all',
+                        handler :this.removeAllArtifacts,
+                        scope :this
+                      }
+                  ]
+                }
+            ]
           },
           this.extraItems,
           {
@@ -396,6 +417,18 @@ Ext.extend(Sonatype.repoServer.ArtifactUploadPanel, Ext.FormPanel, {
     pomField.reset();
 	},
 	
+	artifactWithClassifierAndExtensionExists : function(classifier, extension){
+		var treePanel = this.find('name', 'artifact-list')[0];
+    for ( var i = 0 ; i < treePanel.root.childNodes.length; i++ ){
+    	var currClassifier = treePanel.root.childNodes[i].attributes.payload.classifier;
+    	var currExtension = treePanel.root.childNodes[i].attributes.payload.extension;
+    	if(classifier == currClassifier && extension == currExtension){
+    		return true;
+    	}
+    }
+    return false;
+	},
+	
   addArtifact : function() {
     var treePanel = this.find('name', 'artifact-list')[0];
     var filenameField = this.find('name', 'filenameField')[0];
@@ -403,7 +436,16 @@ Ext.extend(Sonatype.repoServer.ArtifactUploadPanel, Ext.FormPanel, {
     var extensionField = this.find('name', 'extension')[0];
     var classifier = classifierField.getValue();
     var extension = extensionField.getValue();
-    
+    if(this.artifactWithClassifierAndExtensionExists(classifier, extension) ){
+	    Ext.Msg.show({
+		  	title:'Classifier and Extension Taken',
+		   	msg: "Every artifact must have a unique classifier and extension. The specified classifier and extension is already taken.",
+		   	buttons: Ext.Msg.OK,
+		   	icon: Ext.MessageBox.WARNING
+			});
+			return;    
+    }
+    var extension = extensionField.getValue();
     var nodeText = filenameField.getValue();
     if ( !Ext.isEmpty(classifier)){
       nodeText += ' c:' + classifier;
