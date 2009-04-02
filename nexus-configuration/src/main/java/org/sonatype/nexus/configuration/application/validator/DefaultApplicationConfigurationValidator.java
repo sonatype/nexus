@@ -366,7 +366,7 @@ public class DefaultApplicationConfigurationValidator
             if ( context.getExistingRepositoryIds().contains( repo.getId() ) )
             {
                 response.addValidationError( new ValidationMessage( "id", "The Repository ID '" + repo.getId()
-                    + "' is in use by another Repository" ) );
+                    + "' conflicts with an existing Repository ID" ) );
             }
 
             context.getExistingRepositoryIds().add( repo.getId() );
@@ -447,7 +447,7 @@ public class DefaultApplicationConfigurationValidator
             if ( context.getExistingRepositoryShadowIds().contains( shadow.getId() ) )
             {
                 response.addValidationError( new ValidationMessage( "id", "Virtual Repository ID '" + shadow.getId()
-                    + "' is in use by another Virtual Repository" ) );
+                    + "' conflicts with an existing Virtual Repository ID" ) );
             }
 
             context.getExistingRepositoryShadowIds().add( shadow.getId() );
@@ -632,7 +632,7 @@ public class DefaultApplicationConfigurationValidator
             if ( context.getExistingRepositoryGroupIds().contains( group.getGroupId() ) )
             {
                 response.addValidationError( new ValidationMessage( "id", "The Group ID  '" + group.getGroupId()
-                    + "' is in use by another Repository Group" ) );
+                    + "' conflicts with an existing Group ID" ) );
             }
         }
 
