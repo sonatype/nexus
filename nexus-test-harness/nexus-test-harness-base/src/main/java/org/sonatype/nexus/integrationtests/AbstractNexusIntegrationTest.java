@@ -148,7 +148,7 @@ public class AbstractNexusIntegrationTest
      * static, so we don't have access to the package name of the running tests. We are going to use the package name to
      * find resources for additional setup. NOTE: With this setup running multiple Test at the same time is not
      * possible.
-     * 
+     *
      * @throws Exception
      */
     @Before
@@ -253,9 +253,8 @@ public class AbstractNexusIntegrationTest
 
                 public boolean accept( File pathname )
                 {
-                    return ( !pathname.getName().endsWith( ".svn" ) && pathname.isDirectory() && new File(
-                        pathname,
-                        "pom.xml" ).exists() );
+                    return ( !pathname.getName().endsWith( ".svn" ) && pathname.isDirectory() && new File( pathname,
+                                                                                                           "pom.xml" ).exists() );
                 }
             } );
 
@@ -275,8 +274,7 @@ public class AbstractNexusIntegrationTest
                 if ( model.getDistributionManagement() == null
                     || model.getDistributionManagement().getRepository() == null )
                 {
-                    Assert
-                        .fail( "The test artifact is either missing or has an invalid Distribution Management section." );
+                    Assert.fail( "The test artifact is either missing or has an invalid Distribution Management section." );
                 }
                 String deployUrl = model.getDistributionManagement().getRepository().getUrl();
 
@@ -286,8 +284,9 @@ public class AbstractNexusIntegrationTest
 
                 log.debug( "wow, this is working: " + artifactFile.getName() );
 
-                Gav gav = new Gav( model.getGroupId(), model.getArtifactId(), model.getVersion(), null, model
-                    .getPackaging(), 0, new Date().getTime(), model.getName(), false, false, null, false, null );
+                Gav gav =
+                    new Gav( model.getGroupId(), model.getArtifactId(), model.getVersion(), null, model.getPackaging(),
+                             0, new Date().getTime(), model.getName(), false, false, null, false, null );
 
                 // the Restlet Client does not support multipart forms:
                 // http://restlet.tigris.org/issues/show_bug.cgi?id=71
@@ -301,10 +300,9 @@ public class AbstractNexusIntegrationTest
 
                 try
                 {
-                    DeployUtils.deployWithWagon( this.container, "http", deployUrl, artifactFile, this
-                        .getRelitiveArtifactPath( gav ) );
-                    DeployUtils
-                        .deployWithWagon( this.container, "http", deployUrl, pom, this.getRelitivePomPath( gav ) );
+                    DeployUtils.deployWithWagon( this.container, "http", deployUrl, artifactFile,
+                                                 this.getRelitiveArtifactPath( gav ) );
+                    DeployUtils.deployWithWagon( this.container, "http", deployUrl, pom, this.getRelitivePomPath( gav ) );
                 }
                 catch ( Exception e )
                 {
@@ -414,9 +412,8 @@ public class AbstractNexusIntegrationTest
         log.debug( "copying "
             + configFile
             + " to:  "
-            + new File(
-                AbstractNexusIntegrationTest.nexusBaseDir + "/" + ( path == null ? RELATIVE_CONF_DIR : path ),
-                configFile ) );
+            + new File( AbstractNexusIntegrationTest.nexusBaseDir + "/" + ( path == null ? RELATIVE_CONF_DIR : path ),
+                        configFile ) );
 
         FileTestingUtils.interpolationFileCopy( testConfigFile, new File( AbstractNexusIntegrationTest.nexusBaseDir
             + "/" + ( path == null ? RELATIVE_CONF_DIR : path ), destShortName ), variables );
@@ -441,7 +438,7 @@ public class AbstractNexusIntegrationTest
     /**
      * Returns a File if it exists, null otherwise. Files returned by this method must be located in the
      * "src/test/resourcs/nexusXXX/" folder.
-     * 
+     *
      * @param relativePath path relative to the nexusXXX directory.
      * @return A file specified by the relativePath. or null if it does not exist.
      */
@@ -460,7 +457,7 @@ public class AbstractNexusIntegrationTest
     /**
      * Returns a File if it exists, null otherwise. Files returned by this method must be located in the
      * "src/test/resourcs/nexusXXX/files/" folder.
-     * 
+     *
      * @param relativePath path relative to the files directory.
      * @return A file specified by the relativePath. or null if it does not exist.
      */
@@ -534,9 +531,12 @@ public class AbstractNexusIntegrationTest
         // Configuration
         // ----------------------------------------------------------------------------
 
-        ContainerConfiguration containerConfiguration = new DefaultContainerConfiguration()
-            .setName( "test" ).setContext( context ).setContainerConfiguration(
-                getClass().getName().replace( '.', '/' ) + ".xml" );
+        ContainerConfiguration containerConfiguration =
+            new DefaultContainerConfiguration().setName( "test" ).setContext( context ).setContainerConfiguration(
+                                                                                                                   getClass().getName().replace(
+                                                                                                                                                 '.',
+                                                                                                                                                 '/' )
+                                                                                                                       + ".xml" );
 
         try
         {
@@ -582,12 +582,12 @@ public class AbstractNexusIntegrationTest
     protected String getRelitiveArtifactPath( Gav gav )
         throws FileNotFoundException
     {
-        return this.getRelitiveArtifactPath( gav.getGroupId(), gav.getArtifactId(), gav.getVersion(), gav
-            .getExtension(), gav.getClassifier() );
+        return this.getRelitiveArtifactPath( gav.getGroupId(), gav.getArtifactId(), gav.getVersion(),
+                                             gav.getExtension(), gav.getClassifier() );
     }
 
     protected String getRelitiveArtifactPath( String groupId, String artifactId, String version, String extension,
-        String classifier )
+                                              String classifier )
         throws FileNotFoundException
     {
         String classifierPart = StringUtils.isEmpty( classifier ) ? "" : "-" + classifier;
@@ -607,13 +607,14 @@ public class AbstractNexusIntegrationTest
         // p=<packaging> -- optional, jar is taken as default
         // http://localhost:8087/nexus/service/local/artifact/maven/redirect?r=tasks-snapshot-repo&g=nexus&a=artifact&
         // v=1.0-SNAPSHOT
-        String serviceURI = "service/local/artifact/maven/redirect?r=" + repository + "&g=" + gav.getGroupId() + "&a="
-            + gav.getArtifactId() + "&v=" + gav.getVersion();
+        String serviceURI =
+            "service/local/artifact/maven/redirect?r=" + repository + "&g=" + gav.getGroupId() + "&a="
+                + gav.getArtifactId() + "&v=" + gav.getVersion();
         Response response = RequestFacade.doGetRequest( serviceURI );
         Status status = response.getStatus();
         Assert.assertEquals( "Snapshot download should redirect to a new file\n "
-            + response.getRequest().getResourceRef().toString() + " \n Error: " + status.getDescription(), 301, status
-            .getCode() );
+            + response.getRequest().getResourceRef().toString() + " \n Error: " + status.getDescription(), 301,
+                             status.getCode() );
 
         Reference redirectRef = response.getRedirectRef();
         Assert.assertNotNull( "Snapshot download should redirect to a new file "
@@ -630,47 +631,36 @@ public class AbstractNexusIntegrationTest
     protected File downloadArtifact( Gav gav, String targetDirectory )
         throws IOException
     {
-        return this.downloadArtifact( gav.getGroupId(), gav.getArtifactId(), gav.getVersion(), gav.getExtension(), gav
-            .getClassifier(), targetDirectory );
+        return this.downloadArtifact( gav.getGroupId(), gav.getArtifactId(), gav.getVersion(), gav.getExtension(),
+                                      gav.getClassifier(), targetDirectory );
     }
 
     protected File downloadArtifact( String groupId, String artifact, String version, String type, String classifier,
-        String targetDirectory )
+                                     String targetDirectory )
         throws IOException
     {
-        return this.downloadArtifact(
-            this.getNexusTestRepoUrl(),
-            groupId,
-            artifact,
-            version,
-            type,
-            classifier,
-            targetDirectory );
+        return this.downloadArtifact( this.getNexusTestRepoUrl(), groupId, artifact, version, type, classifier,
+                                      targetDirectory );
     }
 
     protected File downloadArtifactFromRepository( String repoId, Gav gav, String targetDirectory )
         throws IOException
     {
-        return this.downloadArtifact(
-            AbstractNexusIntegrationTest.baseNexusUrl + REPOSITORY_RELATIVE_URL + repoId + "/",
-            gav.getGroupId(),
-            gav.getArtifactId(),
-            gav.getVersion(),
-            gav.getExtension(),
-            gav.getClassifier(),
-            targetDirectory );
+        return this.downloadArtifact( AbstractNexusIntegrationTest.baseNexusUrl + REPOSITORY_RELATIVE_URL + repoId
+            + "/", gav.getGroupId(), gav.getArtifactId(), gav.getVersion(), gav.getExtension(), gav.getClassifier(),
+                                      targetDirectory );
     }
 
     protected File downloadArtifactFromGroup( String groupId, Gav gav, String targetDirectory )
         throws IOException
     {
         return this.downloadArtifact( AbstractNexusIntegrationTest.baseNexusUrl + GROUP_REPOSITORY_RELATIVE_URL
-            + groupId + "/", gav.getGroupId(), gav.getArtifactId(), gav.getVersion(), gav.getExtension(), gav
-            .getClassifier(), targetDirectory );
+            + groupId + "/", gav.getGroupId(), gav.getArtifactId(), gav.getVersion(), gav.getExtension(),
+                                      gav.getClassifier(), targetDirectory );
     }
 
     protected File downloadArtifact( String baseUrl, String groupId, String artifact, String version, String type,
-        String classifier, String targetDirectory )
+                                     String classifier, String targetDirectory )
         throws IOException
     {
         URL url = new URL( baseUrl + this.getRelitiveArtifactPath( groupId, artifact, version, type, classifier ) );
@@ -728,9 +718,14 @@ public class AbstractNexusIntegrationTest
         AbstractNexusIntegrationTest.baseNexusUrl = baseNexusUrl;
     }
 
+    public String getNexusTestRepoUrl( String repo )
+    {
+        return baseNexusUrl + REPOSITORY_RELATIVE_URL + repo + "/";
+    }
+
     public String getNexusTestRepoUrl()
     {
-        return baseNexusUrl + REPOSITORY_RELATIVE_URL + testRepositoryId + "/";
+        return getNexusTestRepoUrl( testRepositoryId );
     }
 
     public String getNexusTestRepoServiceUrl()
@@ -780,8 +775,8 @@ public class AbstractNexusIntegrationTest
 
     protected boolean printKnownErrorButDoNotFail( Class<? extends AbstractNexusIntegrationTest> clazz, String... tests )
     {
-        StringBuffer error = new StringBuffer(
-            "*********************************************************************************" );
+        StringBuffer error =
+            new StringBuffer( "*********************************************************************************" );
         error.append( "\n* This test is being skipped because its known to fail," );
         error.append( "\n* It is a very minor error, and is only a problem if you start sending in " );
         error.append( "\n* raw REST request to Nexus. (it is not a security problem)" );
