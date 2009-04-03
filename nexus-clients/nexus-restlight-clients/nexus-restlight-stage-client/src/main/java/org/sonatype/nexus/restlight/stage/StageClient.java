@@ -66,9 +66,9 @@ extends AbstractRESTLightClient
 
     private static final String USER_ID_ELEMENT = "userId";
 
-    private static final String OPEN_STAGE_REPOS_XPATH = "//stagingRepositoryIds/string/text()";
+    private static final String OPEN_STAGE_REPOS_XPATH = "stagingRepositoryIds/string/text()";
 
-    private static final String CLOSED_STAGE_REPOS_XPATH = "//stagedRepositoryIds/string/text()";
+    private static final String CLOSED_STAGE_REPOS_XPATH = "stagedRepositoryIds/string/text()";
 
     private static final String STAGE_REPO_LIST_XPATH = "//stagingProfile";
 
