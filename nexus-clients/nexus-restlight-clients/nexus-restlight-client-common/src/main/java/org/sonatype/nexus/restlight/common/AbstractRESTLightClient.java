@@ -231,7 +231,7 @@ public abstract class AbstractRESTLightClient
                     continue;
                 }
 
-                StringTokenizer tokens = new StringTokenizer( (String) lstEntry.getValue() );
+                StringTokenizer tokens = new StringTokenizer( (String) lstEntry.getValue(), "," );
                 while ( tokens.hasMoreTokens() )
                 {
                     lst.add( tokens.nextToken().trim() );
@@ -272,6 +272,12 @@ public abstract class AbstractRESTLightClient
                 String vocabResource = vocabBasepath + vocab + ".vocabulary.properties";
 
                 stream = cloader.getResourceAsStream( vocabResource );
+                if ( stream == null )
+                {
+                    throw new RESTLightClientException( "Failed to load REST vocabulary from classpath: "
+                        + vocabResource );
+                }
+                
                 try
                 {
                     props.load( stream );
@@ -399,6 +405,7 @@ public abstract class AbstractRESTLightClient
     throws RESTLightClientException
     {
         GetMethod method = urlIsAbsolute ? new GetMethod( url ) : new GetMethod( baseUrl + url );
+        method.addRequestHeader( "Content-Type", "application/xml" );
 
         if ( requestParams != null )
         {
@@ -510,6 +517,7 @@ public abstract class AbstractRESTLightClient
 
         PostMethod method = new PostMethod( baseUrl + path );
         method.addRequestHeader( "Content-Type", "application/xml" );
+        method.addRequestHeader( "Accept", "application/xml" );
 
         if ( body != null && body.getRootElement() != null )
         {
