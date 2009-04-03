@@ -67,7 +67,10 @@ Ext.extend( Sonatype.repoServer.AbstractRepositoryEditor, Sonatype.ext.FormPanel
   
   providerSelectHandler: function( combo, rec, index ) {
     this.form.findField( 'format' ).setValue( rec.data.format );
+    this.afterProviderSelectHandler( combo, rec, index);
   },
+  
+  afterProviderSelectHandler: function( combo, rec, index ) {},
 
   repoPolicySelectHandler: function( combo, rec, index ) {
     var repoPolicy = rec.data.value.toLowerCase();
@@ -962,6 +965,18 @@ Ext.extend( Sonatype.repoServer.ProxyRepositoryEditor, Sonatype.repoServer.Abstr
       // Disable the editor - this is a temporary measure,
       // until we find a better solution for procurement repos
       this.buttons[0].disable();
+    }
+  },
+  
+  afterProviderSelectHandler: function( combo, rec, index ) {
+  	var downloadRemoteIndexCombo = this.form.findField('downloadRemoteIndexes');
+  	if ( rec.data.format == 'maven2'){
+      downloadRemoteIndexCombo.setValue('True');
+      downloadRemoteIndexCombo.enable();
+    }
+    else{
+      downloadRemoteIndexCombo.setValue('False');
+      downloadRemoteIndexCombo.disable();    	
     }
   }
 } );
