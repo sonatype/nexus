@@ -56,15 +56,19 @@ extends AbstractRESTLightClient
 
     private static final String PROFILE_ID_ELEMENT = "id";
 
+    private static final String PROFILE_NAME_ELEMENT = "name";
+
     private static final String REPO_ID_ELEMENT = "repositoryId";
 
     private static final String REPO_URI_ELEMENT = "repositoryURI";
+    
+    private static final String REPO_DESCRIPTION_ELEMENT = "description";
 
     private static final String USER_ID_ELEMENT = "userId";
 
-    private static final String OPEN_STAGE_REPOS_XPATH = "//stagingRepositoryIds/string/text()";
+    private static final String OPEN_STAGE_REPOS_XPATH = "stagingRepositoryIds/string/text()";
 
-    private static final String CLOSED_STAGE_REPOS_XPATH = "//stagedRepositoryIds/string/text()";
+    private static final String CLOSED_STAGE_REPOS_XPATH = "stagedRepositoryIds/string/text()";
 
     private static final String STAGE_REPO_LIST_XPATH = "//stagingProfile";
 
@@ -154,12 +158,13 @@ extends AbstractRESTLightClient
      * we have the details for this repository, submit those details to Nexus to convert the open repository to closed
      * (finished) status. This will make the artifacts in the repository available for use in Maven, etc.
      */
-    public void finishRepositoryForUser( final String groupId, final String artifactId, final String version )
+    public void finishRepositoryForUser( final String groupId, final String artifactId, final String version,
+                                         final String description )
     throws RESTLightClientException
     {
         StageRepository repo = getOpenStageRepositoryForUser( groupId, artifactId, version );
 
-        finishRepository( repo );
+        finishRepository( repo, description );
     }
 
     /**
@@ -167,10 +172,12 @@ extends AbstractRESTLightClient
      * staging repository), submit those details to Nexus to convert the open repository to closed (finished) status.
      * This will make the artifacts in the repository available for use in Maven, etc.
      */
-    public void finishRepository( final StageRepository repo )
+    public void finishRepository( final StageRepository repo, final String description )
     throws RESTLightClientException
     {
-        performStagingAction( repo, STAGE_REPO_FINISH_ACTION, null );
+        Element desc = new Element( REPO_DESCRIPTION_ELEMENT ).setText( description );
+
+        performStagingAction( repo, STAGE_REPO_FINISH_ACTION, Collections.singletonList( desc ) );
     }
 
     /**
@@ -227,6 +234,8 @@ extends AbstractRESTLightClient
                 // System.out.println( new XMLOutputter().outputString( profile ) );
 
                 String profileId = profile.getChild( PROFILE_ID_ELEMENT ).getText();
+                String profileName = profile.getChild( PROFILE_NAME_ELEMENT ).getText();
+                
                 Map<String, StageRepository> matchingRepoStubs = new LinkedHashMap<String, StageRepository>();
 
                 if ( !Boolean.FALSE.equals( findOpen ) )
@@ -239,7 +248,7 @@ extends AbstractRESTLightClient
                             for ( Text txt : repoIds )
                             {
                                 matchingRepoStubs.put( profileId + "/" + txt.getText(),
-                                                       new StageRepository( profileId, txt.getText(), findOpen ) );
+                                                       new StageRepository( profileId, txt.getText(), findOpen ).setProfileName( profileName ) );
                             }
                         }
                     }
@@ -260,7 +269,7 @@ extends AbstractRESTLightClient
                             for ( Text txt : repoIds )
                             {
                                 matchingRepoStubs.put( profileId + "/" + txt.getText(),
-                                                       new StageRepository( profileId, txt.getText(), findOpen ) );
+                                                       new StageRepository( profileId, txt.getText(), findOpen ).setProfileName( profileName ) );
                             }
                         }
                     }
@@ -334,6 +343,12 @@ extends AbstractRESTLightClient
                 if ( url != null )
                 {
                     repo.setUrl( url.getText() );
+                }
+                
+                Element desc = detail.getChild( REPO_DESCRIPTION_ELEMENT );
+                if ( desc != null )
+                {
+                    repo.setDescription( desc.getText() );
                 }
             }
         }
