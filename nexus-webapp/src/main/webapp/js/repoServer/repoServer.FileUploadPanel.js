@@ -669,6 +669,16 @@ Ext.extend(Sonatype.repoServer.ArtifactUploadPanel, Ext.FormPanel, {
     }
   },
   doUpload: function() {
+  	var treePanel = this.find('name', 'artifact-list')[0];
+  	if(treePanel.root.childNodes == null || treePanel.root.childNodes.length == 0){
+      Sonatype.MessageBox.show({
+        title: 'No Artifacts Selected',
+        msg: 'The Artifacts list must contain at least one artifact to upload.',
+        buttons: Sonatype.MessageBox.OK,
+        icon: Sonatype.MessageBox.ERROR
+      });
+  		return;
+  	}
     Sonatype.MessageBox.wait( 'Uploading...' );
     
     var treePanel = this.find('name', 'artifact-list')[0];
