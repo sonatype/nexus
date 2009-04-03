@@ -415,6 +415,11 @@ Ext.extend(Sonatype.repoServer.ArtifactUploadPanel, Ext.FormPanel, {
     //the pom panel
     var pomField = this.find('name', 'pomnameField')[0];
     pomField.reset();
+    
+    var desc = this.find('name', 'description')[0];
+    if(desc){
+    	desc.reset();
+    }
 	},
 	
 	artifactWithClassifierAndExtensionExists : function(classifier, extension){
