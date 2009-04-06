@@ -709,7 +709,7 @@ Sonatype.utils = {
             Sonatype.user.curr.repoServer = respObj.data.clientPermissions.permissions;
             Sonatype.user.curr.isLoggedIn = respObj.data.clientPermissions.loggedIn;
             Sonatype.user.curr.username = respObj.data.clientPermissions.loggedInUsername;
-            Sonatype.user.curr.loggedInUserSource = loggedInUserSource;
+            Sonatype.user.curr.loggedInUserSource = respObj.data.clientPermissions.loggedInUserSource;
             
             var availSvrs = Sonatype.config.installedServers;
             for(var srv in availSvrs) {
