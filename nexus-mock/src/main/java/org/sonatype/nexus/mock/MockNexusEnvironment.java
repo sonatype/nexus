@@ -13,6 +13,8 @@ import org.codehaus.plexus.PlexusConstants;
 import org.codehaus.plexus.PlexusContainer;
 import org.codehaus.plexus.classworlds.ClassWorld;
 import org.codehaus.plexus.classworlds.realm.ClassRealm;
+import org.codehaus.plexus.util.FileUtils;
+import org.codehaus.plexus.util.IOUtil;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.handler.ContextHandlerCollection;
 import org.mortbay.jetty.nio.SelectChannelConnector;
@@ -108,8 +110,6 @@ public class MockNexusEnvironment
         throws Exception
     {
         getServer().start();
-
-        getPlexusContainer().lookup( Nexus.class ).setSecurityEnabled( false );
     }
 
     public void stop()
@@ -125,6 +125,9 @@ public class MockNexusEnvironment
     public void addNexus( Server server, String contextPath )
         throws Exception
     {
+        // prepare config
+        FileUtils.copyFile( new File("src/test/resources/nexus-1.xml"), new File( "target/nexus-work/conf/nexus.xml" ) );
+        
         // create plexus
         createPlexusContainer();
 

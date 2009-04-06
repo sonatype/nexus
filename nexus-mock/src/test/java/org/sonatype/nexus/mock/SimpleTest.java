@@ -38,6 +38,8 @@ public class SimpleTest
         Response response = client.get( new Reference( "http://localhost:12345/nexus/service/local/status" ) );
 
         assertEquals( 200, response.getStatus().getCode() );
+        
+        Thread.sleep( 100000 );
 
         // test content etc
     }
