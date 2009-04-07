@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.sonatype.nexus.restlight</groupId>
     <artifactId>nexus-restlight-clients</artifactId>
-    <version>1.3.2-SNAPSHOT</version>
+    <version>1.3.2</version>
   </parent>
   
   <artifactId>nexus-restlight-stage-client</artifactId>
