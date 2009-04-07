@@ -16,13 +16,14 @@ package org.sonatype.nexus.proxy.registry;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.codehaus.plexus.PlexusContainer;
 import org.codehaus.plexus.component.annotations.Component;
 import org.codehaus.plexus.component.annotations.Requirement;
 import org.codehaus.plexus.component.repository.ComponentDescriptor;
-import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
+import org.codehaus.plexus.component.repository.ComponentRequirement;
 import org.codehaus.plexus.logging.AbstractLogEnabled;
 import org.codehaus.plexus.util.StringUtils;
 import org.sonatype.nexus.proxy.repository.GroupRepository;
@@ -37,6 +38,9 @@ public class DefaultRepositoryTypeRegistry
 {
     @Requirement
     private PlexusContainer container;
+
+    @Requirement( role = ContentClass.class )
+    private Map<String, ContentClass> contentClasses;
 
     private Set<RepositoryTypeDescriptor> repositoryRoles;
 
@@ -70,6 +74,11 @@ public class DefaultRepositoryTypeRegistry
         return Collections.unmodifiableSet( result );
     }
 
+    public Set<ContentClass> getContentClasses()
+    {
+        return Collections.unmodifiableSet( new HashSet<ContentClass>( contentClasses.values() ) );
+    }
+
     public Set<String> getExistingRepositoryHints( String role )
     {
         if ( !getRepositoryRoles().contains( role ) )
@@ -77,8 +86,8 @@ public class DefaultRepositoryTypeRegistry
             return Collections.emptySet();
         }
 
-        List<ComponentDescriptor<Repository>> components = container
-            .getComponentDescriptorList( Repository.class, role );
+        List<ComponentDescriptor<Repository>> components =
+            container.getComponentDescriptorList( Repository.class, role );
 
         HashSet<String> result = new HashSet<String>( components.size() );
 
@@ -99,18 +108,26 @@ public class DefaultRepositoryTypeRegistry
 
         if ( container.hasComponent( Repository.class, role, hint ) )
         {
-            try
-            {
-                // Note: this is very heavy to do on every call, we need some better solution.
-                // but if we think about plugins, and having runtime changes about available repository
-                // implementations...
-                Repository repository = container.lookup( Repository.class, role, hint );
+            ComponentDescriptor<Repository> descriptor = container
+                .getComponentDescriptor( Repository.class, role, hint );
 
-                return repository.getRepositoryContentClass();
-            }
-            catch ( ComponentLookupException e )
+            String contentClassHint = null;
+
+            for ( ComponentRequirement req : descriptor.getRequirements() )
             {
-                // should not happen, we checked for it
+                if ( StringUtils.equals( ContentClass.class.getName(), req.getRole() ) )
+                {
+                    // XXX: shadow has two of these!
+                    contentClassHint = req.getRoleHint();
+                }
+            }
+
+            if ( contentClassHint != null )
+            {
+                return contentClasses.get( contentClassHint );
+            }
+            else
+            {
                 return null;
             }
         }
