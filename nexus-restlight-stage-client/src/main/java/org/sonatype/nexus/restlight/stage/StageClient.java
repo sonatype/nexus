@@ -97,6 +97,24 @@ extends AbstractRESTLightClient
     }
 
     /**
+     * Retrieve the list of all closed (finished) staging repositories that may house artifacts with the specified
+     * groupId, artifactId, and version for the current user.
+     * 
+     * @return details about each closed repository
+     */
+    public List<StageRepository> getOpenStageRepositoriesForUser( final String groupId, final String artifactId,
+                                                                  final String version )
+        throws RESTLightClientException
+    {
+        Map<String, String> params = new HashMap<String, String>();
+        mapCoord( groupId, artifactId, version, params );
+
+        Document doc = get( PROFILES_PATH, params );
+
+        return parseStageRepositories( doc, STAGE_REPO_XPATH, true );
+    }
+
+    /**
      * Retrieve the details for the open staging repository which would be used for an artifact with the specified
      * groupId, artifactId, and version if the current user deployed it. In the event Nexus returns multiple open
      * staging repositories for the given user and GAV, this call will return details for the FIRST repository in that
@@ -175,9 +193,22 @@ extends AbstractRESTLightClient
     public void finishRepository( final StageRepository repo, final String description )
     throws RESTLightClientException
     {
-        Element desc = new Element( REPO_DESCRIPTION_ELEMENT ).setText( description );
+        String descElementName =
+            getVocabulary().getProperty( VocabularyKeys.PROMOTE_STAGE_REPO_DESCRIPTION_ELEMENT,
+                                         VocabularyKeys.SUPPRESS_ELEMENT_VALUE );
 
-        performStagingAction( repo, STAGE_REPO_FINISH_ACTION, Collections.singletonList( desc ) );
+        List<Element> extras;
+        if ( !VocabularyKeys.SUPPRESS_ELEMENT_VALUE.equals( descElementName ) )
+        {
+            Element desc = new Element( REPO_DESCRIPTION_ELEMENT ).setText( description );
+            extras = Collections.singletonList( desc );
+        }
+        else
+        {
+            extras = null;
+        }
+
+        performStagingAction( repo, STAGE_REPO_FINISH_ACTION, extras );
     }
 
     /**
