@@ -949,8 +949,6 @@ Sonatype.repoServer.ProxyRepositoryEditor = function( config ) {
       }
     }
   } );
-  
-  this.on( 'show', this.showHandler, this );
 };
 
 Ext.extend( Sonatype.repoServer.ProxyRepositoryEditor, Sonatype.repoServer.AbstractRepositoryEditor, {
@@ -971,27 +969,16 @@ Ext.extend( Sonatype.repoServer.ProxyRepositoryEditor, Sonatype.repoServer.Abstr
   },
   
   afterProviderSelectHandler: function( combo, rec, index ) {
-  	this.updateDownloadRemoteIndexCombo(rec.data.format);
-  },
-  
-  showHandler: function ( panel ) {
-  	var formatField = this.form.findField('format');
-  	if ( formatField ){
-  		this.updateDownloadRemoteIndexCombo( formatField.getValue() );
-  	}
-  },
-  
-  updateDownloadRemoteIndexCombo: function( repoFormat ){
   	var downloadRemoteIndexCombo = this.form.findField('downloadRemoteIndexes');
-  	if ( repoFormat == 'maven2'){
-      downloadRemoteIndexCombo.enable();  		
-  	}
-  	else{
+  	if ( rec.data.format == 'maven2'){
+      downloadRemoteIndexCombo.setValue('True');
+      downloadRemoteIndexCombo.enable();
+    }
+    else{
       downloadRemoteIndexCombo.setValue('False');
-      downloadRemoteIndexCombo.disable();    		
-  	}
+      downloadRemoteIndexCombo.disable();    	
+    }
   }
-
 } );
 
 Sonatype.repoServer.VirtualRepositoryEditor = function( config ) {
