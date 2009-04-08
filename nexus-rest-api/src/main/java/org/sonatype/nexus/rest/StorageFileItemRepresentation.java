@@ -19,7 +19,6 @@ import java.io.OutputStream;
 import java.util.Date;
 
 import org.codehaus.plexus.util.IOUtil;
-import org.mortbay.jetty.EofException;
 import org.restlet.data.MediaType;
 import org.restlet.data.Tag;
 import org.restlet.resource.OutputRepresentation;
@@ -78,10 +77,6 @@ public class StorageFileItemRepresentation
             is = getStorageFileItem().getInputStream();
 
             IOUtil.copy( is, outputStream );
-        }
-        catch ( EofException e )
-        {
-            // https://issues.sonatype.org/browse/NEXUS-217
         }
         finally
         {
