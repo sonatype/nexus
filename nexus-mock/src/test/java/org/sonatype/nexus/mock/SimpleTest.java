@@ -39,6 +39,11 @@ public class SimpleTest
         super.tearDown();
     }
 
+    /**
+     * Here, we don't mock anything, we are relying on _real_ response from real Nexus
+     * 
+     * @throws Exception
+     */
     public void testStatusFine()
         throws Exception
     {
@@ -51,6 +56,11 @@ public class SimpleTest
         assertEquals( 200, response.getStatus().getCode() );
     }
 
+    /**
+     * We mock the status resource to be unavailable.
+     * 
+     * @throws Exception
+     */
     public void testStatusUnavailable()
         throws Exception
     {
@@ -65,6 +75,11 @@ public class SimpleTest
         assertEquals( Status.SERVER_ERROR_SERVICE_UNAVAILABLE.getCode(), response.getStatus().getCode() );
     }
 
+    /**
+     * We mock status response.
+     * 
+     * @throws Exception
+     */
     public void testStatusCustomContent()
         throws Exception
     {
