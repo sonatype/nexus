@@ -14,12 +14,10 @@ import org.codehaus.plexus.PlexusContainer;
 import org.codehaus.plexus.classworlds.ClassWorld;
 import org.codehaus.plexus.classworlds.realm.ClassRealm;
 import org.codehaus.plexus.util.FileUtils;
-import org.codehaus.plexus.util.IOUtil;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.handler.ContextHandlerCollection;
 import org.mortbay.jetty.nio.SelectChannelConnector;
 import org.mortbay.jetty.webapp.WebAppContext;
-import org.sonatype.nexus.Nexus;
 
 public class MockNexusEnvironment
 {
@@ -83,7 +81,7 @@ public class MockNexusEnvironment
                 .setClassWorld( cw ).setContainerConfigurationURL( Class.class.getResource( "/plexus/plexus.xml" ) )
                 .setContext( createContainerContext() ).addComponentDiscoveryListener(
                     new InhibitingComponentDiscovererListener() );
-
+            
             plexusContainer = new DefaultPlexusContainer( cc );
         }
 

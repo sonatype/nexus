@@ -6,6 +6,7 @@ import java.util.Iterator;
 import org.codehaus.plexus.component.discovery.ComponentDiscoveryEvent;
 import org.codehaus.plexus.component.discovery.ComponentDiscoveryListener;
 import org.codehaus.plexus.component.repository.ComponentDescriptor;
+import org.codehaus.plexus.component.repository.ComponentRequirement;
 import org.codehaus.plexus.component.repository.ComponentSetDescriptor;
 import org.sonatype.plexus.rest.resource.ManagedPlexusResource;
 import org.sonatype.plexus.rest.resource.PlexusResource;
@@ -22,35 +23,41 @@ public class InhibitingComponentDiscovererListener
     {
         ComponentSetDescriptor set = event.getComponentSetDescriptor();
 
-        String source = set.getSource();
+        ArrayList<ComponentDescriptor<?>> injectedComponents = new ArrayList<ComponentDescriptor<?>>();
 
-        // looking into jars only
-        if ( source != null && source.startsWith( "jar:file:" ) && source.endsWith( "!/META-INF/plexus/components.xml" ) )
+        for ( Iterator<ComponentDescriptor<?>> i = set.getComponents().iterator(); i.hasNext(); )
         {
-            ArrayList<ComponentDescriptor<?>> toRemove = new ArrayList<ComponentDescriptor<?>>();
+            ComponentDescriptor<?> comp = i.next();
 
-            for ( Iterator<ComponentDescriptor<?>> i = set.getComponents().iterator(); i.hasNext(); )
+            if ( PlexusResource.class.getName().equals( comp.getRole() )
+                || ManagedPlexusResource.class.getName().equals( comp.getRole() ) )
             {
-                ComponentDescriptor<?> comp = i.next();
+                String role = comp.getRole();
 
-                if ( PlexusResource.class.getName().equals( comp.getRole() ) )
-                {
-                    toRemove.add( comp );
+                // rename the original
+                comp.setRole( "hidden-" + role );
 
-                    System.out.println( "PlexusResource removed (impl='" + comp.getImplementation() + "'), came from "
-                        + event.getComponentSetDescriptor().getSource() );
-                }
-                // else if ( ManagedPlexusResource.class.getName().equals( comp.getRole() ) )
-                // {
-                // toRemove.add( comp );
-                //
-                // System.out.println( "ManagedPlexusResource removed (impl='" + comp.getImplementation() +
-                // "'), came from "
-                // + event.getComponentSetDescriptor().getSource() );
-                // }
+                // tie in the "proxy"
+                ComponentDescriptor proxy = new ComponentDescriptor();
+                proxy.setRole( role );
+                proxy.setRoleHint( comp.getRoleHint() );
+                proxy.setImplementation( ProxyPlexusResource.class.getName() );
+
+                ComponentRequirement req = new ComponentRequirement();
+                req.setFieldName( "plexusResource" );
+                req.setRole( comp.getRole() );
+                req.setRoleHint( comp.getRoleHint() );
+
+                proxy.addRequirement( req );
+
+                injectedComponents.add( proxy );
             }
+        }
 
-            set.getComponents().removeAll( toRemove );
+        // add the new ones in
+        for ( ComponentDescriptor<?> proxy : injectedComponents )
+        {
+            set.addComponentDescriptor( proxy );
         }
     }
 
