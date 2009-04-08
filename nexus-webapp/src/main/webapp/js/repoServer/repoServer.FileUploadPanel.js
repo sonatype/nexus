@@ -34,14 +34,17 @@ Sonatype.repoServer.ArtifactUploadPanel = function(config){
   }    
 
   Sonatype.repoServer.ArtifactUploadPanel.superclass.constructor.call(this, {
+    region: 'center',
+    id: 'uploadFormId',
+    trackResetOnLoad: true,
+    autoScroll: true,
+    bodyStyle:'overflow:auto;',
     border: false,
     frame: true,
     collapsible: false,
     collapsed: false,
-    fileUpload: true,
     width: '100%',
-    height: '100%',
-    autoScroll: true,
+    fileUpload: true,
     layoutConfig: {
       labelSeparator: ''
     },
@@ -248,7 +251,7 @@ Sonatype.repoServer.ArtifactUploadPanel = function(config){
         title: 'Select Artifact(s) for Upload',
         collapsible: false,
         autoHeight:true,
-        width: '95%',
+        style: 'margin-right:7px;width:95%;',
         items: [
           {
             hideLabel: true,
