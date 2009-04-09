@@ -598,13 +598,6 @@
       <method>read</method>
     </applicationPrivilege>
     <applicationPrivilege>
-      <permission>nexus:repocontentclasses</permission>
-      <id>56</id>
-      <name>Repository Content Classes - (read)</name>
-      <description>Give permission to retrieve the list of repository content classes supported by nexus.</description>
-      <method>read</method>
-    </applicationPrivilege>
-    <applicationPrivilege>
       <permission>nexus:usersforgotpw</permission>
       <id>57</id>
       <name>User Forgot Password - (create,read)</name>

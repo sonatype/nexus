@@ -105,7 +105,7 @@ public class MemoryRealm
         perms.add( "nexus:feeds:read" );
         perms.add( "nexus:artifact:read" );
         perms.add( "nexus:repostatus:read" );
-        perms.add( "nexus:repocontentclasses:read" );
+        perms.add( "nexus:componentscontentclasses:read" );
         // Target privileges, that allow read access to everything
         // The numbers below (1 & 2) are Repository Target IDs in nexus
         // The asterisk means that this privilege applies to any repository
@@ -125,7 +125,7 @@ public class MemoryRealm
         perms.add( "nexus:feeds:read" );
         perms.add( "nexus:artifact:read" );
         perms.add( "nexus:repostatus:read" );
-        perms.add( "nexus:repocontentclasses:read" );
+        perms.add( "nexus:componentscontentclasses:read" );
         perms.add( "nexus:target:1:*:read" );
         perms.add( "nexus:target:2:*:read" );
         perms.add( "nexus:target:1:*:update" );

@@ -121,7 +121,7 @@ public class Nexus1170ReducePermissionChecking
         this.checkPermission( permissions, "nexus:wastebasket", 0 );
         this.checkPermission( permissions, "nexus:artifact", 1 );
         this.checkPermission( permissions, "nexus:repostatus", 1 );
-        this.checkPermission( permissions, "nexus:repocontentclasses", 1 );
+        this.checkPermission( permissions, "nexus:componentscontentclasses", 1 );
         this.checkPermission( permissions, "nexus:usersforgotpw", 9 );
         this.checkPermission( permissions, "nexus:usersforgotid", 9 );
         this.checkPermission( permissions, "nexus:usersreset", 0 );
