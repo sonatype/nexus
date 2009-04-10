@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.codehaus.plexus.component.annotations.Requirement;
+import org.codehaus.plexus.personality.plexus.lifecycle.phase.Disposable;
 import org.codehaus.plexus.personality.plexus.lifecycle.phase.Initializable;
 import org.codehaus.plexus.personality.plexus.lifecycle.phase.InitializationException;
 import org.codehaus.plexus.util.StringUtils;
@@ -89,14 +90,14 @@ import org.sonatype.nexus.util.ContextUtils;
  */
 public abstract class AbstractRepository
     extends EventMulticasterComponent
-    implements Repository, Initializable
+    implements Repository, Initializable, Disposable
 {
     /**
      * StorageItem context key. If value set to Boolean.TRUE, the item will not be stored locally. Useful to suppress
      * caching of secondary items, like merged m2 group repository metadata.
      */
-    public static final String CTX_TRANSITIVE_ITEM = AbstractRepository.class.getCanonicalName()
-        + ".CTX_TRANSITIVE_ITEM";
+    public static final String CTX_TRANSITIVE_ITEM =
+        AbstractRepository.class.getCanonicalName() + ".CTX_TRANSITIVE_ITEM";
 
     @Requirement
     private ApplicationConfiguration applicationConfiguration;
@@ -188,6 +189,11 @@ public abstract class AbstractRepository
         applicationConfiguration.addProximityEventListener( this );
     }
 
+    public void dispose()
+    {
+        applicationConfiguration.removeProximityEventListener( this );
+    }
+
     public void onProximityEvent( AbstractEvent evt )
     {
         // act automatically on repo removal
@@ -211,10 +217,10 @@ public abstract class AbstractRepository
     public RepositoryTaskFilter getRepositoryTaskFilter()
     {
         // we are allowing all, and subclasses will filter as they want
-        return new DefaultRepositoryTaskFilter()
-            .setAllowsRepositoryScanning( true ).setAllowsScheduledTasks( true ).setAllowsUserInitiatedTasks( true )
-            .setContentOperators( DefaultRepositoryTaskActivityDescriptor.ALL_CONTENT_OPERATIONS )
-            .setAttributeOperators( DefaultRepositoryTaskActivityDescriptor.ALL_ATTRIBUTES_OPERATIONS );
+        return new DefaultRepositoryTaskFilter().setAllowsRepositoryScanning( true ).setAllowsScheduledTasks( true ).setAllowsUserInitiatedTasks(
+                                                                                                                                                  true ).setContentOperators(
+                                                                                                                                                                              DefaultRepositoryTaskActivityDescriptor.ALL_CONTENT_OPERATIONS ).setAttributeOperators(
+                                                                                                                                                                                                                                                                      DefaultRepositoryTaskActivityDescriptor.ALL_ATTRIBUTES_OPERATIONS );
     }
 
     public LocalStatus getLocalStatus()
@@ -575,10 +581,7 @@ public abstract class AbstractRepository
     // Store iface
 
     public StorageItem retrieveItem( ResourceStoreRequest request )
-        throws IllegalOperationException,
-            ItemNotFoundException,
-            StorageException,
-            AccessDeniedException
+        throws IllegalOperationException, ItemNotFoundException, StorageException, AccessDeniedException
     {
         if ( !checkConditions( request, Action.read ) )
         {
@@ -592,8 +595,8 @@ public abstract class AbstractRepository
         if ( StorageCollectionItem.class.isAssignableFrom( item.getClass() ) && !isBrowseable() )
         {
             getLogger().debug(
-                getId() + " retrieveItem() :: FOUND a collection on " + uid.toString()
-                    + " but repository is not Browseable." );
+                               getId() + " retrieveItem() :: FOUND a collection on " + uid.toString()
+                                   + " but repository is not Browseable." );
 
             throw new ItemNotFoundException( uid );
         }
@@ -602,11 +605,8 @@ public abstract class AbstractRepository
     }
 
     public void copyItem( ResourceStoreRequest from, ResourceStoreRequest to )
-        throws UnsupportedStorageOperationException,
-            IllegalOperationException,
-            ItemNotFoundException,
-            StorageException,
-            AccessDeniedException
+        throws UnsupportedStorageOperationException, IllegalOperationException, ItemNotFoundException,
+        StorageException, AccessDeniedException
     {
         if ( !checkConditions( from, Action.read ) )
         {
@@ -625,11 +625,8 @@ public abstract class AbstractRepository
     }
 
     public void moveItem( ResourceStoreRequest from, ResourceStoreRequest to )
-        throws UnsupportedStorageOperationException,
-            IllegalOperationException,
-            ItemNotFoundException,
-            StorageException,
-            AccessDeniedException
+        throws UnsupportedStorageOperationException, IllegalOperationException, ItemNotFoundException,
+        StorageException, AccessDeniedException
     {
         if ( !checkConditions( from, Action.read ) )
         {
@@ -652,11 +649,8 @@ public abstract class AbstractRepository
     }
 
     public void deleteItem( ResourceStoreRequest request )
-        throws UnsupportedStorageOperationException,
-            IllegalOperationException,
-            ItemNotFoundException,
-            StorageException,
-            AccessDeniedException
+        throws UnsupportedStorageOperationException, IllegalOperationException, ItemNotFoundException,
+        StorageException, AccessDeniedException
     {
         if ( !checkConditions( request, Action.delete ) )
         {
@@ -669,22 +663,15 @@ public abstract class AbstractRepository
     }
 
     public void storeItem( ResourceStoreRequest request, InputStream is, Map<String, String> userAttributes )
-        throws UnsupportedStorageOperationException,
-            IllegalOperationException,
-            StorageException,
-            AccessDeniedException
+        throws UnsupportedStorageOperationException, IllegalOperationException, StorageException, AccessDeniedException
     {
         if ( !checkConditions( request, getResultingActionOnWrite( request ) ) )
         {
             throw new AccessDeniedException( request, "Operation does not fills needed requirements!" );
         }
 
-        DefaultStorageFileItem fItem = new DefaultStorageFileItem(
-            this,
-            request.getRequestPath(),
-            true,
-            true,
-            new PreparedContentLocator( is ) );
+        DefaultStorageFileItem fItem =
+            new DefaultStorageFileItem( this, request.getRequestPath(), true, true, new PreparedContentLocator( is ) );
 
         fItem.getItemContext().putAll( request.getRequestContext() );
 
@@ -697,21 +684,15 @@ public abstract class AbstractRepository
     }
 
     public void createCollection( ResourceStoreRequest request, Map<String, String> userAttributes )
-        throws UnsupportedStorageOperationException,
-            IllegalOperationException,
-            StorageException,
-            AccessDeniedException
+        throws UnsupportedStorageOperationException, IllegalOperationException, StorageException, AccessDeniedException
     {
         if ( !checkConditions( request, getResultingActionOnWrite( request ) ) )
         {
             throw new AccessDeniedException( request, "Operation does not fills needed requirements!" );
         }
 
-        DefaultStorageCollectionItem coll = new DefaultStorageCollectionItem(
-            this,
-            request.getRequestPath(),
-            true,
-            true );
+        DefaultStorageCollectionItem coll =
+            new DefaultStorageCollectionItem( this, request.getRequestPath(), true, true );
 
         coll.getItemContext().putAll( request.getRequestContext() );
 
@@ -724,10 +705,7 @@ public abstract class AbstractRepository
     }
 
     public Collection<StorageItem> list( ResourceStoreRequest request )
-        throws IllegalOperationException,
-            ItemNotFoundException,
-            StorageException,
-            AccessDeniedException
+        throws IllegalOperationException, ItemNotFoundException, StorageException, AccessDeniedException
     {
         if ( !checkConditions( request, Action.read ) )
         {
@@ -787,9 +765,7 @@ public abstract class AbstractRepository
     // Repositry store-like
 
     public StorageItem retrieveItem( RepositoryItemUid uid, Map<String, Object> context )
-        throws IllegalOperationException,
-            ItemNotFoundException,
-            StorageException
+        throws IllegalOperationException, ItemNotFoundException, StorageException
     {
         if ( getLogger().isDebugEnabled() )
         {
@@ -844,8 +820,9 @@ public abstract class AbstractRepository
                 else
                 {
                     getLogger().info(
-                        "The file in repository ID='" + this.getId() + "' on path='" + uid.getPath()
-                            + "' should be generated by ContentGeneratorId='" + key + "' but it is not found!" );
+                                      "The file in repository ID='" + this.getId() + "' on path='" + uid.getPath()
+                                          + "' should be generated by ContentGeneratorId='" + key
+                                          + "' but it is not found!" );
 
                     throw new ItemNotFoundException( uid );
                 }
@@ -879,10 +856,7 @@ public abstract class AbstractRepository
     }
 
     public void copyItem( RepositoryItemUid from, RepositoryItemUid to, Map<String, Object> context )
-        throws UnsupportedStorageOperationException,
-            IllegalOperationException,
-            ItemNotFoundException,
-            StorageException
+        throws UnsupportedStorageOperationException, IllegalOperationException, ItemNotFoundException, StorageException
     {
         if ( getLogger().isDebugEnabled() )
         {
@@ -902,12 +876,13 @@ public abstract class AbstractRepository
         {
             try
             {
-                DefaultStorageFileItem target = new DefaultStorageFileItem(
-                    this,
-                    to.getPath(),
-                    true,
-                    true,
-                    new PreparedContentLocator( ( (StorageFileItem) item ).getInputStream() ) );
+                DefaultStorageFileItem target =
+                    new DefaultStorageFileItem(
+                                                this,
+                                                to.getPath(),
+                                                true,
+                                                true,
+                                                new PreparedContentLocator( ( (StorageFileItem) item ).getInputStream() ) );
 
                 target.getItemContext().putAll( item.getItemContext() );
 
@@ -924,10 +899,7 @@ public abstract class AbstractRepository
     }
 
     public void moveItem( RepositoryItemUid from, RepositoryItemUid to, Map<String, Object> context )
-        throws UnsupportedStorageOperationException,
-            IllegalOperationException,
-            ItemNotFoundException,
-            StorageException
+        throws UnsupportedStorageOperationException, IllegalOperationException, ItemNotFoundException, StorageException
     {
         if ( getLogger().isDebugEnabled() )
         {
@@ -945,10 +917,7 @@ public abstract class AbstractRepository
     }
 
     public void deleteItem( RepositoryItemUid uid, Map<String, Object> context )
-        throws UnsupportedStorageOperationException,
-            IllegalOperationException,
-            ItemNotFoundException,
-            StorageException
+        throws UnsupportedStorageOperationException, IllegalOperationException, ItemNotFoundException, StorageException
     {
         if ( getLogger().isDebugEnabled() )
         {
@@ -978,7 +947,7 @@ public abstract class AbstractRepository
             if ( getLogger().isDebugEnabled() )
             {
                 getLogger().debug(
-                    "We are deleting a collection, starting a walker to send delete notifications per-file." );
+                                   "We are deleting a collection, starting a walker to send delete notifications per-file." );
             }
 
             // it is collection, walk it and below and fire events for all files
@@ -995,9 +964,7 @@ public abstract class AbstractRepository
     }
 
     public void storeItem( StorageItem item )
-        throws UnsupportedStorageOperationException,
-            IllegalOperationException,
-            StorageException
+        throws UnsupportedStorageOperationException, IllegalOperationException, StorageException
     {
         if ( getLogger().isDebugEnabled() )
         {
@@ -1022,9 +989,7 @@ public abstract class AbstractRepository
     }
 
     public Collection<StorageItem> list( RepositoryItemUid uid, Map<String, Object> context )
-        throws IllegalOperationException,
-            ItemNotFoundException,
-            StorageException
+        throws IllegalOperationException, ItemNotFoundException, StorageException
     {
         if ( getLogger().isDebugEnabled() )
         {
@@ -1054,9 +1019,7 @@ public abstract class AbstractRepository
     }
 
     public Collection<StorageItem> list( StorageCollectionItem item )
-        throws IllegalOperationException,
-            ItemNotFoundException,
-            StorageException
+        throws IllegalOperationException, ItemNotFoundException, StorageException
     {
         return list( item.getRepositoryItemUid(), item.getItemContext() );
     }
@@ -1104,7 +1067,8 @@ public abstract class AbstractRepository
                     if ( getLogger().isDebugEnabled() )
                     {
                         getLogger().debug(
-                            "The path " + path + " is in NFC and still active, throwing ItemNotFoundException." );
+                                           "The path " + path
+                                               + " is in NFC and still active, throwing ItemNotFoundException." );
                     }
                     throw new ItemNotFoundException( path );
                 }
@@ -1159,15 +1123,13 @@ public abstract class AbstractRepository
      * @throws AccessDeniedException the access denied exception
      */
     protected boolean checkConditions( ResourceStoreRequest request, Action action )
-        throws IllegalOperationException,
-            AccessDeniedException
+        throws IllegalOperationException, AccessDeniedException
     {
         return checkConditions( this, request, action );
     }
 
     protected boolean checkConditions( Repository repository, ResourceStoreRequest request, Action action )
-        throws IllegalOperationException,
-            AccessDeniedException
+        throws IllegalOperationException, AccessDeniedException
     {
         if ( !repository.getLocalStatus().shouldServiceRequest() )
         {
@@ -1208,12 +1170,8 @@ public abstract class AbstractRepository
     {
         ContentLocator content = new ByteArrayContentLocator( bytes );
 
-        DefaultStorageFileItem result = new DefaultStorageFileItem(
-            this,
-            uid.getPath(),
-            true /* isReadable */,
-            false /* isWritable */,
-            content );
+        DefaultStorageFileItem result =
+            new DefaultStorageFileItem( this, uid.getPath(), true /* isReadable */, false /* isWritable */, content );
         result.getItemContext().putAll( context );
         result.setMimeType( "text/plain" );
         result.setLength( bytes.length );
@@ -1222,24 +1180,19 @@ public abstract class AbstractRepository
     }
 
     protected void doDeleteItem( RepositoryItemUid uid, Map<String, Object> context )
-        throws UnsupportedStorageOperationException,
-            ItemNotFoundException,
-            StorageException
+        throws UnsupportedStorageOperationException, ItemNotFoundException, StorageException
     {
         getLocalStorage().deleteItem( this, context, uid.getPath() );
     }
 
     protected Collection<StorageItem> doListItems( RepositoryItemUid uid, Map<String, Object> context )
-        throws ItemNotFoundException,
-            StorageException
+        throws ItemNotFoundException, StorageException
     {
         return getLocalStorage().listItems( this, context, uid.getPath() );
     }
 
     protected StorageItem doRetrieveItem( RepositoryItemUid uid, Map<String, Object> context )
-        throws IllegalOperationException,
-            ItemNotFoundException,
-            StorageException
+        throws IllegalOperationException, ItemNotFoundException, StorageException
     {
         AbstractStorageItem localItem = null;
 

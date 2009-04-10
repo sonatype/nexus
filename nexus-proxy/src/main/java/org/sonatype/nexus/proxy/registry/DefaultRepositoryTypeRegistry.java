@@ -14,6 +14,7 @@
 package org.sonatype.nexus.proxy.registry;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -23,7 +24,8 @@ import org.codehaus.plexus.PlexusContainer;
 import org.codehaus.plexus.component.annotations.Component;
 import org.codehaus.plexus.component.annotations.Requirement;
 import org.codehaus.plexus.component.repository.ComponentDescriptor;
-import org.codehaus.plexus.component.repository.ComponentRequirement;
+import org.codehaus.plexus.component.repository.exception.ComponentLifecycleException;
+import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.codehaus.plexus.logging.AbstractLogEnabled;
 import org.codehaus.plexus.util.StringUtils;
 import org.sonatype.nexus.proxy.repository.GroupRepository;
@@ -41,6 +43,8 @@ public class DefaultRepositoryTypeRegistry
 
     @Requirement( role = ContentClass.class )
     private Map<String, ContentClass> contentClasses;
+
+    private Map<String, ContentClass> repoCachedContentClasses = new HashMap<String, ContentClass>();
 
     private Set<RepositoryTypeDescriptor> repositoryRoles;
 
@@ -106,35 +110,63 @@ public class DefaultRepositoryTypeRegistry
             return null;
         }
 
-        if ( container.hasComponent( Repository.class, role, hint ) )
+        ContentClass result = null;
+
+        String cacheKey = role + ":" + hint;
+
+        if ( repoCachedContentClasses.containsKey( cacheKey ) )
         {
-            ComponentDescriptor<Repository> descriptor = container
-                .getComponentDescriptor( Repository.class, role, hint );
-
-            String contentClassHint = null;
-
-            for ( ComponentRequirement req : descriptor.getRequirements() )
-            {
-                if ( StringUtils.equals( ContentClass.class.getName(), req.getRole() ) )
-                {
-                    // XXX: shadow has two of these!
-                    contentClassHint = req.getRoleHint();
-                }
-            }
-
-            if ( contentClassHint != null )
-            {
-                return contentClasses.get( contentClassHint );
-            }
-            else
-            {
-                return null;
-            }
+            result = repoCachedContentClasses.get( cacheKey );
         }
         else
         {
-            return null;
+            if ( container.hasComponent( Repository.class, role, hint ) )
+            {
+                try
+                {
+                    Repository repository = container.lookup( Repository.class, role, hint );
+
+                    result = repository.getRepositoryContentClass();
+
+                    container.release( repository );
+
+                    repoCachedContentClasses.put( cacheKey, result );
+                }
+                catch ( ComponentLookupException e )
+                {
+                    getLogger().warn( "Container contains a component but lookup failed!", e );
+                }
+                catch ( ComponentLifecycleException e )
+                {
+                    getLogger().warn( "Could not release the component! Possible leak here.", e );
+                }
+
+                // ComponentDescriptor<Repository> descriptor =
+                // container.getComponentDescriptor( Repository.class, role, hint );
+                //
+                // String contentClassHint = null;
+                //
+                // for ( ComponentRequirement req : descriptor.getRequirements() )
+                // {
+                // if ( StringUtils.equals( ContentClass.class.getName(), req.getRole() ) )
+                // {
+                // // XXX: shadow has two of these!
+                // contentClassHint = req.getRoleHint();
+                // }
+                // }
+                //
+                // if ( contentClassHint != null )
+                // {
+                // return contentClasses.get( contentClassHint );
+                // }
+                // else
+                // {
+                // return null;
+                // }
+            }
         }
+
+        return result;
     }
 
     public String getRepositoryDescription( String role, String hint )
