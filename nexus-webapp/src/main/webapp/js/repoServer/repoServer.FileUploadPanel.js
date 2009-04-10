@@ -145,7 +145,7 @@ Sonatype.repoServer.ArtifactUploadPanel = function(config){
                     itemCls: 'required-field',
                     disabled: true,
                     regex: /^(pom.xml)|(.*\.pom)$/i,
-                    regexText: 'POM file name must be pom.xml or extension must end in *.pom'
+                    regexText: 'POM file name must be pom.xml or file extension must be .pom'
                   }
                 ]
               },
