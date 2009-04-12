@@ -128,7 +128,7 @@
     <!-- Shared with nexus-client, hence it is properties'ed -->
     <plexus.restlet.bridge.version>1.8-SNAPSHOT</plexus.restlet.bridge.version>
     <micromailer.version>1.0.2</micromailer.version>
-    <mercury.version>1.0-alpha-5</mercury.version>
+    <mercury.version>1.0-alpha-6</mercury.version>
     <restlet.version>1.1.1-b6</restlet.version>
     <plexus-jetty6.version>1.6</plexus-jetty6.version>
     <plexus-task-scheduler.version>1.1</plexus-task-scheduler.version>
