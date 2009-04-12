@@ -2,13 +2,15 @@ package org.sonatype.nexus.proxy.maven.metadata;
 
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
+import org.apache.maven.mercury.repository.metadata.AddPluginOperation;
 import org.apache.maven.mercury.repository.metadata.Metadata;
 import org.apache.maven.mercury.repository.metadata.MetadataBuilder;
+import org.apache.maven.mercury.repository.metadata.MetadataException;
+import org.apache.maven.mercury.repository.metadata.MetadataOperation;
 import org.apache.maven.mercury.repository.metadata.Plugin;
+import org.apache.maven.mercury.repository.metadata.PluginOperand;
 import org.codehaus.plexus.util.StringUtils;
 
 /**
@@ -42,30 +44,20 @@ public class GroupDirMetadataProcessor
 
     }
     
-    private List<SortablePlugin> sortPlugins( Map<String, Plugin> plugins )
-    {
-        List<SortablePlugin> result = new ArrayList<SortablePlugin>( plugins.size() );
-        
-        for( Plugin plugin : plugins.values())
-        {
-            result.add( new SortablePlugin(plugin) );
-        }
-
-        Collections.sort( result );
-
-        return result;
-    }
 
     private Metadata createMetadata( String path )
+        throws MetadataException
     {
         Metadata md = new Metadata();
 
-        List<SortablePlugin> plugins = sortPlugins( metadataHelper.currentPlugins );
+        List<MetadataOperation> ops = new ArrayList<MetadataOperation>();
 
-        for ( Plugin plugin : plugins )
+        for ( Plugin plugin : metadataHelper.currentPlugins.values() )
         {
-            md.addPlugin( plugin );
+            ops.add( new AddPluginOperation( new PluginOperand( plugin ) ) );
         }
+
+        MetadataBuilder.changeMetadata( md, ops );
 
         return md;
     }
@@ -169,28 +161,5 @@ public class GroupDirMetadataProcessor
         }
 
         return false;
-    }
-    
-    class SortablePlugin
-        extends Plugin
-        implements Comparable<Plugin>
-    {
-        private static final long serialVersionUID = -8433277055194909767L;
-
-        public SortablePlugin( Plugin plugin )
-        {
-            this.setArtifactId( plugin.getArtifactId() );
-
-            this.setPrefix( plugin.getPrefix() );
-
-            this.setName( plugin.getName() );
-
-            this.setModelEncoding( plugin.getModelEncoding() );
-        }
-
-        public int compareTo( Plugin plugin )
-        {
-            return this.getArtifactId().compareTo( plugin.getArtifactId() );
-        }
     }
 }
