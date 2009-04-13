@@ -257,7 +257,7 @@ Ext.extend( Sonatype.repoServer.RepositoryPanel, Sonatype.panels.GridViewer, {
   },
 
   statusCallback : function( options, success, response ) {
-    if ( response.status != 202 ) {
+    if ( !success ) {
       Ext.TaskMgr.stop( this.repoStatusTask );
     }
 
