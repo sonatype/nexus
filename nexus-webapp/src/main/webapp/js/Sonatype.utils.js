@@ -131,7 +131,8 @@ Sonatype.utils = {
             msg: 'Incorrect username, password or no permission to use the Nexus User Interface.<br />Try again.' + serverMessage,
             buttons: Sonatype.MessageBox.OK,
             icon: Sonatype.MessageBox.ERROR,
-            animEl: 'mb3'
+            animEl: 'mb3',
+            fn: this.focusPassword
           } );
         }
       }
@@ -174,7 +175,15 @@ Sonatype.utils = {
       } );
     }
   },
-  
+  /**
+  *  Call this after the error signing in dialog appears. Otherwise focus doesn't get
+  *  put in the password field correctly. 
+  **/
+  focusPassword: function(){
+  	if ( Sonatype.repoServer.RepoServer.loginWindow.isVisible() ) {
+  		Sonatype.repoServer.RepoServer.loginForm.find('name', 'password')[0].focus(true);
+  	}
+  },
   /**
   *  Base64 encode / decode
   *  http://www.webtoolkit.info/
