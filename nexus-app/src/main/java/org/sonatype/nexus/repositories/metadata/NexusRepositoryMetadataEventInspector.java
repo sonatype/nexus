@@ -23,6 +23,7 @@ import org.sonatype.nexus.proxy.maven.MavenRepository;
 import org.sonatype.nexus.proxy.registry.ContentClass;
 import org.sonatype.nexus.proxy.repository.GroupRepository;
 import org.sonatype.nexus.proxy.repository.HostedRepository;
+import org.sonatype.nexus.proxy.repository.LocalStatus;
 import org.sonatype.nexus.proxy.repository.ProxyRepository;
 import org.sonatype.nexus.proxy.repository.Repository;
 import org.sonatype.nexus.repository.metadata.MetadataHandlerException;
@@ -44,7 +45,7 @@ public class NexusRepositoryMetadataEventInspector
 
     @Requirement
     private RepositoryMetadataHandler repositoryMetadataHandler;
-    
+
     @Requirement
     private NexusConfiguration configuration;
 
@@ -62,10 +63,15 @@ public class NexusRepositoryMetadataEventInspector
         {
             Repository repository = revt.getRepository();
 
+            if ( LocalStatus.OUT_OF_SERVICE.equals( repository.getLocalStatus() ) )
+            {
+                return;
+            }
+
             String repositoryUrl = null;
 
             String repositoryLocalUrl = null;
-            
+
             List<RepositoryMirrorMetadata> mirrors = null;
 
             if ( repository.getRepositoryKind().isFacetAvailable( GroupRepository.class ) )
@@ -97,7 +103,7 @@ public class NexusRepositoryMetadataEventInspector
                 // huh? unknown stuff, better to not tamper with it
                 return;
             }
-            
+
             if ( repository.getRepositoryKind().isFacetAvailable( HostedRepository.class ) )
             {
                 mirrors = getMirrors( repository.getId() );
@@ -120,8 +126,8 @@ public class NexusRepositoryMetadataEventInspector
             {
                 List<Repository> members = repository.adaptToFacet( GroupRepository.class ).getMemberRepositories();
 
-                List<RepositoryMemberMetadata> memberMetadatas = new ArrayList<RepositoryMemberMetadata>( members
-                    .size() );
+                List<RepositoryMemberMetadata> memberMetadatas =
+                    new ArrayList<RepositoryMemberMetadata>( members.size() );
 
                 for ( Repository member : members )
                 {
@@ -150,9 +156,8 @@ public class NexusRepositoryMetadataEventInspector
                 // "decorate" the file attrs
                 StorageFileItem file = nrt.getLastWriteFile();
 
-                file.getAttributes().put(
-                    ContentGenerator.CONTENT_GENERATOR_ID,
-                    "NexusRepositoryMetadataContentGenerator" );
+                file.getAttributes().put( ContentGenerator.CONTENT_GENERATOR_ID,
+                                          "NexusRepositoryMetadataContentGenerator" );
 
                 repository.getLocalStorage().updateItemAttributes( repository, file.getItemContext(), file );
             }
@@ -220,25 +225,25 @@ public class NexusRepositoryMetadataEventInspector
         try
         {
             List<RepositoryMirrorMetadata> mirrors = new ArrayList<RepositoryMirrorMetadata>();
-            
+
             CRepository repo = configuration.readRepository( repositoryId );
-            
-            for ( CMirror mirror : ( List<CMirror> ) repo.getMirrors() )
+
+            for ( CMirror mirror : (List<CMirror>) repo.getMirrors() )
             {
                 RepositoryMirrorMetadata md = new RepositoryMirrorMetadata();
                 md.setId( mirror.getId() );
                 md.setUrl( mirror.getUrl() );
-                
+
                 mirrors.add( md );
             }
-            
+
             return mirrors;
         }
         catch ( NoSuchRepositoryException e )
         {
             getLogger().debug( "Repository not found, returning no mirrors" );
         }
-        
+
         return null;
     }
 }
