@@ -45,7 +45,9 @@ import org.sonatype.nexus.integrationtests.nexus167.Nexus167ReleaseToSnapshotTes
 import org.sonatype.nexus.integrationtests.nexus168.Nexus168SnapshotToReleaseTest;
 import org.sonatype.nexus.integrationtests.nexus169.Nexus169ReleaseMetaDataInSnapshotRepoTest;
 import org.sonatype.nexus.integrationtests.nexus1696.Nexus1696ValidateBaseUrl;
+import org.sonatype.nexus.integrationtests.nexus1719.Nexus1719OOSRepoEvictUnusedTaskTest;
 import org.sonatype.nexus.integrationtests.nexus176.Nexus176DeployToInvalidRepoTest;
+import org.sonatype.nexus.integrationtests.nexus1883.Nexus1883OOSRepoExpireTaskTest;
 import org.sonatype.nexus.integrationtests.nexus233.Nexus233PrivilegesCrudXMLTests;
 import org.sonatype.nexus.integrationtests.nexus233.Nexus233PrivilegesValidationTests;
 import org.sonatype.nexus.integrationtests.nexus258.Nexus258ReleaseDeployTest;
@@ -96,6 +98,7 @@ import org.sonatype.nexus.integrationtests.nexus779.Nexus779DeployRssTest;
 import org.sonatype.nexus.integrationtests.nexus782.Nexus782UploadWithClassifier;
 import org.sonatype.nexus.integrationtests.nexus810.Nexus810PackageNamesInNexusConf;
 import org.sonatype.nexus.integrationtests.nexus810.Nexus810PackageNamesInRestMessages;
+import org.sonatype.nexus.integrationtests.nexus836.Nexus836OOSRepoReindexTaskTest;
 import org.sonatype.nexus.integrationtests.nexus947.Nexus947GroupBrowsing;
 import org.sonatype.nexus.integrationtests.nexus950.Nexus950CorruptPomTest;
 import org.sonatype.nexus.integrationtests.nexus969.Nexus969CacheEvictInteractionTest;
@@ -214,7 +217,10 @@ import org.sonatype.nexus.integrationtests.webproxy.nexus1116.Nexus1116InvalidPr
     Nexus1329MirrorOnlyTest.class,
     Nexus1329RetryMirrorTest.class,
     Nexus1329UnavailableTest.class,
-    Nexus1696ValidateBaseUrl.class
+    Nexus1696ValidateBaseUrl.class,
+    Nexus1883OOSRepoExpireTaskTest.class,
+    Nexus1719OOSRepoEvictUnusedTaskTest.class,
+    Nexus836OOSRepoReindexTaskTest.class
 } )
 public class IntegrationTestSuiteClasses
 {
