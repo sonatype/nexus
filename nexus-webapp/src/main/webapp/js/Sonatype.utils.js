@@ -518,6 +518,7 @@ Sonatype.utils = {
               formBind: false,
               scope: this,
               handler: function(){
+                w.hide();
                 w.close();
               }
             }
