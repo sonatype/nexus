@@ -68,10 +68,12 @@ public class GroupDirMetadataProcessor
         {
             return false;
         }
-        if ( path.substring( 1 ).replace( '/', '.' ).equals( metadataHelper.currentGroupId ) )
+
+        if ( ( "/" + metadataHelper.currentGroupId.replace( '.', '/' ) ).equals( path ) )
         {
             return true;
         }
+
         return false;
     }
 
