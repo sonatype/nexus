@@ -194,14 +194,13 @@ Ext.ux.form.BrowseButton = Ext.extend(Ext.Button, {
 		});
 		
 		
-		if (this.debug) {
-			this.clipEl.applyStyles({
-				'background-color': 'green'
-			});
-			this.floatEl.applyStyles({
-				'background-color': 'red'
-			});
-		} else {
+		this.clipEl.applyStyles({
+		  'background-color': 'green'
+		});
+		this.floatEl.applyStyles({
+			'background-color': 'red'
+		});
+		if ( !this.debug ) {
 			this.clipEl.setOpacity(0.0);
 		}
 		
