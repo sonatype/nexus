@@ -151,7 +151,24 @@ Ext.extend( Sonatype.repoServer.AbstractRepositoryEditor, Sonatype.ext.FormPanel
     rec.set( 'repoPolicy', receivedData.repoPolicy );
     rec.commit();
     rec.endEdit();
+  },
+  
+    //@override
+  addSorted : function(store, rec) {
+	var insertIndex = store.getCount();
+	for (var i=0 ; i < store.getCount() ; i++) {
+	  var tempRec = store.getAt(i);
+	  if (tempRec.get('repoType') == 'group') {
+	    continue;
+	  }
+	  if (tempRec.get('name').toLowerCase() > rec.get('name').toLowerCase() ) {
+	  	insertIndex = i;
+	  	break;
+	  }
+	}
+	store.insert( insertIndex, [rec] );
   }
+  
 } );
 
 Sonatype.repoServer.HostedRepositoryEditor = function( config ) {

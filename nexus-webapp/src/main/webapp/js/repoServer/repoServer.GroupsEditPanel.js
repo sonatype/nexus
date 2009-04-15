@@ -209,7 +209,7 @@ Ext.extend( Sonatype.repoServer.RepositoryGroupEditor, Sonatype.ext.FormPanel, {
   //@override
   addSorted : function(store, rec) {
 	var insertIndex;
-	for (var i=0 ; i < store.getTotalCount() ; i++) {
+	for (var i=0 ; i < store.getCount() ; i++) {
 	  var tempRec = store.getAt(i);
 	  if (tempRec.get('repoType') != 'group') {
 	    insertIndex = i;
