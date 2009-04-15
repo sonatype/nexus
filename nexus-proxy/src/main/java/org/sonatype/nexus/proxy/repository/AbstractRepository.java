@@ -1047,7 +1047,7 @@ public abstract class AbstractRepository
      * @param path the path
      * @throws ItemNotFoundException the item not found exception
      */
-    protected void maintainNotFoundCache( String path )
+    public void maintainNotFoundCache( String path )
         throws ItemNotFoundException
     {
         if ( isNotFoundCacheActive() )
