@@ -180,6 +180,15 @@ public interface Repository
     void setNotFoundCache( PathCache notFoundcache );
 
     /**
+     * Maintains NFC.
+     * 
+     * @param path
+     * @throws ItemNotFoundException
+     */
+    void maintainNotFoundCache( String path )
+        throws ItemNotFoundException;
+
+    /**
      * Adds path to NFC.
      * 
      * @param path
@@ -385,41 +394,24 @@ public interface Repository
     // Alternative (and unprotected) Content access
 
     StorageItem retrieveItem( RepositoryItemUid uid, Map<String, Object> context )
-        throws IllegalOperationException,
-            ItemNotFoundException,
-            StorageException;
+        throws IllegalOperationException, ItemNotFoundException, StorageException;
 
     void copyItem( RepositoryItemUid from, RepositoryItemUid to, Map<String, Object> context )
-        throws UnsupportedStorageOperationException,
-            IllegalOperationException,
-            ItemNotFoundException,
-            StorageException;
+        throws UnsupportedStorageOperationException, IllegalOperationException, ItemNotFoundException, StorageException;
 
     void moveItem( RepositoryItemUid from, RepositoryItemUid to, Map<String, Object> context )
-        throws UnsupportedStorageOperationException,
-            IllegalOperationException,
-            ItemNotFoundException,
-            StorageException;
+        throws UnsupportedStorageOperationException, IllegalOperationException, ItemNotFoundException, StorageException;
 
     void deleteItem( RepositoryItemUid uid, Map<String, Object> context )
-        throws UnsupportedStorageOperationException,
-            IllegalOperationException,
-            ItemNotFoundException,
-            StorageException;
+        throws UnsupportedStorageOperationException, IllegalOperationException, ItemNotFoundException, StorageException;
 
     void storeItem( StorageItem item )
-        throws UnsupportedStorageOperationException,
-            IllegalOperationException,
-            StorageException;
+        throws UnsupportedStorageOperationException, IllegalOperationException, StorageException;
 
     Collection<StorageItem> list( RepositoryItemUid uid, Map<String, Object> context )
-        throws IllegalOperationException,
-            ItemNotFoundException,
-            StorageException;
+        throws IllegalOperationException, ItemNotFoundException, StorageException;
 
     Collection<StorageItem> list( StorageCollectionItem item )
-        throws IllegalOperationException,
-            ItemNotFoundException,
-            StorageException;
+        throws IllegalOperationException, ItemNotFoundException, StorageException;
 
 }
