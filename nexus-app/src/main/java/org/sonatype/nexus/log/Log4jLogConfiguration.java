@@ -22,6 +22,7 @@ import java.util.Properties;
 import org.apache.log4j.PropertyConfigurator;
 import org.codehaus.plexus.component.annotations.Component;
 import org.codehaus.plexus.component.annotations.Requirement;
+import org.codehaus.plexus.util.FileUtils;
 
 /**
  * @author juven
@@ -30,6 +31,7 @@ import org.codehaus.plexus.component.annotations.Requirement;
 public class Log4jLogConfiguration
     implements LogConfiguration<Properties>
 {
+    private static final String NEXUS_REMARK = "Log4j configuration created by Sonatype Nexus";
 
     @Requirement
     private LogConfigurationSource<File> logConfigurationSource;
@@ -44,6 +46,20 @@ public class Log4jLogConfiguration
     public Properties getConfig()
     {
         return config;
+    }
+
+    public boolean isUserEdited()
+    {
+        try
+        {
+            String configFile = FileUtils.fileRead( logConfigurationSource.getSource() );
+
+            return !configFile.contains( NEXUS_REMARK );
+        }
+        catch ( IOException e )
+        {
+            return true;
+        }
     }
 
     public void setConfig( Properties config )
@@ -73,7 +89,7 @@ public class Log4jLogConfiguration
 
         try
         {
-            config.store( outputStream, null );
+            config.store( outputStream, NEXUS_REMARK );
         }
         finally
         {

@@ -60,8 +60,8 @@ import org.sonatype.nexus.index.FlatSearchResponse;
 import org.sonatype.nexus.index.IndexerManager;
 import org.sonatype.nexus.index.context.IndexingContext;
 import org.sonatype.nexus.jsecurity.NexusSecurity;
+import org.sonatype.nexus.log.LogConfig;
 import org.sonatype.nexus.log.LogManager;
-import org.sonatype.nexus.log.SimpleLog4jConfig;
 import org.sonatype.nexus.maven.tasks.SnapshotRemovalRequest;
 import org.sonatype.nexus.maven.tasks.SnapshotRemovalResult;
 import org.sonatype.nexus.maven.tasks.SnapshotRemover;
@@ -1878,13 +1878,13 @@ public class DefaultNexus
         return response;
     }
 
-    public SimpleLog4jConfig getLogConfig()
+    public LogConfig getLogConfig()
         throws IOException
     {
         return logManager.getLogConfig();
     }
 
-    public void setLogConfig( SimpleLog4jConfig config )
+    public void setLogConfig( LogConfig config )
         throws IOException
     {
         logManager.setLogConfig( config );
