@@ -87,10 +87,10 @@ Sonatype.repoServer.ArtifactUploadPanel = function(config){
               }
             }
           },
-					{
+          {
             xtype: 'panel',
             id: 'gav-definition-card-panel',
-						header: false,
+            header: false,
             layout: 'card',
             region: 'center',
             activeItem: 0,
@@ -264,13 +264,13 @@ Sonatype.repoServer.ArtifactUploadPanel = function(config){
               var filename = b.uploadPanel.fileInput.getValue();
               var endStr = '.pom';
               if(filename == "pom.xml" || (filename.match(endStr+"$")==endStr)){
-								Ext.Msg.show({
-							  	title:'Error',
-							   	msg: "Select the POM file as part of the GAV Definition.",
-							   	buttons: Ext.Msg.OK,
-							   	icon: Ext.MessageBox.ERROR
-								});
-								return;              
+                Ext.Msg.show({
+                  title:'Error',
+                  msg: "Select the POM file as part of the GAV Definition.",
+                  buttons: Ext.Msg.OK,
+                  icon: Ext.MessageBox.ERROR
+                });
+                return;              
               }
               b.uploadPanel.updateFilename( b.uploadPanel, filename );
             }
@@ -370,20 +370,20 @@ Sonatype.repoServer.ArtifactUploadPanel = function(config){
             frame: false,
             items: [ {} ],
             buttons: [
-           		{
-		            xtype: 'button',
-		            id: 'upload-button',
-		            text: 'Upload Artifact(s)',
-		            handler: this.uploadArtifacts,
-		            scope: this
-		          },
-		          {
-		            xtype: 'button',
-		            id: 'reset-all-button',
-		            text: 'Reset',
-		            handler: this.resetFields,
-		            scope: this
-		          }
+              {
+                xtype: 'button',
+                id: 'upload-button',
+                text: 'Upload Artifact(s)',
+                handler: this.uploadArtifacts,
+                scope: this
+              },
+              {
+                xtype: 'button',
+                id: 'reset-all-button',
+                text: 'Reset',
+                handler: this.resetFields,
+                scope: this
+              }
             ]
           }
         ]
@@ -393,8 +393,8 @@ Sonatype.repoServer.ArtifactUploadPanel = function(config){
 };
 
 Ext.extend(Sonatype.repoServer.ArtifactUploadPanel, Ext.FormPanel, {
-	resetFields : function() {
-	  //reset the artifact panels
+  resetFields : function() {
+    //reset the artifact panels
     var filenameField = this.find('name', 'filenameField')[0];
     var classifierField = this.find('name', 'classifier')[0];
     var extensionField = this.find('name', 'extension')[0];
@@ -420,25 +420,27 @@ Ext.extend(Sonatype.repoServer.ArtifactUploadPanel, Ext.FormPanel, {
     //the pom panel
     var pomField = this.find('name', 'pomnameField')[0];
     pomField.reset();
+  this.pomInput = null;
+  this.fileInput = null;
     
     var desc = this.find('name', 'description')[0];
     if(desc){
-    	desc.reset();
+      desc.reset();
     }
-	},
-	
-	artifactWithClassifierAndExtensionExists : function(classifier, extension){
-		var treePanel = this.find('name', 'artifact-list')[0];
+  },
+  
+  artifactWithClassifierAndExtensionExists : function(classifier, extension){
+    var treePanel = this.find('name', 'artifact-list')[0];
     for ( var i = 0 ; i < treePanel.root.childNodes.length; i++ ){
-    	var currClassifier = treePanel.root.childNodes[i].attributes.payload.classifier;
-    	var currExtension = treePanel.root.childNodes[i].attributes.payload.extension;
-    	if(classifier == currClassifier && extension == currExtension){
-    		return true;
-    	}
+      var currClassifier = treePanel.root.childNodes[i].attributes.payload.classifier;
+      var currExtension = treePanel.root.childNodes[i].attributes.payload.extension;
+      if(classifier == currClassifier && extension == currExtension){
+        return true;
+      }
     }
     return false;
-	},
-	
+  },
+  
   addArtifact : function() {
     var treePanel = this.find('name', 'artifact-list')[0];
     var filenameField = this.find('name', 'filenameField')[0];
@@ -447,13 +449,13 @@ Ext.extend(Sonatype.repoServer.ArtifactUploadPanel, Ext.FormPanel, {
     var classifier = classifierField.getValue();
     var extension = extensionField.getValue();
     if(this.artifactWithClassifierAndExtensionExists(classifier, extension) ){
-	    Ext.Msg.show({
-		  	title:'Classifier and Extension Taken',
-		   	msg: "Every artifact must have a unique classifier and extension. The specified classifier and extension is already taken.",
-		   	buttons: Ext.Msg.OK,
-		   	icon: Ext.MessageBox.WARNING
-			});
-			return;    
+      Ext.Msg.show({
+        title:'Classifier and Extension Taken',
+        msg: "Every artifact must have a unique classifier and extension. The specified classifier and extension is already taken.",
+        buttons: Ext.Msg.OK,
+        icon: Ext.MessageBox.WARNING
+      });
+      return;    
     }
     var extension = extensionField.getValue();
     var nodeText = filenameField.getValue();
@@ -675,23 +677,29 @@ Ext.extend(Sonatype.repoServer.ArtifactUploadPanel, Ext.FormPanel, {
   },
   doUpload: function() {
    var treePanel = this.find('name', 'artifact-list')[0];
-  	if(treePanel.root.childNodes == null || treePanel.root.childNodes.length == 0){
+   var hasArtifacts = treePanel.root.childNodes != null && treePanel.root.childNodes.length > 0;
+    if(this.pomInput == null && !hasArtifacts ){
       Sonatype.MessageBox.show({
         title: 'No Artifacts Selected',
-        msg: 'The Artifacts list must contain at least one artifact to upload.',
+        msg: 'The Artifacts list must contain at least one artifact to upload (or a POM file must be selected).',
         buttons: Sonatype.MessageBox.OK,
         icon: Sonatype.MessageBox.ERROR
       });
-  		return;
-  	}
+      return;
+    }
     Sonatype.MessageBox.wait( 'Uploading...' );
     
+  if (hasArtifacts){
     for ( var i = 0 ; i < treePanel.root.childNodes.length; i++ ){
       this.createUploadForm( treePanel.root.childNodes[i].attributes.payload.fileInput,
           treePanel.root.childNodes[i].attributes.payload.classifier,
           treePanel.root.childNodes[i].attributes.payload.extension,
           i == treePanel.root.childNodes.length - 1 );
     }
+  }
+  else if (this.pomInput != null) {
+    this.createUploadForm( null, null, null, true );
+  }
   },
   createUploadForm: function( fileInput, classifier, extension, lastItem ) {
     var repoId = this.payload.id;
@@ -777,7 +785,9 @@ Ext.extend(Sonatype.repoServer.ArtifactUploadPanel, Ext.FormPanel, {
     if ( pomMode ) {
       this.pomInput.appendTo( tmpForm );
     }
-    fileInput.appendTo( tmpForm );
+  if ( fileInput ) {
+      fileInput.appendTo( tmpForm );
+  }
     
     Ext.Ajax.request({
       url: Sonatype.config.repos.urls.upload,
@@ -796,6 +806,7 @@ Ext.extend(Sonatype.repoServer.ArtifactUploadPanel, Ext.FormPanel, {
               buttons: Sonatype.MessageBox.OK,
               icon: Sonatype.MessageBox.INFO
             });
+      this.resetFields();
           }
         }
         else {
