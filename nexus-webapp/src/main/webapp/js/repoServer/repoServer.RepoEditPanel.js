@@ -1040,7 +1040,9 @@ Sonatype.repoServer.VirtualRepositoryEditor = function( config ) {
     id: 'id',
     fields: [
       { name: 'id' },
-      { name: 'name', sortType: Ext.data.SortTypes.asUCString }
+      { name: 'name', sortType: Ext.data.SortTypes.asUCString },
+      { name: 'format'},
+      { name: 'repoType'}
     ],
     sortInfo: { field: 'name', direction: 'asc' },
     url: Sonatype.config.repos.urls.repositories,
@@ -1144,7 +1146,9 @@ Sonatype.repoServer.VirtualRepositoryEditor = function( config ) {
         triggerAction: 'all',
         emptyText: 'Select...',
         selectOnFocus: true,
-        allowBlank: false
+        allowBlank: false,
+        // this config can solve the problem of 'filter is not applied the first time'
+        lastQuery: ''
       },
       {
         xtype: 'combo',
@@ -1168,6 +1172,32 @@ Sonatype.repoServer.VirtualRepositoryEditor = function( config ) {
 };
 
 Ext.extend( Sonatype.repoServer.VirtualRepositoryEditor, Sonatype.repoServer.AbstractRepositoryEditor, {
+	
+	afterProviderSelectHandler: function( combo, rec, index ) {
+		var provider = rec.data.provider;
+		var sourceRepoCombo = this.form.findField('shadowOf');
+		sourceRepoCombo.focus();
+		if ( provider == 'm1-m2-shadow'){
+			sourceRepoCombo.store.filterBy( 
+				function fn(rec, id){
+					if ( rec.data.repoType != 'virtual' && rec.data.format == 'maven1'){
+						return true;
+					}
+					return false;
+				}
+			);
+		}
+		else if ( provider == 'm2-m1-shadow'){
+			sourceRepoCombo.store.filterBy( 
+				function fn(rec, id){
+					if ( rec.data.repoType != 'virtual' && rec.data.format == 'maven2'){
+						return true;
+					}
+					return false;
+				}
+			);
+		}
+	}
 } );
 
 Sonatype.Events.addListener( 'repositoryViewInit', function( cardPanel, rec ) {
