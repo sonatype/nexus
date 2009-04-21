@@ -18,7 +18,7 @@ public abstract class AbstractPropertyDescriptor
 {
     private String helpText;
     private boolean required;
-    
+
     public String getHelpText()
     {
         return helpText;
@@ -37,5 +37,10 @@ public abstract class AbstractPropertyDescriptor
     public void setRequired( boolean required )
     {
         this.required = required;
+    }
+
+    public String getRegexValidation()
+    {
+        return null;
     }
 }

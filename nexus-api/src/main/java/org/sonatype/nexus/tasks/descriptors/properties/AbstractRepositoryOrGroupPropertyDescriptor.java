@@ -20,4 +20,11 @@ public abstract class AbstractRepositoryOrGroupPropertyDescriptor
     {
         return "repo-or-group";
     }
+
+    @Override
+    public final String getRegexValidation()
+    {
+        return null;
+    }
+
 }

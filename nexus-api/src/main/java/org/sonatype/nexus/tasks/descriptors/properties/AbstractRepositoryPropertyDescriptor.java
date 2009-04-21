@@ -20,4 +20,11 @@ public abstract class AbstractRepositoryPropertyDescriptor
     {
         return "repo";
     }
+
+    @Override
+    public final String getRegexValidation()
+    {
+        return null;
+    }
+
 }

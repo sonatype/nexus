@@ -20,4 +20,10 @@ public abstract class AbstractBooleanPropertyDescriptor
     {
         return "boolean";
     }
+
+    @Override
+    public final String getRegexValidation()
+    {
+        return null;
+    }
 }
