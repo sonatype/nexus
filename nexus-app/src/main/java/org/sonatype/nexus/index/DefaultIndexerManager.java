@@ -29,7 +29,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -717,34 +716,6 @@ public class DefaultIndexerManager
                 }
             }
         } );
-        
-        // Get the local properties file and add to update request
-        if ( repository.getRepositoryKind().isFacetAvailable( ProxyRepository.class ) )
-        {
-            ProxyRepository proxy = repository.adaptToFacet( ProxyRepository.class );
-            
-            try
-            {
-                StorageFileItem item = ( StorageFileItem ) proxy.getLocalStorage().retrieveItem( proxy, new HashMap<String, Object>(), "/.index/" + IndexingContext.INDEX_FILE + ".properties" );
-                
-                InputStream is = item.getInputStream();
-                
-                try
-                {
-                    Properties props = new Properties();
-                    props.load( is );
-                    updateRequest.setLocalProperties( props );
-                }
-                finally
-                {
-                    is.close();
-                }
-            }
-            catch ( Exception e )
-            {
-                getLogger().debug( "Local index.properties file not found." );
-            }
-        }
 
         Date contextTimestamp = indexUpdater.fetchAndUpdateIndex( updateRequest );
 
