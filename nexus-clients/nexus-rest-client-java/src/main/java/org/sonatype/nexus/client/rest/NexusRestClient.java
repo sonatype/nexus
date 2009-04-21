@@ -16,6 +16,8 @@ package org.sonatype.nexus.client.rest;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Handler;
+import java.util.logging.LogManager;
 
 import org.apache.log4j.Logger;
 import org.codehaus.plexus.component.annotations.Component;
@@ -31,7 +33,7 @@ import org.sonatype.nexus.rest.model.RepositoryResourceResponse;
 import org.sonatype.nexus.rest.model.SearchResponse;
 import org.sonatype.nexus.rest.model.StatusResourceResponse;
 
-@Component(role=NexusClient.class, instantiationStrategy="per-lookup")
+@Component( role = NexusClient.class, instantiationStrategy = "per-lookup" )
 public class NexusRestClient
     implements NexusClient
 {
@@ -45,6 +47,19 @@ public class NexusRestClient
     private Logger logger = Logger.getLogger( getClass() );
 
     public static final String WAIT_FOR_START_TIMEOUT_KEY = "nexus.client.started.timeout";
+
+    public NexusRestClient()
+    {
+        // kill all JUL
+        java.util.logging.Logger julLogger = LogManager.getLogManager().getLogger( "" );
+
+        Handler[] handlers = julLogger.getHandlers();
+
+        for ( Handler handler : handlers )
+        {
+            julLogger.removeHandler( handler );
+        }
+    }
 
     public void connect( String baseUrl, String username, String password )
     {
@@ -308,7 +323,7 @@ public class NexusRestClient
 
     /**
      * Used to add meaningful exceptions.
-     * 
+     *
      * @throws NexusClientException
      */
     @SuppressWarnings( "unchecked" )

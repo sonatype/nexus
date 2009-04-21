@@ -66,7 +66,7 @@ public class Nexus652Beta5To10UpgradeTest
 
         Assert.assertEquals( "http proxy:", true, nexusConfig.getHttpProxy().isEnabled() );
 
-        Assert.assertEquals( "Base url:", TestProperties.getString( "nexus.base.url" ),
+        Assert.assertEquals( "Base url:", AbstractNexusIntegrationTest.baseNexusUrl,
                              nexusConfig.getRestApi().getBaseUrl() );
 
         // we will glance over the repos, because the unit tests cover this.

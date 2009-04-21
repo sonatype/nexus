@@ -38,7 +38,7 @@ public class Nexus412RemoteLeakTest
     private RepositoryStatusConverter repositoryStatusConverter;
 
     @Before
-    protected void prepare()
+    public void prepare()
         throws Exception
     {
         repositoryStatusConverter = (RepositoryStatusConverter) getContainer().lookup( RepositoryStatusConverter.class );
