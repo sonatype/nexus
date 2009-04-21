@@ -29,7 +29,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -39,6 +38,7 @@ import org.codehaus.plexus.component.annotations.Requirement;
 import org.codehaus.plexus.logging.AbstractLogEnabled;
 import org.codehaus.plexus.util.FileUtils;
 import org.codehaus.plexus.util.IOUtil;
+import org.codehaus.plexus.util.io.RawInputStreamFacade;
 import org.sonatype.nexus.configuration.application.NexusConfiguration;
 import org.sonatype.nexus.configuration.model.CRepository;
 import org.sonatype.nexus.index.context.IndexingContext;
@@ -51,6 +51,7 @@ import org.sonatype.nexus.proxy.IllegalOperationException;
 import org.sonatype.nexus.proxy.ItemNotFoundException;
 import org.sonatype.nexus.proxy.NoSuchRepositoryException;
 import org.sonatype.nexus.proxy.RemoteAccessException;
+import org.sonatype.nexus.proxy.ResourceStoreRequest;
 import org.sonatype.nexus.proxy.item.DefaultStorageFileItem;
 import org.sonatype.nexus.proxy.item.PreparedContentLocator;
 import org.sonatype.nexus.proxy.item.RepositoryItemUid;
@@ -467,7 +468,7 @@ public class DefaultIndexerManager
 
             synchronized ( context )
             {
-                nexusIndexer.scan( context );
+                nexusIndexer.scan( context, true );
 
                 if ( repository.getRepositoryKind().isFacetAvailable( ProxyRepository.class ) )
                 {
@@ -717,34 +718,6 @@ public class DefaultIndexerManager
                 }
             }
         } );
-        
-        // Get the local properties file and add to update request
-        if ( repository.getRepositoryKind().isFacetAvailable( ProxyRepository.class ) )
-        {
-            ProxyRepository proxy = repository.adaptToFacet( ProxyRepository.class );
-            
-            try
-            {
-                StorageFileItem item = ( StorageFileItem ) proxy.getLocalStorage().retrieveItem( proxy, new HashMap<String, Object>(), "/.index/" + IndexingContext.INDEX_FILE + ".properties" );
-                
-                InputStream is = item.getInputStream();
-                
-                try
-                {
-                    Properties props = new Properties();
-                    props.load( is );
-                    updateRequest.setLocalProperties( props );
-                }
-                finally
-                {
-                    is.close();
-                }
-            }
-            catch ( Exception e )
-            {
-                getLogger().debug( "Local index.properties file not found." );
-            }
-        }
 
         Date contextTimestamp = indexUpdater.fetchAndUpdateIndex( updateRequest );
 
@@ -892,6 +865,10 @@ public class DefaultIndexerManager
                     }
                     else
                     {
+                        // copy the current properties file to the temp directory, this is what the indexer uses to decide
+                        // if chunks are necessary, and what to label it as
+                        copyIndexPropertiesToTempDir( repository, targetDir );
+                        
                         IndexPackingRequest packReq = new IndexPackingRequest( context, targetDir );
 
                         packReq.setCreateIncrementalChunks( true );
@@ -959,6 +936,10 @@ public class DefaultIndexerManager
                     {
                         getLogger().debug( "Packing the merged index context." );
                     }
+                    
+                    // copy the current properties file to the temp directory, this is what the indexer uses to decide
+                    // if chunks are necessary, and what to label it as
+                    copyIndexPropertiesToTempDir( groupRepository, targetDir );
 
                     IndexPackingRequest packReq = new IndexPackingRequest( context, targetDir );
 
@@ -987,6 +968,38 @@ public class DefaultIndexerManager
                     }
 
                     FileUtils.deleteDirectory( targetDir );
+                }
+            }
+        }
+    }
+    
+    private void copyIndexPropertiesToTempDir( Repository repository, File tempDir )
+    {
+        ResourceStoreRequest req = new ResourceStoreRequest( "/.index/" + IndexingContext.INDEX_FILE + ".properties", true );
+        InputStream is = null;
+        try
+        {
+            StorageFileItem item = ( StorageFileItem ) repository.retrieveItem( req );
+            
+            is = item.getInputStream();
+            
+            FileUtils.copyStreamToFile( new RawInputStreamFacade( is ), new File( tempDir, IndexingContext.INDEX_FILE + ".properties" ) );
+        }
+        catch ( Exception e )
+        {
+            getLogger().debug( "Unable to copy index properties file, continuing without it", e );
+        }   
+        finally
+        {
+            if ( is != null )
+            {
+                try
+                {
+                    is.close();
+                }
+                catch ( IOException e )
+                {
+                    getLogger().debug( "Unable to close file handle!!", e );
                 }
             }
         }

@@ -119,6 +119,7 @@ public class TaskScheduleUtil
             List<ScheduledServiceListResource> tasks = getTasks();
 
             int brokenCount = 0;
+            int submittedCount = 0;
 
             for ( ScheduledServiceListResource task : tasks )
             {
@@ -126,9 +127,14 @@ public class TaskScheduleUtil
                 {
                     brokenCount++;
                 }
+                
+                if ( "SUBMITTED".equals( task.getStatus() ) )
+                {
+                    submittedCount++;
+                }
             }
 
-            if ( tasks.size() - brokenCount == 0 )
+            if ( tasks.size() - brokenCount - submittedCount == 0 )
             {
                 return;
             }
