@@ -450,7 +450,7 @@ public class AbstractNexusIntegrationTest
     protected void copyConfigFile( String configFile, String path )
         throws IOException
     {
-        this.copyConfigFile( configFile, new HashMap<String, String>(), path );
+        this.copyConfigFile( configFile, TestProperties.getAll(), path );
     }
 
     protected void copyConfigFile( String configFile, Map<String, String> variables, String path )
