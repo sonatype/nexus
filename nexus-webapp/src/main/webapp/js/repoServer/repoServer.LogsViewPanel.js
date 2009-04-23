@@ -169,7 +169,7 @@ Sonatype.repoServer.LogsViewPanel = function(config){
         tooltip: {text:'Reloads the current document'},
         icon: Sonatype.config.resourcePath + '/images/icons/arrow_refresh.png',
         cls: 'x-btn-text-icon',
-        handler: this.reloadLogFile,
+        handler: this.reloadAllFiles,
         scope: this
       },
       {
@@ -369,8 +369,12 @@ Ext.extend(Sonatype.repoServer.LogsViewPanel, Ext.form.FormPanel, {
 	  
   },
   
-  //gets the log file specified by this.currentLogUrl
-  reloadLogFile : function(){
+  //reload log and config file list
+  //reload the log file specified by this.currentLogUrl
+  reloadAllFiles : function(){
+  	this.updateLogFileList();
+    this.updateConfigFileList();
+    
     this.currentSize = 0;
     this.currentOffset = 0;
     this.tailed = this.tailEnabled;
