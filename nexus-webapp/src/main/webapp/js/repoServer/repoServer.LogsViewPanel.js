@@ -225,7 +225,8 @@ Sonatype.repoServer.LogsViewPanel = function(config){
         readOnly: true,
         hideLabel: true,
         anchor: '100% 100%',
-        emptyText: 'Select a document to view'
+        emptyText: 'Select a document to view',
+        style: 'font-family: monospace'
       }
     ]
   });
@@ -239,12 +240,15 @@ Ext.extend(Sonatype.repoServer.LogsViewPanel, Ext.form.FormPanel, {
     if (success){
       var resp = Ext.decode(response.responseText);
       var myMenu = Ext.menu.MenuMgr.get('log-menu');
-
-      for (var i=0; i< resp.data.length; i++) {
-        var name = resp.data[i].name;
-        var size = resp.data[i].size;
+      
+      var list = resp.data;
+      this.sortFileListByName(list);
+      
+      for (var i=0; i< list.length; i++) {
+        var name = list[i].name;
+        var size = list[i].size;
         var text = name + ' (' + this.printKb(size) + ')';
-        var uri = resp.data[i].resourceURI;
+        var uri = list[i].resourceURI;
 
         var existingItem = myMenu.items.find( function( o ) {
           return o.logUri == uri;
@@ -297,16 +301,23 @@ Ext.extend(Sonatype.repoServer.LogsViewPanel, Ext.form.FormPanel, {
       var resp = Ext.decode(response.responseText);
       var myMenu = Ext.menu.MenuMgr.get('log-menu');
       
-      for ( var i=0; i<resp.data.length; i++){
-      	var name = resp.data[i].name;
-      	var uri = resp.data[i].resourceURI;
+      if ( resp.data.length > 0 ){
+    	  myMenu.add('-');
+      }
+      
+      var list = resp.data;
+      this.sortFileListByName(list);
+      
+      for ( var i=0; i<list.length; i++){
+      	var name = list[i].name;
+      	var uri = list[i].resourceURI;
       	
       	var existingItem = myMenu.items.find( function( o ) {
           return o.logUri == uri;
         } );
         
         if ( !existingItem ){
-        	  myMenu.addMenuItem({
+          myMenu.addMenuItem({
             id: name,
             logUri: uri, 
             text: name,
@@ -534,5 +545,22 @@ Ext.extend(Sonatype.repoServer.LogsViewPanel, Ext.form.FormPanel, {
       Ext.TaskMgr.stop( this.tailUpdateTask );
       this.tailUpdateTask.started = false;
     }
+  },
+  
+  sortFileListByName: function(list) {
+  	list.sort( function(a,b) {
+  		var valueA = a.name.toLowerCase();
+		var valueB = b.name.toLowerCase();
+		if ( valueA < valueB ) {
+			return -1;
+		}
+		else if ( valueA == valueB ) {
+			return 0;
+		}
+		else {
+			return 1;
+		}
+ 	 });
   }
+  
 });
