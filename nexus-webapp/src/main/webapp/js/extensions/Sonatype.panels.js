@@ -124,6 +124,7 @@ Sonatype.panels.GridViewer = function( config ) {
   var defaultConfig = {
     dataAutoLoad: true,
     dataId: 'resourceURI',
+    dataBookmark: 'id',
     dataRoot: 'data',
     dataSortInfo: { field: 'name', direction: 'asc' },
     titleColumn: 'name',
@@ -292,6 +293,19 @@ Ext.extend( Sonatype.panels.GridViewer, Ext.Panel, {
     else {
       handler( item, e );
     }
+  },
+  
+  applyBookmark: function( bookmark ) {
+    if ( this.dataStore.lastOptions == null ) {
+      this.dataStore.on( 'load', 
+        function( store, recs, options ) {
+          this.selectBookmarkedItem( bookmark );
+        },
+        this,
+        { single: true } 
+      );
+    }
+    else this.selectBookmarkedItem( bookmark );
   },
   
   cancelHandler: function( panel ) {
@@ -493,6 +507,11 @@ Ext.extend( Sonatype.panels.GridViewer, Ext.Panel, {
       }
     }
   },
+
+  getBookmark: function() {
+    var rec = this.gridPanel.getSelectionModel().getSelected();
+    return rec ? rec.data[this.dataBookmark] : null;
+  },
   
   recordAddHandler: function( store, recs, index ) {
     if ( recs.length == 1 && recs[0].autoCreateNewRecord && recs[0].id.substring( 0, 4 ) != 'new_' ) {
@@ -586,16 +605,26 @@ Ext.extend( Sonatype.panels.GridViewer, Ext.Panel, {
     	if ( this.showRecordContextMenu(rec) ){
     		rec.beginEdit();
     		rec.set('showCtx', true);
-			rec.commit();
-			rec.endEdit();
+        rec.commit();
+        rec.endEdit();
     	}
     	else{
     		rec.beginEdit();
     		rec.set('showCtx', false);
-			rec.commit();
-			rec.endEdit();    		
+        rec.commit();
+        rec.endEdit();    		
     	}
-        this.createChildPanel( rec );
+      this.createChildPanel( rec );
+      Ext.History.add( this.id + Sonatype.view.HISTORY_DELIMITER + rec.data[this.dataBookmark] );
+    }
+  },
+
+  selectBookmarkedItem: function( bookmark ) {
+    var recIndex = this.dataStore.findBy( function( rec, id ) {
+      return rec.data[this.dataBookmark] == bookmark;
+    }, this );
+    if ( recIndex >= 0 ) {
+      this.gridPanel.getSelectionModel().selectRecords( [this.dataStore.getAt( recIndex )] );
     }
   },
   
@@ -604,7 +633,6 @@ Ext.extend( Sonatype.panels.GridViewer, Ext.Panel, {
   showRecordContextMenu: function(rec) {
   	return true;	
   }
-  
 } );
 
 Sonatype.panels.TreePanel = function( config ) {

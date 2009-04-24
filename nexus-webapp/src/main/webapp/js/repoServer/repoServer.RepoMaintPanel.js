@@ -206,6 +206,20 @@ Sonatype.repoServer.RepositoryPanel = function( config ) {
 };
 
 Ext.extend( Sonatype.repoServer.RepositoryPanel, Sonatype.panels.GridViewer, {
+  
+  applyBookmark: function( bookmark ) {
+    if ( this.groupStore.lastOptions == null ) {
+      this.groupStore.on( 'load', 
+        function( store, recs, options ) {
+          this.selectBookmarkedItem( bookmark );
+        },
+        this,
+        { single: true } 
+      );
+    }
+    else this.selectBookmarkedItem( bookmark );
+  },
+
   deleteTrashHandler: function( button, e ) {
     Sonatype.utils.defaultToNo();
     
@@ -257,7 +271,7 @@ Ext.extend( Sonatype.repoServer.RepositoryPanel, Sonatype.panels.GridViewer, {
   },
 
   statusCallback : function( options, success, response ) {
-    if ( !success ) {
+    if ( response.status != 202 ) {
       Ext.TaskMgr.stop( this.repoStatusTask );
     }
 
@@ -313,7 +327,6 @@ Ext.extend( Sonatype.repoServer.RepositoryPanel, Sonatype.panels.GridViewer, {
   showRecordContextMenu: function(rec) {
   	return rec.data.exposed;
   }
-  
 } );
 
 Sonatype.repoServer.RepositoryBrowsePanel = function( config ) {
@@ -647,7 +660,6 @@ Ext.extend( Sonatype.repoServer.RepositoryBrowsePanel, Ext.tree.TreePanel, {
       node.setText( node.text + ' (Access Denied)' );
     }
   }
-  
 } );
 
 Sonatype.Events.addListener( 'repositoryViewInit', function( cardPanel, rec ) {
