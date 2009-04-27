@@ -38,8 +38,6 @@ import org.sonatype.nexus.proxy.events.RepositoryEventRecreateMavenMetadata;
 import org.sonatype.nexus.proxy.item.AbstractStorageItem;
 import org.sonatype.nexus.proxy.item.DefaultStorageFileItem;
 import org.sonatype.nexus.proxy.item.RepositoryItemUid;
-import org.sonatype.nexus.proxy.item.StorageCollectionItem;
-import org.sonatype.nexus.proxy.item.StorageFileItem;
 import org.sonatype.nexus.proxy.item.StorageItem;
 import org.sonatype.nexus.proxy.maven.EvictUnusedMavenItemsWalkerProcessor.EvictUnusedMavenItemsWalkerFilter;
 import org.sonatype.nexus.proxy.repository.DefaultRepository;
@@ -50,7 +48,6 @@ import org.sonatype.nexus.proxy.repository.Repository;
 import org.sonatype.nexus.proxy.repository.RepositoryKind;
 import org.sonatype.nexus.proxy.storage.UnsupportedStorageOperationException;
 import org.sonatype.nexus.proxy.walker.DefaultWalkerContext;
-import org.sonatype.nexus.util.ItemPathUtils;
 
 /**
  * The abstract (layout unaware) Maven Repository.
@@ -629,35 +626,4 @@ public abstract class AbstractMavenRepository
         }
     }
 
-    public void deleteItem( ResourceStoreRequest request )
-        throws UnsupportedStorageOperationException,
-            IllegalOperationException,
-            ItemNotFoundException,
-            StorageException,
-            AccessDeniedException
-    {
-        RepositoryItemUid uid = createUid( request.getRequestPath() );
-
-        Map<String, Object> context = request.getRequestContext();
-
-        // first determine from where to rebuild metadata
-        String path = RepositoryItemUid.PATH_ROOT;
-
-        StorageItem item = this.retrieveItem( uid, context );
-
-        if ( item instanceof StorageCollectionItem )
-        {
-            path = ItemPathUtils.getParentPath( item.getPath() );
-        }
-        else if ( item instanceof StorageFileItem )
-        {
-            path = ItemPathUtils.getParentPath( ItemPathUtils.getParentPath( item.getPath() ) );
-        }
-
-        // then delete the item
-        super.deleteItem( request );
-
-        // finally rebuild metadata
-        recreateMavenMetadata( path );
-    }
 }
