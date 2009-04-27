@@ -1868,8 +1868,16 @@ public class DefaultNexus
 
         response.setName( key );
 
-        response.setMimeType( "text/xml" );
-
+        String fileName = nexusConfiguration.getConfigurationFiles().get( key );
+        
+        if ( fileName.endsWith( ".xml" ))
+        {
+            response.setMimeType( "text/xml" );
+        }
+        else 
+        {
+            response.setMimeType( "text/plain" );
+        }
         // TODO:
         response.setSize( 0 );
 
