@@ -20,7 +20,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.lucene.index.IndexFileNameFilter;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.VelocityEngine;
 import org.apache.velocity.exception.MethodInvocationException;
@@ -120,8 +119,6 @@ public class IndexTemplatePlexusResource
         templatingContext.put( "nexusVersion", nexus.getSystemStatus().getVersion() );
 
         templatingContext.put( "nexusRoot", request.getRootRef().toString() );
-
-        templatingContext.put( "nexusHost", request.getHostRef().getHostDomain() );
 
         VelocityRepresentation templateRepresentation = new VelocityRepresentation(
             context,
