@@ -615,7 +615,11 @@ Ext.extend( Sonatype.panels.GridViewer, Ext.Panel, {
         rec.endEdit();    		
     	}
       this.createChildPanel( rec );
-      Ext.History.add( this.id + Sonatype.view.HISTORY_DELIMITER + rec.data[this.dataBookmark] );
+      
+      var bookmark = rec.data[this.dataBookmark];
+      if ( bookmark ) {
+        Ext.History.add( this.id + Sonatype.view.HISTORY_DELIMITER + bookmark );
+      }
     }
   },
 
@@ -623,8 +627,12 @@ Ext.extend( Sonatype.panels.GridViewer, Ext.Panel, {
     var recIndex = this.dataStore.findBy( function( rec, id ) {
       return rec.data[this.dataBookmark] == bookmark;
     }, this );
+    
     if ( recIndex >= 0 ) {
-      this.gridPanel.getSelectionModel().selectRecords( [this.dataStore.getAt( recIndex )] );
+      var selModel = this.gridPanel.getSelectionModel();
+      var oldSelection = selModel.getSelected();
+      var newSelection = this.dataStore.getAt( recIndex );
+      if ( oldSelection != newSelection ) selModel.selectRecords( [newSelection] );
     }
   },
   
