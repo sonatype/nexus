@@ -79,25 +79,43 @@ public class RepositoryGroupPlexusResource
         throws ResourceException
     {
         RepositoryGroupResourceResponse result = new RepositoryGroupResourceResponse();
+
+        CRepositoryGroup group = null;
+
+        GroupRepository groupRepo = null;
+
+        RepositoryGroupResource resource = new RepositoryGroupResource();
+
         try
         {
-            CRepositoryGroup group = getNexus().readRepositoryGroup( getGroupId( request ) );
+            group = getNexus().readRepositoryGroup( getGroupId( request ) );
 
-            GroupRepository groupRepo = getNexus()
-                .getRepositoryWithFacet( getGroupId( request ), GroupRepository.class );
+            groupRepo = getNexus().getRepositoryWithFacet( getGroupId( request ), GroupRepository.class );
+        }
+        catch ( NoSuchRepositoryException e )
+        {
+            getLogger().warn( "Repository Group not found, id=" + getGroupId( request ) );
 
-            RepositoryGroupResource resource = new RepositoryGroupResource();
+            if ( getLogger().isDebugEnabled() )
+            {
+                getLogger().debug( "Cause by: ", e );
+            }
 
-            resource.setId( group.getGroupId() );
+            throw new ResourceException( Status.CLIENT_ERROR_NOT_FOUND, "Repository Group Not Found" );
+        }
 
-            resource.setName( group.getName() );
+        resource.setId( group.getGroupId() );
 
-            resource.setProvider( group.getType() );
+        resource.setName( group.getName() );
 
-            resource.setRepoType( AbstractRepositoryPlexusResource.REPO_TYPE_GROUP );
+        resource.setProvider( group.getType() );
 
-            resource.setFormat( groupRepo.getRepositoryContentClass().getId() );
+        resource.setRepoType( AbstractRepositoryPlexusResource.REPO_TYPE_GROUP );
 
+        resource.setFormat( groupRepo.getRepositoryContentClass().getId() );
+
+        try
+        {
             // just to trigger list creation, and not stay null coz of XStream serialization
             resource.getRepositories();
 

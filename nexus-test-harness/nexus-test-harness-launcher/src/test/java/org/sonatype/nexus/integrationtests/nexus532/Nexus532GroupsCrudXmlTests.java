@@ -25,6 +25,7 @@ import org.restlet.data.Method;
 import org.restlet.data.Response;
 import org.sonatype.nexus.configuration.model.CRepositoryGroup;
 import org.sonatype.nexus.integrationtests.AbstractNexusIntegrationTest;
+import org.sonatype.nexus.integrationtests.RequestFacade;
 import org.sonatype.nexus.rest.model.RepositoryGroupListResource;
 import org.sonatype.nexus.rest.model.RepositoryGroupMemberRepository;
 import org.sonatype.nexus.rest.model.RepositoryGroupResource;
@@ -63,6 +64,17 @@ public class Nexus532GroupsCrudXmlTests extends AbstractNexusIntegrationTest
 
         // this also validates
         this.messageUtil.createGroup( resource );
+    }
+    
+    @Test
+    public void notFoundTest()
+        throws Exception
+    {
+        String groupId = "nonexisted-group-from-mars";
+
+        Response response = RequestFacade.doGetRequest( GroupMessageUtil.SERVICE_PART + "/" + groupId );
+
+        Assert.assertEquals( 404, response.getStatus().getCode());
     }
 
     @Test
