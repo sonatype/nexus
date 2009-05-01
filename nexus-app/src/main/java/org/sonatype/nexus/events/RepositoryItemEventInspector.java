@@ -110,6 +110,10 @@ public class RepositoryItemEventInspector
                 {
                     nae.setAction( NexusArtifactEvent.ACTION_DELETED );
                 }
+                else if ( ievt instanceof RepositoryItemEventRetrieve )
+                {
+                    nae.setAction( NexusArtifactEvent.ACTION_RETRIEVED );
+                }
                 else
                 {
                     return;
