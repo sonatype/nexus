@@ -170,7 +170,7 @@ public class ReindexTest
             directory,
             null,
             null,
-            NexusIndexer.FULL_INDEX );
+            FULL_CREATORS );
 
         // shifting if needed (very crude way to do it, but heh)
         shiftContextInTime( ctx, shiftDays );
