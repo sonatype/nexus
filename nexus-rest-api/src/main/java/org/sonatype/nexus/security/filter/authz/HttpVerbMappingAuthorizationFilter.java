@@ -23,12 +23,17 @@ import javax.servlet.http.HttpServletRequest;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.codehaus.plexus.PlexusConstants;
+import org.codehaus.plexus.PlexusContainer;
+import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.jsecurity.subject.Subject;
 import org.jsecurity.web.filter.authz.PermissionsAuthorizationFilter;
 import org.sonatype.nexus.Nexus;
 import org.sonatype.nexus.feeds.AuthcAuthzEvent;
 import org.sonatype.nexus.feeds.FeedRecorder;
+import org.sonatype.nexus.proxy.access.AccessManager;
 import org.sonatype.nexus.proxy.access.Action;
+import org.sonatype.nexus.rest.RemoteIPFinder;
 import org.sonatype.nexus.security.filter.NexusJSecurityFilter;
 
 /**
@@ -42,6 +47,8 @@ public class HttpVerbMappingAuthorizationFilter
     private final Log logger = LogFactory.getLog( this.getClass() );
 
     private AuthcAuthzEvent currentAuthzEvt;
+    
+    private RemoteIPFinder ipFinder;
 
     private Map<String, String> mapping = new HashMap<String, String>();
     {
@@ -60,6 +67,11 @@ public class HttpVerbMappingAuthorizationFilter
     protected Nexus getNexus()
     {
         return (Nexus) getAttribute( Nexus.class.getName() );
+    }
+    
+    protected PlexusContainer getPlexusContainer()
+    {
+        return (PlexusContainer) getAttribute( PlexusConstants.PLEXUS_KEY );
     }
 
     protected Action getActionFromHttpVerb( String method )
@@ -166,10 +178,42 @@ public class HttpVerbMappingAuthorizationFilter
         getLogger().info( msg );
 
         AuthcAuthzEvent authzEvt = new AuthcAuthzEvent( FeedRecorder.SYSTEM_AUTHZ, msg );
+        
+        if ( HttpServletRequest.class.isAssignableFrom( request.getClass() ) )
+        {
+            RemoteIPFinder finder = getIPFinder();
+            
+            if ( finder != null )
+            {
+                String ip = finder.findIP( ( HttpServletRequest ) request );
+                
+                if ( ip != null )
+                {
+                    authzEvt.getEventContext().put( AccessManager.REQUEST_REMOTE_ADDRESS, ip );
+                }
+            }
+        }
 
         nexus.addAuthcAuthzEvent( authzEvt );
 
         currentAuthzEvt = authzEvt;
+    }
+    
+    private RemoteIPFinder getIPFinder()
+    {
+        if ( this.ipFinder == null )
+        {
+            try
+            {
+                ipFinder = getPlexusContainer().lookup( RemoteIPFinder.class );
+            }
+            catch ( ComponentLookupException e )
+            {
+                getLogger().error( "Unable to lookup remote IP finder", e );
+            }
+        }
+        
+        return ipFinder;
     }
 
     private boolean isSimilarEvent( String msg )
