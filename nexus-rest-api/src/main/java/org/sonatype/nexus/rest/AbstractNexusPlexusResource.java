@@ -258,18 +258,18 @@ public abstract class AbstractNexusPlexusResource
     }
 
     protected void handleInvalidConfigurationException(
-        org.sonatype.jsecurity.realms.tools.InvalidConfigurationException e )
+        InvalidConfigurationException e )
         throws PlexusResourceException
     {
         getLogger().warn( "Configuration error!", e );
 
         ErrorResponse nexusErrorResponse;
 
-        org.sonatype.jsecurity.realms.validator.ValidationResponse vr = e.getValidationResponse();
+        ValidationResponse vr = e.getValidationResponse();
 
         if ( vr != null && vr.getValidationErrors().size() > 0 )
         {
-            org.sonatype.jsecurity.realms.validator.ValidationMessage vm = vr.getValidationErrors().get( 0 );
+            ValidationMessage vm = vr.getValidationErrors().get( 0 );
             nexusErrorResponse = getNexusErrorResponse( vm.getKey(), vm.getShortMessage() );
         }
         else

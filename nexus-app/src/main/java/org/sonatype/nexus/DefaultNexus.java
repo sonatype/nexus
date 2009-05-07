@@ -50,7 +50,6 @@ import org.sonatype.nexus.feeds.NexusArtifactEvent;
 import org.sonatype.nexus.feeds.SystemEvent;
 import org.sonatype.nexus.feeds.SystemProcess;
 import org.sonatype.nexus.index.IndexerManager;
-import org.sonatype.nexus.jsecurity.NexusSecurity;
 import org.sonatype.nexus.log.LogConfig;
 import org.sonatype.nexus.log.LogManager;
 import org.sonatype.nexus.maven.tasks.SnapshotRemovalRequest;
@@ -162,12 +161,6 @@ public class DefaultNexus
      */
     @Requirement
     private CacheManager cacheManager;
-
-    /**
-     * The NexusSecurity.
-     */
-    @Requirement
-    private NexusSecurity security;
 
     /**
      * The SecurityConfiguration component.
@@ -883,9 +876,6 @@ public class DefaultNexus
             // applies configuration and notifies listeners
             nexusConfiguration.loadConfiguration( true );
 
-            // essential service
-            security.startService();
-
             // create internals
             nexusConfiguration.createInternals();
 
@@ -987,8 +977,6 @@ public class DefaultNexus
         applicationEventMulticaster.notifyEventListeners( new NexusStoppedEvent( this ) );
 
         nexusConfiguration.dropInternals();
-
-        security.stopService();
 
         try
         {

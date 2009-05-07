@@ -19,23 +19,24 @@ import java.util.Set;
 import org.codehaus.plexus.component.annotations.Component;
 import org.codehaus.plexus.util.CollectionUtils;
 import org.codehaus.plexus.util.StringUtils;
-import org.sonatype.jsecurity.locators.users.PlexusRole;
-import org.sonatype.jsecurity.locators.users.PlexusUser;
-import org.sonatype.jsecurity.locators.users.PlexusUserLocator;
-import org.sonatype.jsecurity.locators.users.PlexusUserSearchCriteria;
+import org.sonatype.security.usermanagement.AbstractReadOnlyUserManager;
+import org.sonatype.security.usermanagement.DefaultUser;
+import org.sonatype.security.usermanagement.RoleIdentifier;
+import org.sonatype.security.usermanagement.User;
+import org.sonatype.security.usermanagement.UserManager;
+import org.sonatype.security.usermanagement.UserSearchCriteria;
 
 /**
- * This is a simple implementation that will expose a custom user store as PlexusUsers. A plexusUserLocator exposes
+ * This is a simple implementation that will expose a custom user store as Users. A UserLocator exposes
  * users so they can be used for functions other then authentication and authorizing. Users email address, and
  * optionally Roles/Groups from an external source will be looked up this way. For example, user 'jcoder' from a JDBC
  * source might be associated with the group 'projectA-developer', when the user 'jcoder' is returned from this class
- * the association is contained in a PlexusUser object.
+ * the association is contained in a User object.
  */
-// This class must have a role of 'PlexusUserLocator', and the hint, must match the result of getSource() and the hint
+// This class must have a role of 'UserLocator', and the hint, must match the result of getSource() and the hint
 // of the corresponding Realm.
-@Component( role = PlexusUserLocator.class, hint = "Simple", description = "Simple User Locator" )
-public class SimpleUserLocator
-    implements PlexusUserLocator
+@Component( role = UserManager.class, hint = "Simple", description = "Simple User Locator" )
+public class SimpleUserManager extends AbstractReadOnlyUserManager
 {
 
     public static final String SOURCE = "Simple";
@@ -47,7 +48,7 @@ public class SimpleUserLocator
 
     /*
      * (non-Javadoc)
-     * @see org.sonatype.jsecurity.locators.users.PlexusUserLocator#getSource()
+     * @see org.sonatype.jsecurity.locators.users.UserLocator#getSource()
      */
     public String getSource()
     {
@@ -56,14 +57,14 @@ public class SimpleUserLocator
 
     /*
      * (non-Javadoc)
-     * @see org.sonatype.jsecurity.locators.users.PlexusUserLocator#getUser(java.lang.String)
+     * @see org.sonatype.jsecurity.locators.users.UserLocator#getUser(java.lang.String)
      */
-    public PlexusUser getUser( String userId )
+    public User getUser( String userId )
     {
         SimpleUser user = this.userStore.getUser( userId );
         if ( user != null )
         {
-            return this.toPlexusUser( user );
+            return this.toUser( user );
         }
         // else
         return null;
@@ -71,17 +72,17 @@ public class SimpleUserLocator
 
     /*
      * (non-Javadoc)
-     * @see org.sonatype.jsecurity.locators.users.PlexusUserLocator#isPrimary()
+     * @see org.sonatype.jsecurity.locators.users.UserLocator#isPrimary()
      */
     public boolean isPrimary()
     {
-        // Set this to true if this UserLocator should priority over other PlexusUserLocators
+        // Set this to true if this UserLocator should priority over other UserLocators
         return true;
     }
 
     /*
      * (non-Javadoc)
-     * @see org.sonatype.jsecurity.locators.users.PlexusUserLocator#listUserIds()
+     * @see org.sonatype.jsecurity.locators.users.UserLocator#listUserIds()
      */
     public Set<String> listUserIds()
     {
@@ -95,33 +96,33 @@ public class SimpleUserLocator
         return userIds;
     }
 
-    public Set<PlexusUser> listUsers()
+    public Set<User> listUsers()
     {
         // return all the users in the system
-        Set<PlexusUser> users = new HashSet<PlexusUser>();
+        Set<User> users = new HashSet<User>();
         for ( SimpleUser user : this.userStore.getAllUsers() )
         {
-            users.add( this.toPlexusUser( user ) );
+            users.add( this.toUser( user ) );
         }
 
         return users;
     }
 
-    public Set<PlexusUser> searchUsers( PlexusUserSearchCriteria criteria )
+    public Set<User> searchUsers( UserSearchCriteria criteria )
     {
 
-        Set<PlexusUser> users = new HashSet<PlexusUser>();
+        Set<User> users = new HashSet<User>();
         for ( SimpleUser user : this.userStore.getAllUsers() )
         {
             if ( this.userMatchesCriteria( user, criteria ) )
             {
-                users.add( this.toPlexusUser( user ) );
+                users.add( this.toUser( user ) );
             }
         }
         return users;
     }
 
-    public boolean userMatchesCriteria( SimpleUser simpleUser, PlexusUserSearchCriteria criteria )
+    public boolean userMatchesCriteria( SimpleUser simpleUser, UserSearchCriteria criteria )
     {
         // You would most likely replace this code with some query and let you back end do the work.
 
@@ -144,16 +145,16 @@ public class SimpleUserLocator
         return true;
     }
 
-    private PlexusUser toPlexusUser( SimpleUser simpleUser )
+    private User toUser( SimpleUser simpleUser )
     {
         // simple conversion of object
-        PlexusUser user = new PlexusUser();
+        User user = new DefaultUser();
         user.setEmailAddress( simpleUser.getEmail() );
         user.setName( simpleUser.getName() );
         user.setUserId( simpleUser.getUserId() );
         for ( String role : simpleUser.getRoles() )
         {
-            PlexusRole plexusRole = new PlexusRole( role, role, role );
+            RoleIdentifier plexusRole = new RoleIdentifier( this.getSource(), role );
             user.addRole( plexusRole );
         }
         // set the source of this user to this
