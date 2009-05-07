@@ -23,9 +23,9 @@ import junit.framework.Assert;
 import org.junit.Test;
 import org.restlet.data.MediaType;
 import org.sonatype.nexus.integrationtests.AbstractNexusIntegrationTest;
-import org.sonatype.nexus.rest.model.ExternalRoleMappingResource;
-import org.sonatype.nexus.rest.model.PlexusRoleResource;
 import org.sonatype.nexus.test.utils.RoleMessageUtil;
+import org.sonatype.security.rest.model.ExternalRoleMappingResource;
+import org.sonatype.security.rest.model.PlexusRoleResource;
 
 public class Nexus1286RoleListTest
     extends AbstractNexusIntegrationTest

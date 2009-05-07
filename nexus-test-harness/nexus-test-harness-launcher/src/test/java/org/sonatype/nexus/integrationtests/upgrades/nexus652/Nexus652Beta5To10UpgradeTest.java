@@ -82,7 +82,7 @@ public class Nexus652Beta5To10UpgradeTest
     public void checkSecurityConfig()
         throws IOException
     {
-        org.sonatype.jsecurity.model.Configuration secConfig = SecurityConfigUtil.getSecurityConfig();
+        org.sonatype.security.model.Configuration secConfig = SecurityConfigUtil.getSecurityConfig();
 
         Assert.assertEquals( "User Count:", 7, secConfig.getUsers().size());
         Assert.assertEquals( "Roles Count:", 22, secConfig.getRoles().size());

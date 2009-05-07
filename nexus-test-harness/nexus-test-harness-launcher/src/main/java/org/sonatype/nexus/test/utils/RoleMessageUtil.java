@@ -25,14 +25,14 @@ import org.restlet.data.Response;
 import org.restlet.data.Status;
 import org.restlet.resource.StringRepresentation;
 import org.sonatype.nexus.integrationtests.RequestFacade;
-import org.sonatype.nexus.rest.model.ExternalRoleMappingResource;
-import org.sonatype.nexus.rest.model.ExternalRoleMappingResourceResponse;
-import org.sonatype.nexus.rest.model.PlexusRoleListResourceResponse;
-import org.sonatype.nexus.rest.model.PlexusRoleResource;
-import org.sonatype.nexus.rest.model.RoleListResourceResponse;
-import org.sonatype.nexus.rest.model.RoleResource;
-import org.sonatype.nexus.rest.model.RoleResourceRequest;
 import org.sonatype.plexus.rest.representation.XStreamRepresentation;
+import org.sonatype.security.rest.model.ExternalRoleMappingResource;
+import org.sonatype.security.rest.model.ExternalRoleMappingResourceResponse;
+import org.sonatype.security.rest.model.PlexusRoleListResourceResponse;
+import org.sonatype.security.rest.model.PlexusRoleResource;
+import org.sonatype.security.rest.model.RoleListResourceResponse;
+import org.sonatype.security.rest.model.RoleResource;
+import org.sonatype.security.rest.model.RoleResourceRequest;
 
 import com.thoughtworks.xstream.XStream;
 

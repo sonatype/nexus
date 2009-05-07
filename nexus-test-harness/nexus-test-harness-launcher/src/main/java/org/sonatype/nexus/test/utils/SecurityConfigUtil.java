@@ -26,17 +26,17 @@ import java.util.ResourceBundle;
 import junit.framework.Assert;
 
 import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
-import org.sonatype.jsecurity.model.CPrivilege;
-import org.sonatype.jsecurity.model.CProperty;
-import org.sonatype.jsecurity.model.CRole;
-import org.sonatype.jsecurity.model.CUser;
-import org.sonatype.jsecurity.model.Configuration;
-import org.sonatype.jsecurity.model.io.xpp3.SecurityConfigurationXpp3Reader;
 import org.sonatype.nexus.integrationtests.AbstractNexusIntegrationTest;
-import org.sonatype.nexus.rest.model.PrivilegeProperty;
-import org.sonatype.nexus.rest.model.PrivilegeStatusResource;
-import org.sonatype.nexus.rest.model.RoleResource;
-import org.sonatype.nexus.rest.model.UserResource;
+import org.sonatype.security.model.CPrivilege;
+import org.sonatype.security.model.CProperty;
+import org.sonatype.security.model.CRole;
+import org.sonatype.security.model.CUser;
+import org.sonatype.security.model.Configuration;
+import org.sonatype.security.model.io.xpp3.SecurityConfigurationXpp3Reader;
+import org.sonatype.security.rest.model.PrivilegeProperty;
+import org.sonatype.security.rest.model.PrivilegeStatusResource;
+import org.sonatype.security.rest.model.RoleResource;
+import org.sonatype.security.rest.model.UserResource;
 
 public class SecurityConfigUtil
 {

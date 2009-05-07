@@ -8,7 +8,7 @@ import org.sonatype.nexus.integrationtests.AbstractPrivilegeTest;
 import org.sonatype.nexus.integrationtests.TestContainer;
 import org.sonatype.nexus.integrationtests.TestContext;
 import org.sonatype.nexus.integrationtests.nexus450.UserCreationUtil;
-import org.sonatype.nexus.rest.model.RoleResource;
+import org.sonatype.security.rest.model.RoleResource;
 
 public class Nexus1563ExternalRealmsLoginTest
     extends AbstractPrivilegeTest

@@ -15,7 +15,7 @@ package org.sonatype.nexus.test.utils;
 
 import java.util.Comparator;
 
-import org.sonatype.jsecurity.model.CRole;
+import org.sonatype.security.model.CRole;
 
 /**
  * This only works for equals...

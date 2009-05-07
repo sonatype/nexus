@@ -166,6 +166,12 @@
     </dependency>
 
     <dependency>
+      <groupId>org.sonatype.security</groupId>
+      <artifactId>security-rest-api</artifactId>
+      <version>${plexus-security.version}</version>
+    </dependency>
+
+    <dependency>
       <groupId>org.sonatype.plexus</groupId>
       <artifactId>plexus-jetty-testsuite</artifactId>
       <scope>compile</scope>
