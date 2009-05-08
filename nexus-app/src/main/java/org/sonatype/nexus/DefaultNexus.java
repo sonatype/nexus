@@ -87,6 +87,8 @@ import org.sonatype.nexus.tasks.SynchronizeShadowsTask;
 import org.sonatype.nexus.timeline.RepositoryIdTimelineFilter;
 import org.sonatype.nexus.timeline.TimelineFilter;
 import org.sonatype.plexus.appevents.ApplicationEventMulticaster;
+import org.sonatype.security.SecuritySystem;
+import org.sonatype.security.configuration.source.SecurityConfigurationSource;
 
 /**
  * The default Nexus implementation.
@@ -108,6 +110,9 @@ public class DefaultNexus
     @Requirement
     private NexusConfiguration nexusConfiguration;
 
+    @Requirement( hint="static" )
+    private SecurityConfigurationSource defaultSecurityConfigurationSource;
+    
     /**
      * The NexusIndexer.
      */
@@ -622,32 +627,27 @@ public class DefaultNexus
 
     public boolean isDefaultSecurityEnabled()
     {
-        return nexusConfiguration.getConfigurationSource().getDefaultsSource().getConfiguration().getSecurity()
-                                 .isEnabled();
+        return this.defaultSecurityConfigurationSource.getConfiguration().isEnabled();
     }
 
     public boolean isDefaultAnonymousAccessEnabled()
     {
-        return nexusConfiguration.getConfigurationSource().getDefaultsSource().getConfiguration().getSecurity()
-                                 .isAnonymousAccessEnabled();
+        return this.defaultSecurityConfigurationSource.getConfiguration().isAnonymousAccessEnabled();
     }
 
     public String getDefaultAnonymousUsername()
     {
-        return nexusConfiguration.getConfigurationSource().getDefaultsSource().getConfiguration().getSecurity()
-                                 .getAnonymousUsername();
+        return this.defaultSecurityConfigurationSource.getConfiguration().getAnonymousUsername();
     }
 
     public String getDefaultAnonymousPassword()
     {
-        return nexusConfiguration.getConfigurationSource().getDefaultsSource().getConfiguration().getSecurity()
-                                 .getAnonymousPassword();
+        return this.defaultSecurityConfigurationSource.getConfiguration().getAnonymousPassword();
     }
 
     public List<String> getDefaultRealms()
     {
-        return nexusConfiguration.getConfigurationSource().getDefaultsSource().getConfiguration().getSecurity()
-                                 .getRealms();
+        return this.defaultSecurityConfigurationSource.getConfiguration().getRealms();
     }
 
     public NexusStreamResponse getDefaultConfigurationAsStream()

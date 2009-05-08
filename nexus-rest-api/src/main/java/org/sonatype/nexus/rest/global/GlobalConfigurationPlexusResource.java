@@ -27,6 +27,7 @@ import org.restlet.data.Response;
 import org.restlet.data.Status;
 import org.restlet.resource.ResourceException;
 import org.restlet.resource.Variant;
+import org.sonatype.configuration.validation.InvalidConfigurationException;
 import org.sonatype.nexus.configuration.ConfigurationException;
 import org.sonatype.nexus.configuration.model.CRemoteAuthentication;
 import org.sonatype.nexus.configuration.model.CRemoteConnectionSettings;
@@ -315,6 +316,12 @@ public class GlobalConfigurationPlexusResource
                     getLogger().warn( "Got IO Exception during update of Nexus configuration.", e );
 
                     throw new ResourceException( Status.SERVER_ERROR_INTERNAL );
+                }
+                catch ( InvalidConfigurationException e )
+                {
+                    // TODO: this should be removed from the Global config, as it is NO longer part of the nexus.xml
+                    getLogger().debug( "Configuraiton Exception while setting security values", e );   
+                    this.handleInvalidConfigurationException( e );
                 }
 
             }

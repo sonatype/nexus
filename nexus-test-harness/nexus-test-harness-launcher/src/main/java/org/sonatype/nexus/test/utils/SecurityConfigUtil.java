@@ -27,6 +27,7 @@ import junit.framework.Assert;
 
 import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 import org.sonatype.nexus.integrationtests.AbstractNexusIntegrationTest;
+import org.sonatype.security.configuration.model.SecurityConfiguration;
 import org.sonatype.security.model.CPrivilege;
 import org.sonatype.security.model.CProperty;
 import org.sonatype.security.model.CRole;
@@ -98,7 +99,7 @@ public class SecurityConfigUtil
 
     public static String getPrivilegeProperty( PrivilegeStatusResource priv, String key )
     {
-        for ( PrivilegeProperty prop : ( List<PrivilegeProperty> ) priv.getProperties() )
+        for ( PrivilegeProperty prop : (List<PrivilegeProperty>) priv.getProperties() )
         {
             if ( prop.getKey().equals( key ) )
             {
@@ -125,7 +126,7 @@ public class SecurityConfigUtil
             Assert.assertEquals( privResource.getName(), secPriv.getName() );
             Assert.assertEquals( privResource.getDescription(), secPriv.getDescription() );
 
-            for ( CProperty prop : ( List<CProperty> ) secPriv.getProperties() )
+            for ( CProperty prop : (List<CProperty>) secPriv.getProperties() )
             {
                 Assert.assertEquals( getPrivilegeProperty( privResource, prop.getKey() ), prop.getValue() );
             }
@@ -211,11 +212,7 @@ public class SecurityConfigUtil
     public static Configuration getSecurityConfig()
         throws IOException
     {
-
-        ResourceBundle rb = ResourceBundle.getBundle( "baseTest" );
-
-        File secConfigFile = new File( AbstractNexusIntegrationTest.WORK_CONF_DIR
-                                       , "security.xml" );
+        File secConfigFile = new File( AbstractNexusIntegrationTest.WORK_CONF_DIR, "security.xml" );
 
         Reader fr = null;
         Configuration configuration = null;
@@ -238,7 +235,8 @@ public class SecurityConfigUtil
 
             Configuration staticConfiguration = null;
 
-            fr = new InputStreamReader( SecurityConfigUtil.class.getResourceAsStream( "/META-INF/nexus/static-security.xml" ) );
+            fr = new InputStreamReader( SecurityConfigUtil.class
+                .getResourceAsStream( "/META-INF/nexus/static-security.xml" ) );
 
             try
             {
@@ -249,15 +247,15 @@ public class SecurityConfigUtil
                 fr.close();
             }
 
-            for ( CUser user : ( List<CUser> ) staticConfiguration.getUsers() )
+            for ( CUser user : (List<CUser>) staticConfiguration.getUsers() )
             {
                 configuration.addUser( user );
             }
-            for ( CRole role : ( List<CRole> ) staticConfiguration.getRoles() )
+            for ( CRole role : (List<CRole>) staticConfiguration.getRoles() )
             {
                 configuration.addRole( role );
             }
-            for ( CPrivilege priv : ( List<CPrivilege> ) staticConfiguration.getPrivileges() )
+            for ( CPrivilege priv : (List<CPrivilege>) staticConfiguration.getPrivileges() )
             {
                 configuration.addPrivilege( priv );
             }

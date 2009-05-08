@@ -279,6 +279,30 @@ public abstract class AbstractNexusPlexusResource
 
         throw new PlexusResourceException( Status.CLIENT_ERROR_BAD_REQUEST, "Configuration error.", nexusErrorResponse );
     }
+    
+    // Generic InvalidConfigurationException from base-configuration
+    protected void handleInvalidConfigurationException(
+        org.sonatype.configuration.validation.InvalidConfigurationException e )
+        throws PlexusResourceException
+    {
+        getLogger().warn( "Configuration error!", e );
+
+        ErrorResponse nexusErrorResponse;
+
+        org.sonatype.configuration.validation.ValidationResponse<?> vr = e.getValidationResponse();
+
+        if ( vr != null && vr.getValidationErrors().size() > 0 )
+        {
+            org.sonatype.configuration.validation.ValidationMessage vm = vr.getValidationErrors().get( 0 );
+            nexusErrorResponse = getNexusErrorResponse( vm.getKey(), vm.getShortMessage() );
+        }
+        else
+        {
+            nexusErrorResponse = getNexusErrorResponse( "*", e.getMessage() );
+        }
+
+        throw new PlexusResourceException( Status.CLIENT_ERROR_BAD_REQUEST, "Configuration error.", nexusErrorResponse );
+    }
 
     protected void handleConfigurationException( ConfigurationException e )
         throws PlexusResourceException

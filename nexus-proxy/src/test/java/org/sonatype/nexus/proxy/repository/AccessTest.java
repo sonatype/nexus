@@ -141,7 +141,6 @@ public class AccessTest
         throws Exception
     {
         ApplicationConfiguration applicationConfiguration = this.lookup( ApplicationConfiguration.class );
-        applicationConfiguration.getConfiguration().getSecurity().setEnabled( true );
         applicationConfiguration.saveConfiguration();
 
         super.setUp();
