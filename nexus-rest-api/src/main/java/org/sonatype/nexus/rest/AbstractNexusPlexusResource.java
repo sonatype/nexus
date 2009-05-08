@@ -58,9 +58,6 @@ public abstract class AbstractNexusPlexusResource
 
     @Requirement
     private NexusItemAuthorizer nexusItemAuthorizer;
-    
-    @Requirement
-    private RemoteIPFinder ipFinder;
 
     protected Nexus getNexus()
     {
@@ -386,6 +383,6 @@ public abstract class AbstractNexusPlexusResource
     
     protected String getValidRemoteIPAddress( Request request )
     {
-        return ipFinder.findIP( request );
+        return RemoteIPFinder.findIP( request );
     }
 }
