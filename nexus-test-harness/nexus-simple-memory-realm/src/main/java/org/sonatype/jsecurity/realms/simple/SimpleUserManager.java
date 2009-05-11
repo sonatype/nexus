@@ -25,6 +25,7 @@ import org.sonatype.security.usermanagement.RoleIdentifier;
 import org.sonatype.security.usermanagement.User;
 import org.sonatype.security.usermanagement.UserManager;
 import org.sonatype.security.usermanagement.UserSearchCriteria;
+import org.sonatype.security.usermanagement.UserStatus;
 
 /**
  * This is a simple implementation that will expose a custom user store as Users. A UserLocator exposes
@@ -110,39 +111,7 @@ public class SimpleUserManager extends AbstractReadOnlyUserManager
 
     public Set<User> searchUsers( UserSearchCriteria criteria )
     {
-
-        Set<User> users = new HashSet<User>();
-        for ( SimpleUser user : this.userStore.getAllUsers() )
-        {
-            if ( this.userMatchesCriteria( user, criteria ) )
-            {
-                users.add( this.toUser( user ) );
-            }
-        }
-        return users;
-    }
-
-    public boolean userMatchesCriteria( SimpleUser simpleUser, UserSearchCriteria criteria )
-    {
-        // You would most likely replace this code with some query and let you back end do the work.
-
-        // this is expected to be a starts with search, so 'jcod' would find 'jcoder'
-        if ( StringUtils.isNotEmpty( criteria.getUserId() )
-            && !simpleUser.getUserId().toLowerCase().startsWith( criteria.getUserId() ) )
-        {
-            return false;
-        }
-
-        if ( criteria.getOneOfRoleIds() != null && !criteria.getOneOfRoleIds().isEmpty() )
-        {
-            // we are checking if any of the roles in the criteria are also in the users roles.
-            if ( CollectionUtils.intersection( simpleUser.getRoles(), criteria.getOneOfRoleIds() ).isEmpty() )
-            {
-                return false;
-            }
-        }
-
-        return true;
+        return this.filterListInMemeory( this.listUsers(), criteria );
     }
 
     private User toUser( SimpleUser simpleUser )
@@ -152,6 +121,7 @@ public class SimpleUserManager extends AbstractReadOnlyUserManager
         user.setEmailAddress( simpleUser.getEmail() );
         user.setName( simpleUser.getName() );
         user.setUserId( simpleUser.getUserId() );
+        user.setStatus( UserStatus.active );
         for ( String role : simpleUser.getRoles() )
         {
             RoleIdentifier plexusRole = new RoleIdentifier( this.getSource(), role );

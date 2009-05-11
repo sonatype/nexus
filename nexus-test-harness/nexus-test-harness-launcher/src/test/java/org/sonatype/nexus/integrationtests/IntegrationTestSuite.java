@@ -15,6 +15,7 @@ package org.sonatype.nexus.integrationtests;
 
 import java.io.File;
 
+import org.apache.tools.ant.taskdefs.Sleep;
 import org.codehaus.plexus.util.FileUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -38,7 +39,7 @@ public class IntegrationTestSuite
         FileUtils.copyFile( testConfigFile, outputFile );
 
         NexusStatusUtil.doHardStart();
-
+        
         NexusStatusUtil.doSoftStop();
     }
 

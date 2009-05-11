@@ -79,16 +79,14 @@ public class SecurityConfigUtil
     public static void verifyUsers( List<UserResource> users )
         throws IOException
     {
-        Configuration securityConfig = getSecurityConfig();
-
-        List secUsers = securityConfig.getUsers();
 
         for ( Iterator<UserResource> outterIter = users.iterator(); outterIter.hasNext(); )
         {
             UserResource userResource = outterIter.next();
+            
             CUser secUser = getCUser( userResource.getUserId() );
 
-            Assert.assertNotNull( secUser );
+            Assert.assertNotNull( "Cannot find user: "+ userResource.getUserId(), secUser );
 
             CUser user = UserConverter.toCUser( userResource );
 
