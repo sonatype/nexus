@@ -333,13 +333,6 @@ public class FileConfigurationSource
 
     private void encryptDecryptPasswords(Configuration config, boolean encrypt )
     {
-        
-        // anonymous pass
-        if( config.getSecurity() != null && StringUtils.isNotEmpty( config.getSecurity().getAnonymousPassword() ))
-        {
-            config.getSecurity().setAnonymousPassword( this.encryptDecryptPassword( config.getSecurity().getAnonymousPassword(), encrypt ) );
-        }
-        
         // smtp
         if ( config.getSmtpConfiguration() != null
             && StringUtils.isNotEmpty( config.getSmtpConfiguration().getPassword() ) )

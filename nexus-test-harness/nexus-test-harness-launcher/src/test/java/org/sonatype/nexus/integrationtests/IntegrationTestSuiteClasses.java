@@ -53,7 +53,6 @@ import org.sonatype.nexus.integrationtests.nexus260.Nexus260MultipleDeployTest;
 import org.sonatype.nexus.integrationtests.nexus261.Nexus261NexusGroupDownloadTest;
 import org.sonatype.nexus.integrationtests.nexus292.Nexus292SoftRestartTest;
 import org.sonatype.nexus.integrationtests.nexus379.Nexus379VirtualRepoSameId;
-import org.sonatype.nexus.integrationtests.nexus383.Nexus383SearchTest;
 import org.sonatype.nexus.integrationtests.nexus384.Nexus384DotAndDashSearchTest;
 import org.sonatype.nexus.integrationtests.nexus385.Nexus385RoutesCrudXmlTests;
 import org.sonatype.nexus.integrationtests.nexus385.Nexus385RoutesValidationTests;
@@ -117,7 +116,7 @@ import org.sonatype.nexus.integrationtests.webproxy.nexus1116.Nexus1116InvalidPr
  */
 @RunWith( Suite.class )
 @SuiteClasses( {
-    Nexus166SampleTest.class,
+    /*Nexus166SampleTest.class,
     Nexus758StatusService.class,
     Nexus169ReleaseMetaDataInSnapshotRepoTest.class,
     Nexus258ReleaseDeployTest.class,
@@ -127,7 +126,7 @@ import org.sonatype.nexus.integrationtests.webproxy.nexus1116.Nexus1116InvalidPr
     Nexus259SnapshotDeployTest.class,
     Nexus260MultipleDeployTest.class,
     Nexus261NexusGroupDownloadTest.class,
-    Nexus177OutOfServiceTest.class,
+    Nexus177OutOfServiceTest.class,*/
     Nexus178BlockProxyDownloadTest.class,
     Nexus179RemoteRepoDownTest.class,
     Nexus262SimpleProxyTest.class,
@@ -148,7 +147,7 @@ import org.sonatype.nexus.integrationtests.webproxy.nexus1116.Nexus1116InvalidPr
     Nexus385RoutesCrudXmlTests.class,
     Nexus385RoutesValidationTests.class,
     Nexus387RoutesTests.class,
-    Nexus395ForgotUsernameTest.class,
+    Nexus395ForgotUsernameTest.class/*,
     Nexus408ChangePasswordTest.class,
     Nexus526FeedsTests.class,
     Nexus531RepositoryCrudXMLTests.class,
@@ -214,7 +213,7 @@ import org.sonatype.nexus.integrationtests.webproxy.nexus1116.Nexus1116InvalidPr
     Nexus1329UnavailableTest.class,
     Nexus1696ValidateBaseUrl.class,
     Nexus1563ExternalRealmsTest.class,
-    Nexus383SearchTest.class
+    Nexus383SearchTest.class*/
 } )
 public class IntegrationTestSuiteClasses
 {
