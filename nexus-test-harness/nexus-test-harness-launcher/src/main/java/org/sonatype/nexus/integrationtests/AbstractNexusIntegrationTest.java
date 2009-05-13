@@ -17,7 +17,6 @@ import static org.junit.Assert.fail;
 
 import java.io.File;
 import java.io.FileFilter;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
@@ -290,8 +289,8 @@ public class AbstractNexusIntegrationTest
                 File pom = new File( project, "pom.xml" );
 
                 MavenXpp3Reader reader = new MavenXpp3Reader();
-                FileInputStream fis = new FileInputStream( pom );
-                Model model = reader.read( new FileInputStream( pom ) );
+                FileReader fis = new FileReader( pom );
+                Model model = reader.read( fis );
                 fis.close();
 
                 // a helpful note so you don't need to dig into the code to much.
