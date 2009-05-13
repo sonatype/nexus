@@ -183,14 +183,16 @@ public class AbstractNexusIntegrationTest
 
                 this.copyConfigFiles();
 
-                NexusConfigUtil.enableSecurity( TestContainer.getInstance().getTestContext().isSecureTest()
-                    || Boolean.valueOf( System.getProperty( "secure.test" ) ) );
-
                 // we need to make sure the config is valid, so we don't need to hunt through log files
                 if ( this.verifyNexusConfigBeforeStart )
                 {
                     NexusConfigUtil.validateConfig();
                 }
+                
+                // the validation needs to happen before we enable security it triggers an upgrade.
+                
+                NexusConfigUtil.enableSecurity( TestContainer.getInstance().getTestContext().isSecureTest()
+                    || Boolean.valueOf( System.getProperty( "secure.test" ) ) );
 
                 // start nexus
                 this.startNexus();

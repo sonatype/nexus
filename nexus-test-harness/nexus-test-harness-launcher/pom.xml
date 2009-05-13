@@ -53,12 +53,12 @@
           <argLine>-Xmx512M</argLine>
           <skip>false</skip>
           <forkMode>always</forkMode>
-          <includes>
+          <!--<includes>
             <include>**/IntegrationTestSuite.java</include>
-          </includes>
-          <!--<excludes>
+          </includes>-->
+          <excludes>
             <exclude>**Suite*</exclude>
-          </excludes>-->
+          </excludes>
         </configuration>
       </plugin>
 
