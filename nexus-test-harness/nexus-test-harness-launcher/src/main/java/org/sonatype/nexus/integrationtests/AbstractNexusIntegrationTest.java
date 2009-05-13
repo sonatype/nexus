@@ -291,7 +291,7 @@ public class AbstractNexusIntegrationTest
 
                 MavenXpp3Reader reader = new MavenXpp3Reader();
                 FileInputStream fis = new FileInputStream( pom );
-                Model model = reader.read( new FileReader( pom ) );
+                Model model = reader.read( new FileInputStream( pom ) );
                 fis.close();
 
                 // a helpful note so you don't need to dig into the code to much.
