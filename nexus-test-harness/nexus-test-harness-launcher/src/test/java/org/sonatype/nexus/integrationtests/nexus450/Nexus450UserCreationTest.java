@@ -81,6 +81,10 @@ public class Nexus450UserCreationTest
         MimeMessage[] msgs = server.getReceivedMessages();
         String password = null;
         StringBuilder emailsContent = new StringBuilder();
+        
+        /// make sure we have at least 1 message
+        Assert.assertTrue( "No emails recieved.", msgs.length > 0 );
+        
         for ( MimeMessage mimeMessage : msgs )
         {
             emailsContent.append( GreenMailUtil.getHeaders( mimeMessage ) ).append( '\n' );
