@@ -66,6 +66,8 @@ import org.sonatype.nexus.proxy.target.Target;
 import org.sonatype.nexus.proxy.target.TargetRegistry;
 import org.sonatype.nexus.tasks.descriptors.ScheduledTaskDescriptor;
 
+import edu.emory.mathcs.backport.java.util.Arrays;
+
 /**
  * The class DefaultNexusConfiguration is responsible for config management. It actually keeps in sync Nexus internal
  * state with p ersisted user configuration. All changes incoming thru its iface is reflect/maintained in Nexus current
@@ -198,7 +200,7 @@ public class DefaultNexusConfiguration
     }
 
     // XXX: finish this! What changed?
-    public void applyConfiguration( Object... changeds )
+    public void applyConfiguration( Object... changes )
         throws IOException
     {
         getLogger().info( "Applying Nexus Configuration..." );
@@ -209,7 +211,7 @@ public class DefaultNexusConfiguration
 
         wastebasketDirectory = null;
 
-        notifyProximityEventListeners( new ConfigurationChangeEvent( this, null ) );
+        notifyProximityEventListeners( new ConfigurationChangeEvent( this, Arrays.asList( changes ) ) );
     }
 
     public void saveConfiguration()
@@ -849,11 +851,11 @@ public class DefaultNexusConfiguration
 
             if ( repo.getId().equals( settings.getId() ) )
             {
-                reposes.remove( i );
+                CRepository oldSettings = reposes.remove( i );
 
                 reposes.add( i, settings );
 
-                applyAndSaveConfiguration();
+                applyAndSaveConfiguration( oldSettings, settings );
 
                 return;
             }

@@ -13,13 +13,20 @@
  */
 package org.sonatype.nexus.events;
 
+import java.util.List;
+
 import org.codehaus.plexus.component.annotations.Component;
 import org.codehaus.plexus.component.annotations.Requirement;
 import org.sonatype.nexus.configuration.ConfigurationChangeEvent;
+import org.sonatype.nexus.configuration.model.CLocalStorage;
+import org.sonatype.nexus.configuration.model.CRemoteStorage;
+import org.sonatype.nexus.configuration.model.CRepository;
 import org.sonatype.nexus.feeds.FeedRecorder;
 import org.sonatype.nexus.index.IndexerManager;
 import org.sonatype.nexus.proxy.events.AbstractEvent;
 import org.sonatype.nexus.proxy.events.EventInspector;
+import org.sonatype.nexus.scheduling.NexusScheduler;
+import org.sonatype.nexus.tasks.ClearCacheTask;
 
 /**
  * @author Juven Xu
@@ -30,6 +37,9 @@ public class ConfigurationChangeEventInspector
 {
     @Requirement
     private IndexerManager indexerManager;
+
+    @Requirement
+    private NexusScheduler nexusScheduler;
 
     protected IndexerManager getIndexerManager()
     {
@@ -50,6 +60,8 @@ public class ConfigurationChangeEventInspector
         inspectForNexus( evt );
 
         inspectForIndexerManager( evt );
+
+        inspectForRepository( evt );
     }
 
     private void inspectForNexus( AbstractEvent evt )
@@ -64,6 +76,51 @@ public class ConfigurationChangeEventInspector
     private void inspectForIndexerManager( AbstractEvent evt )
     {
         getIndexerManager().resetConfiguration();
+    }
+
+    private void inspectForRepository( AbstractEvent evt )
+    {
+        ConfigurationChangeEvent event = (ConfigurationChangeEvent) evt;
+
+        List<Object> changes = event.getChanges();
+
+        if ( changes != null && changes.size() == 2 )
+        {
+            CRepository oldConfig = (CRepository) changes.get( 0 );
+
+            CRepository newConfig = (CRepository) changes.get( 1 );
+
+            if ( repositoryStorageLocationChanged( oldConfig, newConfig ) )
+            {
+                ClearCacheTask expireCacheTask = nexusScheduler.createTaskInstance( ClearCacheTask.class );
+
+                expireCacheTask.setRepositoryId( newConfig.getId() );
+
+                expireCacheTask.setResourceStorePath( "/" );
+
+                nexusScheduler.submit( "Expire repository cache", expireCacheTask );
+            }
+        }
+    }
+
+    private boolean repositoryStorageLocationChanged( CRepository oldConfig, CRepository newConfig )
+    {
+        CLocalStorage oldLocal = oldConfig.getLocalStorage();
+        CLocalStorage newLocal = newConfig.getLocalStorage();
+
+        CRemoteStorage oldRemote = oldConfig.getRemoteStorage();
+        CRemoteStorage newRemote = newConfig.getRemoteStorage();
+
+        if ( oldLocal != null && newLocal != null && !oldLocal.getUrl().equals( newLocal.getUrl() ) )
+        {
+            return true;
+        }
+        if ( oldRemote != null && newRemote != null && !oldRemote.getUrl().equals( newRemote.getUrl() ) )
+        {
+            return true;
+        }
+
+        return false;
     }
 
 }
