@@ -13,6 +13,7 @@
  */
 package org.sonatype.nexus.proxy.maven;
 
+import org.codehaus.plexus.logging.Logger;
 import org.sonatype.nexus.proxy.item.StorageCollectionItem;
 import org.sonatype.nexus.proxy.item.StorageFileItem;
 import org.sonatype.nexus.proxy.item.StorageItem;
@@ -34,6 +35,13 @@ public class RecreateMavenMetadataWalkerProcessor
 
     private AbstractMetadataHelper mdHelper;
 
+    private Logger logger;
+
+    public RecreateMavenMetadataWalkerProcessor( Logger logger )
+    {
+        this.logger = logger;
+    }
+
     @Override
     public void beforeWalk( WalkerContext context )
         throws Exception
@@ -46,7 +54,7 @@ public class RecreateMavenMetadataWalkerProcessor
 
         if ( repository != null )
         {
-            mdHelper = new DefaultMetadataHelper( repository );
+            mdHelper = new DefaultMetadataHelper( logger, repository );
 
             isHostedRepo = repository.getRepositoryKind().isFacetAvailable( HostedRepository.class );
         }
@@ -57,28 +65,47 @@ public class RecreateMavenMetadataWalkerProcessor
     @Override
     public void onCollectionEnter( WalkerContext context, StorageCollectionItem coll )
     {
-        mdHelper.onDirEnter( coll.getPath() );
+        try
+        {
+            mdHelper.onDirEnter( coll.getPath() );
+        }
+        catch ( Exception e )
+        {
+            logger.warn( "Error occured while entering collection '" + coll.getPath() + "'.", e );
+        }
     }
 
     @Override
     public void processItem( WalkerContext context, StorageItem item )
-        throws Exception
     {
         if ( item instanceof StorageFileItem )
         {
-            mdHelper.processFile( item.getPath() );
+            try
+            {
+                mdHelper.processFile( item.getPath() );
+            }
+            catch ( Exception e )
+            {
+                logger.warn( "Error occured while processing item '" + item.getPath() + "'.", e );
+            }
         }
     }
 
     @Override
     public void onCollectionExit( WalkerContext context, StorageCollectionItem coll )
-        throws Exception
     {
-        mdHelper.onDirExit( coll.getPath() );
-
-        if ( coll.list().size() == 0 )
+        try
         {
-            repository.deleteItem( coll.getRepositoryItemUid(), coll.getItemContext() );
+            mdHelper.onDirExit( coll.getPath() );
+
+            if ( coll.list().size() == 0 )
+            {
+                repository.deleteItem( coll.getRepositoryItemUid(), coll.getItemContext() );
+            }
+        }
+        catch ( Exception e )
+        {
+            logger.warn( "Error occured while existing collection '" + coll.getPath() + "'.", e );
         }
     }
 }

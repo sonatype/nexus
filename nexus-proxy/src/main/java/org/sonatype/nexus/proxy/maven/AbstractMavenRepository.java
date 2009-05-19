@@ -163,7 +163,7 @@ public abstract class AbstractMavenRepository
 
         getLogger().info( "Recreating Maven2 metadata in repository ID='" + getId() + "' from path='" + path + "'" );
 
-        RecreateMavenMetadataWalkerProcessor wp = new RecreateMavenMetadataWalkerProcessor();
+        RecreateMavenMetadataWalkerProcessor wp = new RecreateMavenMetadataWalkerProcessor( this.getLogger() );
 
         DefaultWalkerContext ctx = new DefaultWalkerContext( this );
 

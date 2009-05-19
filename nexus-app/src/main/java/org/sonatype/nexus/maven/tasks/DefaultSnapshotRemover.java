@@ -194,7 +194,7 @@ public class DefaultSnapshotRemover
 
         repository.clearCaches( RepositoryItemUid.PATH_ROOT );
 
-        RecreateMavenMetadataWalkerProcessor metadataRebuildProcessor = new RecreateMavenMetadataWalkerProcessor();
+        RecreateMavenMetadataWalkerProcessor metadataRebuildProcessor = new RecreateMavenMetadataWalkerProcessor( getLogger() );
 
         ctx.getProcessors().remove( snapshotRemoveProcessor );
 
