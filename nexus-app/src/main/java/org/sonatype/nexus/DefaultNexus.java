@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -832,13 +833,13 @@ public class DefaultNexus
     protected Collection<String> evictUnusedItems( long timestamp, Repository repository, boolean proxyOnly )
         throws IOException
     {
-        if ( proxyOnly && repository.getRepositoryKind().isFacetAvailable( ProxyRepository.class ) )
+        if ( !proxyOnly || repository.getRepositoryKind().isFacetAvailable( ProxyRepository.class ) )
         {
             return repository.evictUnusedItems( timestamp );
         }
         else
         {
-            return repository.evictUnusedItems( timestamp );
+            return Collections.emptySet();
         }
     }
 
