@@ -248,6 +248,13 @@ public class DefaultIndexerManager
                                             nexusIndexer.getIndexingContexts().get( getRemoteContextId( repositoryId ) ),
                                             deleteFiles );
     }
+    
+    public void rebuildRepositoryIndexContext( String repositoryId )
+        throws IOException, NoSuchRepositoryException
+    {
+        removeRepositoryIndexContext( repositoryId, true );
+        addRepositoryIndexContext( repositoryId );
+    }
 
     public void updateRepositoryIndexContext( String repositoryId )
         throws IOException, NoSuchRepositoryException

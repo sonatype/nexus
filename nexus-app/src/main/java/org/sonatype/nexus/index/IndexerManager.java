@@ -41,6 +41,10 @@ public interface IndexerManager
     void updateRepositoryIndexContext( String repositoryId )
         throws IOException,
             NoSuchRepositoryException;
+    
+    void rebuildRepositoryIndexContext( String repositoryId )
+        throws IOException, 
+            NoSuchRepositoryException;
 
     /**
      * Returns the local index (the true index for hosted ones, and the true cacheds index for proxy reposes). Every

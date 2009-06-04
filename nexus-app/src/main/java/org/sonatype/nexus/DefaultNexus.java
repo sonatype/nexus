@@ -533,6 +533,9 @@ public class DefaultNexus
         // create the initial index
         if ( !previousDownloadRemoteIndexes && settings.isDownloadRemoteIndexes() )
         {
+            // This will dump and recreate the remote context, removing any timestamps we may have
+            indexerManager.rebuildRepositoryIndexContext( settings.getId() );
+            
             // Create the initial index for the repository
             ReindexTask rt = nexusScheduler.createTaskInstance( ReindexTask.class );
             rt.setRepositoryId( settings.getId() );
