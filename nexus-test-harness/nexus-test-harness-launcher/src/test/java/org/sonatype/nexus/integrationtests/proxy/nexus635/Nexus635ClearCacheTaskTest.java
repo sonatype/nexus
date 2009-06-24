@@ -34,19 +34,21 @@ public class Nexus635ClearCacheTaskTest
     extends AbstractNexusProxyIntegrationTest
 {
 
-    private static final Gav GAV =
-        new Gav( "nexus635", "artifact", "1.0-SNAPSHOT", null, "jar", 0, 0L, null, true, false, null, false, null );
+    private Gav gav;
 
     public Nexus635ClearCacheTaskTest()
+        throws Exception
     {
         super( "tasks-snapshot-repo" );
+
+        gav = new Gav( "nexus635", "artifact", "1.0-SNAPSHOT", null, "jar", 0, 0L, null, true, false, null, false, null );
     }
 
     public void addSnapshotArtifactToProxy( File fileToDeploy )
         throws Exception
     {
         String repositoryUrl = "file://" + localStorageDir + "/tasks-snapshot-repo";
-        MavenDeployer.deploy( GAV, repositoryUrl, fileToDeploy, null );
+        MavenDeployer.deploy( gav, repositoryUrl, fileToDeploy, null );
     }
 
     @Test
@@ -61,13 +63,13 @@ public class Nexus635ClearCacheTaskTest
         File artifact1 = getTestFile( "artifact-1.jar" );
         addSnapshotArtifactToProxy( artifact1 );
 
-        File firstDownload = downloadSnapshotArtifact( "tasks-snapshot-repo", GAV, new File( "target/download" ) );
+        File firstDownload = downloadSnapshotArtifact( "tasks-snapshot-repo", gav, new File( "target/download" ) );
         Assert.assertTrue( "First time, should download artifact 1", // 
                            compareFileSHA1s( firstDownload, artifact1 ) );
 
         File artifact2 = getTestFile( "artifact-2.jar" );
         addSnapshotArtifactToProxy( artifact2 );
-        File secondDownload = downloadSnapshotArtifact( "tasks-snapshot-repo", GAV, new File( "target/download" ) );
+        File secondDownload = downloadSnapshotArtifact( "tasks-snapshot-repo", gav, new File( "target/download" ) );
         Assert.assertTrue( "Before ClearCache should download artifact 1",// 
                            compareFileSHA1s( secondDownload, artifact1 ) );
 
@@ -82,7 +84,7 @@ public class Nexus635ClearCacheTaskTest
         // This is THE important part
         TaskScheduleUtil.runTask( ClearCacheTaskDescriptor.ID, prop );
 
-        File thirdDownload = downloadSnapshotArtifact( "tasks-snapshot-repo", GAV, new File( "target/download" ) );
+        File thirdDownload = downloadSnapshotArtifact( "tasks-snapshot-repo", gav, new File( "target/download" ) );
         Assert.assertTrue( "After ClearCache should download artifact 2", //
                            compareFileSHA1s( thirdDownload, artifact2 ) );
     }

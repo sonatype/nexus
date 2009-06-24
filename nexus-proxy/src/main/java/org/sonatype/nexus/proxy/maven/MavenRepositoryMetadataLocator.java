@@ -34,6 +34,7 @@ import org.codehaus.plexus.util.xml.pull.XmlPullParser;
 import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 import org.sonatype.nexus.artifact.Gav;
 import org.sonatype.nexus.artifact.GavCalculator;
+import org.sonatype.nexus.artifact.IllegalArtifactCoordinateException;
 import org.sonatype.nexus.proxy.IllegalOperationException;
 import org.sonatype.nexus.proxy.ItemNotFoundException;
 import org.sonatype.nexus.proxy.item.DefaultStorageFileItem;
@@ -53,6 +54,7 @@ public class MavenRepositoryMetadataLocator
     implements MetadataLocator
 {
     public Gav getGavForRequest( ArtifactStoreRequest request )
+        throws IllegalArtifactCoordinateException
     {
         Gav gav = null;
 
@@ -99,6 +101,7 @@ public class MavenRepositoryMetadataLocator
     }
 
     protected Gav getPomGav( ArtifactStoreRequest request )
+        throws IllegalArtifactCoordinateException
     {
         Gav pomGav = new Gav( request.getGav().getGroupId(), // groupId
             request.getGav().getArtifactId(), // artifactId

@@ -34,7 +34,7 @@ public class Nexus1071AnonAccessTest
 
     @Test
     public void downloadArtifactFromPublicGroup()
-        throws IOException
+        throws Exception
     {
         Gav gav = new Gav(
             this.getTestId(),
@@ -65,7 +65,7 @@ public class Nexus1071AnonAccessTest
 
     @Test
     public void downloadArtifactFromInternalRepo()
-        throws IOException
+        throws Exception
     {
         Gav gav = new Gav(
             this.getTestId(),

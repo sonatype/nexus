@@ -30,6 +30,7 @@ import org.codehaus.plexus.component.annotations.Requirement;
 import org.codehaus.plexus.util.IOUtil;
 import org.sonatype.nexus.artifact.Gav;
 import org.sonatype.nexus.artifact.GavCalculator;
+import org.sonatype.nexus.artifact.IllegalArtifactCoordinateException;
 import org.sonatype.nexus.artifact.M2ArtifactRecognizer;
 import org.sonatype.nexus.artifact.VersionUtils;
 import org.sonatype.nexus.proxy.StorageException;
@@ -94,7 +95,19 @@ public class M2Repository
             }
         }
         // we are using Gav to test the path
-        Gav gav = gavCalculator.pathToGav( uid.getPath() );
+        Gav gav = null;
+        
+        try
+        {
+            gav = getGavCalculator().pathToGav( uid.getPath() );
+        }
+        catch ( IllegalArtifactCoordinateException e )
+        {
+            getLogger().info( "Illegal artifact path: '" + uid.getPath() + "'" + e.getMessage() );
+            
+            return false;
+        }
+        
         if ( gav == null )
         {
             return true;
@@ -176,7 +189,16 @@ public class M2Repository
         }
 
         // we are using Gav to test the path
-        Gav gav = gavCalculator.pathToGav( item.getPath() );
+        Gav gav = null; 
+            
+        try
+        {
+            gavCalculator.pathToGav( item.getPath() );
+        }
+        catch ( IllegalArtifactCoordinateException e )
+        {
+            getLogger().info( "Illegal artifact path: '" + item.getPath() + "'" + e.getMessage() );
+        }
 
         if ( gav == null )
         {
