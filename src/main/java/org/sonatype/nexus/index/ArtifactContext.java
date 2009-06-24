@@ -16,6 +16,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
 import org.sonatype.nexus.artifact.Gav;
+import org.sonatype.nexus.artifact.IllegalArtifactCoordinateException;
 import org.sonatype.nexus.index.context.IndexCreator;
 import org.sonatype.nexus.index.context.IndexingContext;
 
@@ -45,12 +46,13 @@ public class ArtifactContext
     private final List<Exception> errors = new ArrayList<Exception>();
 
     public ArtifactContext( File pom, File artifact, File metadata, ArtifactInfo artifactInfo, Gav gav )
+        throws IllegalArtifactCoordinateException
     {
-        if( artifactInfo == null )
+        if ( artifactInfo == null )
         {
-           throw new IllegalArgumentException( "Parameter artifactInfo must not be null");
+            throw new IllegalArtifactCoordinateException( "Parameter artifactInfo must not be null." );
         }
-        
+
         this.pom = pom;
         this.artifact = artifact;
         this.metadata = metadata;
