@@ -62,6 +62,13 @@ public abstract class AbstractGroupRepository
 
         repoRegistry.addProximityEventListener( this );
     }
+    
+    @Override
+    public boolean isAllowWrite()
+    {
+        //Can't write to group repos (although can be overridden if your specialized group repo needs to
+        return false;
+    }
 
     @Override
     public void onProximityEvent( AbstractEvent evt )
