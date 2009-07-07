@@ -11,14 +11,12 @@
 	      FIFO - first in first out
     -->
     <defaultCache
-            maxElementsInMemory="10000"
+            maxElementsInMemory="5000"
             eternal="false"
             timeToIdleSeconds="120"
             timeToLiveSeconds="120"
-            overflowToDisk="true"
-            maxElementsOnDisk="10000000"
+            overflowToDisk="false"
             diskPersistent="false"
-            diskExpiryThreadIntervalSeconds="120"
             memoryStoreEvictionPolicy="LFU"
             />
 
