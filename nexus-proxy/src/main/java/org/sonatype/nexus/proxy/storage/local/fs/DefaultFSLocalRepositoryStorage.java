@@ -297,6 +297,9 @@ public class DefaultFSLocalRepositoryStorage
         {
             target = getFileFromBase( repository, context, item.getPath() );
 
+            // NXCM-966, to be replaced with Tx!
+            File hiddenTarget = new File( target.getParentFile(), target.getName() + ".tmp" );
+            
             try
             {
                 mkParentDirs( target );
@@ -309,7 +312,7 @@ public class DefaultFSLocalRepositoryStorage
                 {
                     is = ( (StorageFileItem) item ).getInputStream();
 
-                    os = new FileOutputStream( target );
+                    os = new FileOutputStream( hiddenTarget );
 
                     IOUtil.copy( is, os );
 
@@ -320,6 +323,12 @@ public class DefaultFSLocalRepositoryStorage
                     IOUtil.close( is );
 
                     IOUtil.close( os );
+                }
+
+                if ( !hiddenTarget.renameTo( target ) )
+                {
+                    throw new IOException( "Cannot rename file \"" + hiddenTarget.getAbsolutePath() + "\" to \""
+                        + target.getAbsolutePath() + "\"!" );
                 }
 
                 target.setLastModified( item.getModified() );
@@ -342,6 +351,11 @@ public class DefaultFSLocalRepositoryStorage
                 if ( target != null )
                 {
                     target.delete();
+                }
+
+                if ( hiddenTarget != null )
+                {
+                    hiddenTarget.delete();
                 }
 
                 throw new StorageException( "Got exception during storing on path "
