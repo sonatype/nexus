@@ -217,10 +217,10 @@ public abstract class AbstractRepository
     public RepositoryTaskFilter getRepositoryTaskFilter()
     {
         // we are allowing all, and subclasses will filter as they want
-        return new DefaultRepositoryTaskFilter().setAllowsRepositoryScanning( true ).setAllowsScheduledTasks( true ).setAllowsUserInitiatedTasks(
-                                                                                                                                                  true ).setContentOperators(
-                                                                                                                                                                              DefaultRepositoryTaskActivityDescriptor.ALL_CONTENT_OPERATIONS ).setAttributeOperators(
-                                                                                                                                                                                                                                                                      DefaultRepositoryTaskActivityDescriptor.ALL_ATTRIBUTES_OPERATIONS );
+        return new DefaultRepositoryTaskFilter().setAllowsRepositoryScanning( true ).setAllowsScheduledTasks( true )
+            .setAllowsUserInitiatedTasks( true )
+            .setContentOperators( DefaultRepositoryTaskActivityDescriptor.ALL_CONTENT_OPERATIONS )
+            .setAttributeOperators( DefaultRepositoryTaskActivityDescriptor.ALL_ATTRIBUTES_OPERATIONS );
     }
 
     public LocalStatus getLocalStatus()
@@ -318,6 +318,16 @@ public abstract class AbstractRepository
     public void setCacheManager( CacheManager cacheManager )
     {
         this.cacheManager = cacheManager;
+    }
+
+    /**
+     * Returns the repository Item Uid Factory.
+     * 
+     * @return
+     */
+    protected RepositoryItemUidFactory getRepositoryItemUidFactory()
+    {
+        return repositoryItemUidFactory;
     }
 
     /**
@@ -783,18 +793,7 @@ public abstract class AbstractRepository
 
         try
         {
-            StorageItem item = null;
-
-            repositoryItemUidFactory.lock( uid );
-
-            try
-            {
-                item = doRetrieveItem( uid, context );
-            }
-            finally
-            {
-                repositoryItemUidFactory.unlock( uid );
-            }
+            StorageItem item = doRetrieveItem( uid, context );
 
             // Dyna content?
             if ( item instanceof StorageFileItem
@@ -870,32 +869,42 @@ public abstract class AbstractRepository
 
         maintainNotFoundCache( from.getPath() );
 
-        StorageItem item = retrieveItem( from, context );
+        getRepositoryItemUidFactory().lock( from );
 
-        if ( StorageFileItem.class.isAssignableFrom( item.getClass() ) )
+        getRepositoryItemUidFactory().lock( to );
+
+        try
         {
-            try
-            {
-                DefaultStorageFileItem target =
-                    new DefaultStorageFileItem(
-                                                this,
-                                                to.getPath(),
-                                                true,
-                                                true,
-                                                new PreparedContentLocator( ( (StorageFileItem) item ).getInputStream() ) );
+            StorageItem item = retrieveItem( from, context );
 
-                target.getItemContext().putAll( item.getItemContext() );
-
-                storeItem( target );
-            }
-            catch ( IOException e )
+            if ( StorageFileItem.class.isAssignableFrom( item.getClass() ) )
             {
-                throw new StorageException( "Could not get the content of source file (is it file?)!", e );
+                try
+                {
+                    DefaultStorageFileItem target =
+                        new DefaultStorageFileItem( this, to.getPath(), true, true,
+                                                    new PreparedContentLocator( ( (StorageFileItem) item )
+                                                        .getInputStream() ) );
+
+                    target.getItemContext().putAll( item.getItemContext() );
+
+                    storeItem( target );
+
+                    // remove the "to" item from n-cache if there
+                    removeFromNotFoundCache( to.getPath() );
+                }
+                catch ( IOException e )
+                {
+                    throw new StorageException( "Could not get the content of source file (is it file?)!", e );
+                }
             }
         }
+        finally
+        {
+            getRepositoryItemUidFactory().unlock( from );
 
-        // remove the "to" item from n-cache if there
-        removeFromNotFoundCache( to.getPath() );
+            getRepositoryItemUidFactory().unlock( to );
+        }
     }
 
     public void moveItem( RepositoryItemUid from, RepositoryItemUid to, Map<String, Object> context )
@@ -911,9 +920,22 @@ public abstract class AbstractRepository
             throw new RepositoryNotAvailableException( this );
         }
 
-        copyItem( from, to, context );
+        getRepositoryItemUidFactory().lock( from );
 
-        deleteItem( from, context );
+        getRepositoryItemUidFactory().lock( to );
+
+        try
+        {
+            copyItem( from, to, context );
+
+            deleteItem( from, context );
+        }
+        finally
+        {
+            getRepositoryItemUidFactory().unlock( from );
+
+            getRepositoryItemUidFactory().unlock( to );
+        }
     }
 
     public void deleteItem( RepositoryItemUid uid, Map<String, Object> context )
@@ -931,36 +953,47 @@ public abstract class AbstractRepository
 
         maintainNotFoundCache( uid.getPath() );
 
-        // determine is the thing to be deleted a collection or not
-        StorageItem item = getLocalStorage().retrieveItem( this, context, uid.getPath() );
+        getRepositoryItemUidFactory().lock( uid );
 
-        if ( context != null )
+        try
         {
-            item.getItemContext().putAll( context );
-        }
+            // determine is the thing to be deleted a collection or not
+            StorageItem item = getLocalStorage().retrieveItem( this, context, uid.getPath() );
 
-        // fire the event for file being deleted
-        notifyProximityEventListeners( new RepositoryItemEventDelete( this, item ) );
-
-        if ( StorageCollectionItem.class.isAssignableFrom( item.getClass() ) )
-        {
-            if ( getLogger().isDebugEnabled() )
+            if ( context != null )
             {
-                getLogger().debug(
-                                   "We are deleting a collection, starting a walker to send delete notifications per-file." );
+                item.getItemContext().putAll( context );
             }
 
-            // it is collection, walk it and below and fire events for all files
-            DeletionNotifierWalker dnw = new DeletionNotifierWalker( this, context );
+            // fire the event for file being deleted
+            notifyProximityEventListeners( new RepositoryItemEventDelete( this, item ) );
 
-            DefaultWalkerContext ctx = new DefaultWalkerContext( this );
+            if ( StorageCollectionItem.class.isAssignableFrom( item.getClass() ) )
+            {
+                if ( getLogger().isDebugEnabled() )
+                {
+                    getLogger()
+                        .debug(
+                                "We are deleting a collection, starting a walker to send delete notifications per-file." );
+                }
 
-            ctx.getProcessors().add( dnw );
+                // it is collection, walk it and below and fire events for all files
+                DeletionNotifierWalker dnw = new DeletionNotifierWalker( this, context );
 
-            walker.walk( ctx, uid.getPath() );
+                DefaultWalkerContext ctx = new DefaultWalkerContext( this );
+
+                ctx.getProcessors().add( dnw );
+
+                walker.walk( ctx, uid.getPath() );
+            }
+
+            doDeleteItem( uid, context );
+        }
+        finally
+        {
+            getRepositoryItemUidFactory().unlock( uid );
         }
 
-        doDeleteItem( uid, context );
     }
 
     public void storeItem( StorageItem item )
@@ -976,12 +1009,23 @@ public abstract class AbstractRepository
             throw new RepositoryNotAvailableException( this );
         }
 
+        RepositoryItemUid uid = createUid( item.getPath() );
+
         // replace UID to own one
-        item.setRepositoryItemUid( createUid( item.getPath() ) );
+        item.setRepositoryItemUid( uid );
 
-        // store it
-        getLocalStorage().storeItem( this, item.getItemContext(), item );
+        getRepositoryItemUidFactory().lock( uid );
 
+        try
+        {
+            // store it
+            getLocalStorage().storeItem( this, item.getItemContext(), item );
+        }
+        finally
+        {
+            getRepositoryItemUidFactory().unlock( uid );
+        }
+        
         // remove the "request" item from n-cache if there
         removeFromNotFoundCache( item.getRepositoryItemUid().getPath() );
 
@@ -1036,7 +1080,7 @@ public abstract class AbstractRepository
 
     public RepositoryItemUid createUid( String path )
     {
-        return repositoryItemUidFactory.createUid( this, path );
+        return getRepositoryItemUidFactory().createUid( this, path );
     }
 
     // ===================================================================================
