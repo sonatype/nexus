@@ -163,9 +163,10 @@ Sonatype.repoServer.ArtifactoryMigrationPanel = function( config ) {
       {
         style: 'padding: 10px;',
         cls: 'x-form-item',
-        html: 'The Artifactory Import is used to import an existing Artifactory configuration into Nexus.<br/><br/>' +
-          'In order to proceed, you will first place a .zip file with an Artifactory configuration backup to the server where Nexus is running.<br>' +
-          'Once the file is on the Nexus server, you will specify its location in Step 1. Load Artifactory Configuration, and then you will be presented with a list of available repositories and import options, which is customizable in Step 2. Customize Import on Artifactory Import.'
+        html: 'The Artifactory Import is used to import an existing Artifactory System Export into Nexus.  It is tested against Artifactory 1.2.5 and 2.0.6, but it should be compatible with other versions.<br/><br/>' +
+          '1 - Create an Artifactory "Entire System Export", the same used to migrate between Artifactory versions.  It can be zipped or not, both are supported.  The options "Include metadata" and "Create a .m2 compatible export" aren\'t relevant<br>' +
+          '2 - Place this System Export on the server where Nexus is running.<br>' +
+          '3 - Specify its location in Step 1. Load Artifactory Configuration, and then you will be presented with a list of available repositories and import options, which is customizable in Step 2. Customize Import on Artifactory Import.'
       },
       { 
         xtype: 'panel',
@@ -186,7 +187,7 @@ Sonatype.repoServer.ArtifactoryMigrationPanel = function( config ) {
               {
                 style: 'padding-bottom: 10px',
                 cls: 'x-form-item',
-                html: 'Enter the path on the server to the location of your .zip file containing the Artifactory configuration backup and select "Load".'
+                html: 'Enter the path on the server to the location of your Artifactory System Export and select "Load".'
               },
               {
                 xtype: 'panel',
@@ -541,7 +542,7 @@ Ext.extend( Sonatype.repoServer.ArtifactoryMigrationPanel, Ext.Panel, {
             this.formPanel.buttons[1].setDisabled( false );
             Sonatype.MessageBox.show( {
               title: 'Import Scheduled',
-              msg: 'Artifactory backup import scheduled',
+              msg: 'Artifactory importation started.  Click on "Show Log" for details.',
               buttons: Sonatype.MessageBox.OK,
               icon: Sonatype.MessageBox.INFO
             } );
