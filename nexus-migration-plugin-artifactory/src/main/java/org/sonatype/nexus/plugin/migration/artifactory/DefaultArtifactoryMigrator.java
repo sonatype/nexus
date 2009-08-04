@@ -565,6 +565,10 @@ public class DefaultArtifactoryMigrator
             {
                 group.setType( "maven1" );
             }
+            else
+            {
+                group.setType( "maven2" );
+            }
 
             for ( final String repoId : virtualRepo.getResolvedRepositories() )
             {
