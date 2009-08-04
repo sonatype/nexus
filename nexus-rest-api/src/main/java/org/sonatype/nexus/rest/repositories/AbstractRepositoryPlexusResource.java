@@ -37,6 +37,7 @@ import org.sonatype.nexus.proxy.repository.HostedRepository;
 import org.sonatype.nexus.proxy.repository.ProxyRepository;
 import org.sonatype.nexus.proxy.repository.RemoteStatus;
 import org.sonatype.nexus.proxy.repository.Repository;
+import org.sonatype.nexus.proxy.repository.RepositoryWritePolicy;
 import org.sonatype.nexus.proxy.repository.ShadowRepository;
 import org.sonatype.nexus.rest.AbstractNexusPlexusResource;
 import org.sonatype.nexus.rest.NexusCompat;
@@ -268,16 +269,8 @@ public abstract class AbstractRepositoryPlexusResource
 
         resource.setName( repository.getName() );
 
-        // FIXME: set ENUM correctly 
-        if( repository.isAllowWrite())
-        {
-            resource.setWritePolicy( RepositoryWritePolicy.ALLOW_WRITE.name() );
-        }
-        else 
-        {
-            resource.setWritePolicy( RepositoryWritePolicy.READ_ONLY.name() );
-        }
-
+        resource.setWritePolicy( repository.getWritePolicy().name() );
+        
         resource.setBrowseable( repository.isBrowseable() );
 
         resource.setIndexable( repository.isIndexable() );
@@ -423,7 +416,7 @@ public abstract class AbstractRepositoryPlexusResource
         return cRemoteConnectionSettings;
     }
     
-    // temporary method to allow refactoring
+    // FIXME: temporary method to allow refactoring, remove this when cstamas is finished with the configuration changes
     protected boolean isWriteAllowed( String writePolicy )
     {
         if( StringUtils.isEmpty( writePolicy ))

@@ -133,12 +133,31 @@ public class ConfigurableRepository
         getCurrentConfiguration( true ).setLocalStatus( localStatus.toString() );
     }
 
-    public boolean isAllowWrite()
+  //TODO: these might need to moved
+    public RepositoryWritePolicy getWritePolicy()
+    {
+        if( this.isAllowWrite())
+        {
+            return RepositoryWritePolicy.ALLOW_WRITE;
+        }
+        else
+        {
+            return RepositoryWritePolicy.READ_ONLY;
+        }
+    }
+
+    public void setWritePolicy( RepositoryWritePolicy writePolicy )
+    {
+        this.setAllowWrite( RepositoryWritePolicy.ALLOW_WRITE.equals( writePolicy ) );
+    }    
+    
+    // FIXME: this need to be removed
+    protected boolean isAllowWrite()
     {
         return getCurrentConfiguration( false ).isAllowWrite();
     }
 
-    public void setAllowWrite( boolean allowWrite )
+    protected void setAllowWrite( boolean allowWrite )
     {
         getCurrentConfiguration( true ).setAllowWrite( allowWrite );
     }

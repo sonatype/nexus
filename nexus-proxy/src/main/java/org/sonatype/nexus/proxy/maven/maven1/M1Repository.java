@@ -21,7 +21,9 @@ import org.sonatype.nexus.artifact.IllegalArtifactCoordinateException;
 import org.sonatype.nexus.artifact.M1ArtifactRecognizer;
 import org.sonatype.nexus.configuration.Configurator;
 import org.sonatype.nexus.configuration.Validator;
+import org.sonatype.nexus.proxy.IllegalRequestException;
 import org.sonatype.nexus.proxy.ResourceStoreRequest;
+import org.sonatype.nexus.proxy.access.Action;
 import org.sonatype.nexus.proxy.item.StorageItem;
 import org.sonatype.nexus.proxy.maven.AbstractMavenRepository;
 import org.sonatype.nexus.proxy.maven.RepositoryPolicy;
@@ -173,4 +175,18 @@ public class M1Repository
     {
         return false;
     }
+    
+    @Override
+    protected void enforceWritePolicy( ResourceStoreRequest request, Action action )
+        throws IllegalRequestException
+    {
+        // allow updating of metadata
+        // we also need to allow updating snapshots
+        if( !M1ArtifactRecognizer.isMetadata( request.getRequestPath() ) && 
+            !M1ArtifactRecognizer.isSnapshot( request.getRequestPath() ) )
+        {
+            super.enforceWritePolicy( request, action );
+        }
+    } 
+    
 }
