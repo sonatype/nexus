@@ -574,6 +574,12 @@ public class DefaultArtifactoryMigrator
             {
                 RepositoryResolutionDTO repoResolution = result.getMigrationSummary().getRepositoryResolution( repoId );
 
+                if ( repoResolution == null )
+                {
+                    // will happen if the user decide to not import any repo
+                    continue;
+                }
+
                 if ( ERepositoryType.PROXY.equals( repoResolution.getType() )
                     && repoResolution.isMergeSimilarRepository() )
                 {
