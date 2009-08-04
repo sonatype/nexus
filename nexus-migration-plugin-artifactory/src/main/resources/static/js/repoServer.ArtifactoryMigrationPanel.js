@@ -45,7 +45,8 @@ Sonatype.repoServer.ArtifactoryMigrationPanel = function( config ) {
         mapping: 'isMixed',
         convert: function( v, rec ) { return v ? rec.repositoryTypeResolution.toLowerCase().replace( /_/g, ' ' ) : ''; }
       },
-      { name: 'isImport', type: 'bool', defaultValue: true }
+      { name: 'isImport', type: 'bool', defaultValue: true },
+      { name: 'alreadyExists' }
     ]
   } );
 
@@ -73,7 +74,8 @@ Sonatype.repoServer.ArtifactoryMigrationPanel = function( config ) {
         mapping: 'isMixed',
         convert: function( v, rec ) { return v ? rec.mixResolution.toLowerCase().replace( /_/g, ' ' ) : ''; }
       },
-      { name: 'isImport', type: 'bool', defaultValue: true }
+      { name: 'isImport', type: 'bool', defaultValue: true },
+      { name: 'alreadyExists' }
     ]
   } );
 
@@ -100,7 +102,32 @@ Sonatype.repoServer.ArtifactoryMigrationPanel = function( config ) {
   var repoImportColumn = new Ext.grid.CheckColumn( {
     header: 'Import',
     dataIndex: 'isImport',
-    width: 45
+    width: 45,
+    onMouseDown : function(e, t)
+    {
+      if (t.className && t.className.indexOf('x-grid3-cc-'+this.id) != -1)
+      {
+        e.stopEvent();
+    
+        var index = this.grid.getView().findRowIndex(t);
+        var record = this.grid.store.getAt(index);
+    
+        var alreadyExists = record.data.alreadyExists;
+    
+        if ( alreadyExists ) {
+          var repoId  = record.data.repositoryId;
+          
+          Sonatype.MessageBox.show( {
+            title: 'Unable to import "' + repoId + '"',
+            msg: 'A repository with the same ID already exists!',
+            buttons: Sonatype.MessageBox.OK,
+            icon: Sonatype.MessageBox.WARNING
+          } );
+        } else {
+          record.set(this.dataIndex, !record.data[this.dataIndex]);        
+        }
+      }
+    } 
   } );
 
   var mapUrlsColumn = new Ext.grid.CheckColumn( {
@@ -143,6 +170,59 @@ Sonatype.repoServer.ArtifactoryMigrationPanel = function( config ) {
     header: 'Admin',
     dataIndex: 'isAdmin',
     width: 45
+  } );
+  
+  this.repositoryGrid = new Ext.grid.EditorGridPanel( {
+    xtype: 'editorgrid',
+    title: 'Repositories',
+    region: 'center',
+    frame: true,
+    ds: this.repoStore,
+    sortInfo: { field: 'repositoryId', direction: 'asc' },
+    loadMask: true,
+    deferredRender: true,
+    clicksToEdit: 1,
+    plugins: [ repoImportColumn, mapUrlsColumn, copyCachedArtifactsColumn, mergeWithColumn ],
+    columns: [
+      repoImportColumn,
+      { header: 'Repository ID', dataIndex: 'repositoryId', width: 200 },
+      { header: 'Type', dataIndex: 'displayType', width: 55 },
+      mapUrlsColumn,
+      copyCachedArtifactsColumn,
+      { 
+        header: 'Releases/Snapshots', 
+        dataIndex: 'displayMixedResolution', 
+        width: 120, 
+        editor: new Ext.form.ComboBox( {
+          typeAhead: true,
+          forceSelection: true,
+          selectOnFocus: true,
+          triggerAction: 'all',
+          store: mixResolutionStore,
+          mode: 'local',
+          displayField: 'value',
+          valueField: 'value',
+          lazyRender: true,
+          listClass: 'x-combo-list-small'
+        } )
+      },
+      mergeWithColumn
+    ],
+    listeners: {
+      beforeedit: function( e ) {
+          var rec = e.record;
+          var alreadyExists = rec.data.alreadyExists;
+          if( alreadyExists ) {
+              return false;
+          }
+
+        return e.value != '';
+      },
+      scope: this
+    },
+    tools: [
+      { id: 'help', qtip: 'List of repositories to be imported.  Uncheck "Import" flag to prevent the repository from being imported.', handler: function(){ } }
+    ]
   } );
   
   this.formPanel = new Ext.form.FormPanel( {
@@ -285,6 +365,14 @@ Sonatype.repoServer.ArtifactoryMigrationPanel = function( config ) {
                         } )
                       }
                     ],
+                   listeners: {
+                      beforeedit: function( e ) {
+                          var rec = e.record;
+                          var alreadyExists = rec.data.alreadyExists;
+                        return !alreadyExists;
+                      },
+                      scope: this
+                    },
                     tools: [
                       { id: 'help', qtip: 'List of groups to be imported.  Uncheck "Import" flag to prevent the group from being imported.', handler: function(){ } }
                     ]
@@ -297,52 +385,7 @@ Sonatype.repoServer.ArtifactoryMigrationPanel = function( config ) {
                 autoScroll: true,
                 layout: 'border',
                 items: [
-                  {
-                    xtype: 'editorgrid',
-                    title: 'Repositories',
-                    region: 'center',
-                    frame: true,
-                    ds: this.repoStore,
-                    sortInfo: { field: 'repositoryId', direction: 'asc' },
-                    loadMask: true,
-                    deferredRender: true,
-                    clicksToEdit: 1,
-                    plugins: [ repoImportColumn, mapUrlsColumn, copyCachedArtifactsColumn, mergeWithColumn ],
-                    columns: [
-                      repoImportColumn,
-                      { header: 'Repository ID', dataIndex: 'repositoryId', width: 200 },
-                      { header: 'Type', dataIndex: 'displayType', width: 55 },
-                      mapUrlsColumn,
-                      copyCachedArtifactsColumn,
-                      { 
-                        header: 'Releases/Snapshots', 
-                        dataIndex: 'displayMixedResolution', 
-                        width: 120, 
-                        editor: new Ext.form.ComboBox( {
-                          typeAhead: true,
-                          forceSelection: true,
-                          selectOnFocus: true,
-                          triggerAction: 'all',
-                          store: mixResolutionStore,
-                          mode: 'local',
-                          displayField: 'value',
-                          valueField: 'value',
-                          lazyRender: true,
-                          listClass: 'x-combo-list-small'
-                        } )
-                      },
-                      mergeWithColumn
-                    ],
-                    listeners: {
-                      beforeedit: function( e ) {
-                        return e.value != '';
-                      },
-                      scope: this
-                    },
-                    tools: [
-                      { id: 'help', qtip: 'List of repositories to be imported.  Uncheck "Import" flag to prevent the repository from being imported.', handler: function(){ } }
-                    ]
-                  }
+                  this.repositoryGrid
                 ]
               },
               {
