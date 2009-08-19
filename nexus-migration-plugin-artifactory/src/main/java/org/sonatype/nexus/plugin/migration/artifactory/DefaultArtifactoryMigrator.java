@@ -470,6 +470,11 @@ public class DefaultArtifactoryMigrator
     {
         String repoId = repo.getKey();
         String repoName = repo.getDescription();
+        if ( repoName == null )
+        {
+            repoName = repoId;
+        }
+
         if ( suffix != null )
         {
             repoId += "-" + suffix;
