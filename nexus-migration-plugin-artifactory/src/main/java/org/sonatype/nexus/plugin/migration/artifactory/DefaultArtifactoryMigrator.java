@@ -478,6 +478,8 @@ public class DefaultArtifactoryMigrator
         CRepository nexusRepo = new CRepository();
         nexusRepo.setId( repoId );
         nexusRepo.setName( repoName );
+        nexusRepo.setAllowWrite( true );
+
         if ( isSnapshot )
         {
             nexusRepo.setRepositoryPolicy( CRepository.REPOSITORY_POLICY_SNAPSHOT );
