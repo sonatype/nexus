@@ -17,7 +17,7 @@ public class Nexus2499DeployNewArtifactsAfterImportTest
 {
 
     @Test
-    public void importMixedRepo()
+    public void deployAfterImport()
         throws Exception
     {
         MigrationSummaryDTO migrationSummary = prepareMigration( getTestFile( "20090818.120005.zip" ) );
