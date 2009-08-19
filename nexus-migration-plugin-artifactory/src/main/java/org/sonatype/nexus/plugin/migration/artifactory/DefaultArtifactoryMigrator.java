@@ -293,10 +293,11 @@ public class DefaultArtifactoryMigrator
         {
             result.addInfoMessage( "Importing user: " + userResolution.getUserId() );
 
-            ArtifactoryUser user =
-                new ArtifactoryUser( userResolution.getUserId(), userResolution.getPassword(),
-                                     userResolution.getEmail() );
+            ArtifactoryUser user = cfg.getUserByUsername( userResolution.getUserId() );
 
+            user.setUsername( userResolution.getUserId() );
+            user.setPassword( userResolution.getPassword() );
+            user.setEmail( userResolution.getEmail() );
             user.setAdmin( userResolution.isAdmin() );
 
             userList.add( user );
@@ -478,6 +479,8 @@ public class DefaultArtifactoryMigrator
         CRepository nexusRepo = new CRepository();
         nexusRepo.setId( repoId );
         nexusRepo.setName( repoName );
+        nexusRepo.setAllowWrite( true );
+
         if ( isSnapshot )
         {
             nexusRepo.setRepositoryPolicy( CRepository.REPOSITORY_POLICY_SNAPSHOT );
