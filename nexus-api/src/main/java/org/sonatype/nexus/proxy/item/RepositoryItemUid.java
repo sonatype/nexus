@@ -13,6 +13,7 @@
  */
 package org.sonatype.nexus.proxy.item;
 
+import org.sonatype.nexus.proxy.access.Action;
 import org.sonatype.nexus.proxy.repository.Repository;
 
 /**
@@ -43,4 +44,16 @@ public interface RepositoryItemUid
      * @return
      */
     String getPath();
+
+    /**
+     * Locks this UID for action. Will perform lock upgrade is needed (read -> write).
+     * 
+     * @param action
+     */
+    void lock( Action action );
+
+    /**
+     * Unlocks UID.
+     */
+    void unlock();
 }
