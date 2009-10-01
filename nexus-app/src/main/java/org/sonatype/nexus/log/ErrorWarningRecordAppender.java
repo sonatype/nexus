@@ -5,6 +5,7 @@ import org.apache.log4j.Level;
 import org.apache.log4j.spi.LoggingEvent;
 import org.sonatype.nexus.feeds.ErrorWarningEvent;
 import org.sonatype.nexus.feeds.FeedRecorder;
+import org.sonatype.timeline.TimelineException;
 
 /**
  * This class extends log4j, record all error/warning log
