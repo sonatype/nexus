@@ -23,6 +23,13 @@ public class ErrorWarningRecordAppender
         {
             return;
         }
+        
+        // hack to prevent infinite loop
+        if ( event.getThrowableInformation() != null
+            && event.getThrowableInformation().getThrowable() instanceof TimelineException )
+        {
+            return;
+        }
 
         String action = "";
 
