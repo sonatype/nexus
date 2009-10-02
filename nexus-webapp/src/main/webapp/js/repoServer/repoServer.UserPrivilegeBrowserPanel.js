@@ -280,6 +280,7 @@ Ext.extend( Sonatype.repoServer.UserPrivilegeBrowsePanel, Ext.FormPanel, {
             function( rec, recid ) {
               return rec.id == this.getRoleIdFromPayload( userRoles[i] );
             }, this ) );
+        if ( role ){
         var childRouteArray = this.getPrivilegeRoleRouteArray( privId, role.data );
         if ( childRouteArray ){
           for ( var j = 0 ; j < childRouteArray.length ; j++ ){
@@ -287,6 +288,7 @@ Ext.extend( Sonatype.repoServer.UserPrivilegeBrowsePanel, Ext.FormPanel, {
           }
         }        
       }
+    }
     }
     
     routeArray.sort();
