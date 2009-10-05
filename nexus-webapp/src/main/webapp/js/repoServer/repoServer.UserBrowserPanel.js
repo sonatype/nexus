@@ -3,6 +3,13 @@ Ext.tree.UserTreeLoader = function(config){
 };
 
 Ext.extend(Ext.tree.UserTreeLoader, Ext.tree.SonatypeTreeLoader, {  
+  getRoleIdFromPayload : function( role ) {
+    if ( role.roleId ) {
+      return role.roleId;
+    }
+    
+    return role;
+  },
   //override to request data according ot Sonatype's Nexus REST service
   requestData : function(node, callback){
       if(this.fireEvent("beforeload", this, node, callback) !== false){
@@ -36,7 +43,7 @@ Ext.extend(Ext.tree.UserTreeLoader, Ext.tree.SonatypeTreeLoader, {
           node.beginUpdate();
           if ( roles ) {
             for(var i = 0, len = roles.length; i < len; i++){
-                var n = this.createNode(node.id, roles[i], true );
+                var n = this.createNode(node.id, this.getRoleIdFromPayload(roles[i]), true );
                 if(n){
                     node.appendChild(n);
                 }
@@ -71,35 +78,46 @@ Ext.extend(Ext.tree.UserTreeLoader, Ext.tree.SonatypeTreeLoader, {
             function( rec, recid ) {
               return rec.id == id;
             }, this ) );
-        attr.id = parentId + '$$' + Sonatype.config.repos.urls.roles + '/' + id + '/';
-        attr.text = role.data.name;
-        attr.qtip = role.data.description;
-        attr.leaf = false;
+        
+        if ( role ) {
+          attr.id = parentId + '$$' + Sonatype.config.repos.urls.roles + '/' + id + '/';
+          attr.text = role.data.name;
+          attr.qtip = role.data.description;
+          attr.leaf = false;
+        }
       }
       else {
         var priv = this.privDataStore.getAt( this.privDataStore.findBy( 
             function( rec, recid ) {
               return rec.id == id;
             }, this ) );
-        attr.id = parentId + '$$' + Sonatype.config.repos.urls.privileges + '/' + id + '/';
-        attr.text = priv.data.name;
-        attr.qtip = priv.data.description;
-        attr.leaf = true;
+        
+        if ( priv ) {
+          attr.id = parentId + '$$' + Sonatype.config.repos.urls.privileges + '/' + id + '/';
+          attr.text = priv.data.name;
+          attr.qtip = priv.data.description;
+          attr.leaf = true;
+        }
       }
 
-      if(this.applyLoader !== false){
-          attr.loader = this;
+      if ( attr.id ) {
+        if(this.applyLoader !== false){
+            attr.loader = this;
+        }
+        
+        if(typeof attr.uiProvider == 'string'){
+           attr.uiProvider = this.uiProviders[attr.uiProvider] || eval(attr.uiProvider);
+        }
+        
+        attr.singleClickExpand = true;                                      //diff
+        
+        return(isRole ?
+                        new Ext.tree.AsyncTreeNode(attr) :
+                        new Ext.tree.TreeNode(attr));
       }
-      
-      if(typeof attr.uiProvider == 'string'){
-         attr.uiProvider = this.uiProviders[attr.uiProvider] || eval(attr.uiProvider);
+      else {
+        return null;
       }
-      
-      attr.singleClickExpand = true;                                      //diff
-      
-      return(isRole ?
-                      new Ext.tree.AsyncTreeNode(attr) :
-                      new Ext.tree.TreeNode(attr));
   },
   getResourceURIFromId : function( id ){
     var index = id.lastIndexOf( '$$' );
