@@ -83,7 +83,7 @@ Sonatype.repoServer.ArtifactInformationPanel = function( config ) {
                 xtype: 'textarea',
                 fieldLabel: 'XML',
                 anchor: Sonatype.view.FIELD_OFFSET,
-                height: '100%',
+                height: 100,
                 name: 'xml',
                 allowBlank: true,
                 readOnly: true
