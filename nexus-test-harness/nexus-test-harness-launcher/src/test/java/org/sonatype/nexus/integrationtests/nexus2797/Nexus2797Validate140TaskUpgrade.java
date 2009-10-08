@@ -2,13 +2,11 @@ package org.sonatype.nexus.integrationtests.nexus2797;
 
 import java.util.Calendar;
 import java.util.Date;
-import java.util.List;
 
 import junit.framework.Assert;
 
 import org.junit.Test;
 import org.sonatype.nexus.integrationtests.AbstractNexusIntegrationTest;
-import org.sonatype.nexus.rest.model.ScheduledServiceListResource;
 import org.sonatype.nexus.test.utils.NexusStatusUtil;
 import org.sonatype.nexus.test.utils.TaskScheduleUtil;
 
@@ -30,26 +28,25 @@ public class Nexus2797Validate140TaskUpgrade
     
     private void doIt()
         throws Exception
-    {
-        List<ScheduledServiceListResource> tasks = TaskScheduleUtil.getTasks();
-        
-        Assert.assertEquals( 3, tasks.size() );
-        
-        Date lastRunTime = new Date( 1111111111131l );
-        
+    {        
         // not quite sure why, but we add 20 ms to the last run time when calling
         // setLastRun in DefaultScheduledTask
-        Assert.assertEquals( lastRunTime.toString(), tasks.get( 0 ).getLastRunTime() );
-        Assert.assertEquals( lastRunTime.toString(), tasks.get( 1 ).getLastRunTime() );
-        Assert.assertEquals( lastRunTime.toString(), tasks.get( 2 ).getLastRunTime() );
+        Date lastRunTime = new Date( 1111111111131l );
         
-        Date nextRunTime = fixNextRunTime( new Date( 1230777000000l ) );
+        Assert.assertEquals( lastRunTime.toString(), TaskScheduleUtil.getTask( "task1" ).getLastRunTime() );
+        Assert.assertEquals( lastRunTime.toString(), TaskScheduleUtil.getTask( "task2" ).getLastRunTime() );
+        Assert.assertEquals( lastRunTime.toString(), TaskScheduleUtil.getTask( "task3" ).getLastRunTime() );
+        Assert.assertEquals( "n/a", TaskScheduleUtil.getTask( "task4" ).getLastRunTime() );
         
         //problem was simply that next run time was invalidly calculated, and never set
-        //we simply want to make sure it is set        
-        Assert.assertEquals( nextRunTime.toString(), tasks.get( 0 ).getNextRunTime() );
-        Assert.assertEquals( nextRunTime.toString(), tasks.get( 1 ).getNextRunTime() );
-        Assert.assertEquals( nextRunTime.toString(), tasks.get( 2 ).getNextRunTime() );
+        //we simply want to make sure it is set
+        //we need to fix the next run time, as it will change depending on current date
+        Date nextRunTime = fixNextRunTime( new Date( 1230777000000l ) );
+        
+        Assert.assertEquals( nextRunTime.toString(), TaskScheduleUtil.getTask( "task1" ).getNextRunTime() );
+        Assert.assertEquals( nextRunTime.toString(), TaskScheduleUtil.getTask( "task2" ).getNextRunTime() );
+        Assert.assertEquals( nextRunTime.toString(), TaskScheduleUtil.getTask( "task3" ).getNextRunTime() );
+        Assert.assertEquals( nextRunTime.toString(), TaskScheduleUtil.getTask( "task4" ).getNextRunTime() );
     }
     
     private Date fixNextRunTime( Date nextRunTime )
