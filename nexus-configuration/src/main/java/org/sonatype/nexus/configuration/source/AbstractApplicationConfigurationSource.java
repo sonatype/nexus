@@ -24,6 +24,7 @@ import java.io.Writer;
 import org.codehaus.plexus.component.annotations.Requirement;
 import org.codehaus.plexus.interpolation.InterpolatorFilterReader;
 import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
+import org.sonatype.configuration.ConfigurationException;
 import org.sonatype.nexus.configuration.model.Configuration;
 import org.sonatype.nexus.configuration.model.io.xpp3.NexusConfigurationXpp3Reader;
 import org.sonatype.nexus.configuration.model.io.xpp3.NexusConfigurationXpp3Writer;
@@ -78,7 +79,8 @@ public abstract class AbstractApplicationConfigurationSource
      * @throws IOException Signals that an I/O exception has occurred.
      */
     protected void loadConfiguration( InputStream is )
-        throws IOException
+        throws IOException,
+            ConfigurationException
     {
         setConfigurationUpgraded( false );
 
@@ -97,12 +99,9 @@ public abstract class AbstractApplicationConfigurationSource
         }
         catch ( XmlPullParserException e )
         {
-            rejectConfiguration( "Nexus configuration file was not loaded, it has the wrong structure.", e );
-
-            if ( getLogger().isDebugEnabled() )
-            {
-                getLogger().debug( "Nexus.xml is broken:", e );
-            }
+            configuration = null;
+            
+            throw new ConfigurationException( "Nexus configuration file was not loaded, it has the wrong structure.", e );
         }
         finally
         {
