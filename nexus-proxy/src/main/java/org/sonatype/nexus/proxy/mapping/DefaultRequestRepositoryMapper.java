@@ -175,8 +175,11 @@ public class DefaultRequestRepositoryMapper
             {
                 reposList.clear();
 
-                getLogger().info(
-                    "The request path [" + request.toString() + "] is blocked by rule " + mapping.toString() );
+                if ( getLogger().isDebugEnabled() )
+                {
+                    getLogger().debug(
+                        "The request path [" + request.toString() + "] is blocked by rule " + mapping.toString() );
+                }
 
                 return reposList;
             }
@@ -249,12 +252,12 @@ public class DefaultRequestRepositoryMapper
 
         // store the applied mappings to request context
         ArrayList<String> appliedMappingsList = new ArrayList<String>( appliedMappings.size() );
-        
+
         for ( RepositoryPathMapping mapping : appliedMappings )
         {
             appliedMappingsList.add( mapping.toString() );
         }
-        
+
         request.addAppliedMappingsList( repository, appliedMappingsList );
 
         // log it if needed
