@@ -152,7 +152,7 @@
     </repositoryTarget>
   </repositoryTargets>
   <smtpConfiguration>
-    <host>smtp-host</host>
+    <host>127.0.0.5</host>
     <port>25</port>
     <username>smtp-username</username>
     <password>{BVd/m55nCFAHFcgkcelAUZpVF68spHdBEN0dEc1tKmY=}</password>

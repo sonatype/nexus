@@ -23,6 +23,7 @@ import org.codehaus.plexus.util.IOUtil;
 import org.codehaus.plexus.util.StringUtils;
 import org.sonatype.configuration.upgrade.SingleVersionUpgrader;
 import org.sonatype.nexus.configuration.AbstractNexusTestCase;
+import org.sonatype.nexus.configuration.PasswordHelper;
 import org.sonatype.nexus.configuration.model.Configuration;
 import org.sonatype.nexus.configuration.model.io.xpp3.NexusConfigurationXpp3Writer;
 import org.sonatype.security.configuration.model.SecurityConfiguration;
@@ -332,7 +333,7 @@ public class DefaultApplicationConfigurationUpgraderTest
 
         resultIsFine( "/org/sonatype/nexus/configuration/upgrade/nexus-108-with-mirrors.xml", configuration );
     }
-    
+
     public void testFrom108()
         throws Exception
     {
@@ -344,6 +345,10 @@ public class DefaultApplicationConfigurationUpgraderTest
 
         resultIsFine( "/org/sonatype/nexus/configuration/upgrade/nexus-108.xml", configuration );
         securityResultIsFine( "/org/sonatype/nexus/configuration/upgrade/security-configuration-108.xml" );
+
+        assertEquals( "127.0.0.5", configuration.getSmtpConfiguration().getHostname() );
+        PasswordHelper pwHelper = lookup( PasswordHelper.class );
+        assertEquals( "smtp-password", pwHelper.decrypt( configuration.getSmtpConfiguration().getPassword() ) );
     }
 
 }
