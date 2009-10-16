@@ -14,10 +14,6 @@
   <!-- a short but descriptive name for the project -->
   <name>Nexus (Mock Application frontend)</name>
 
-  <properties>
-    <nexus.version>1.4.0-SNAPSHOT</nexus.version>
-  </properties>
-
   <build>
     <resources>
       <resource>
