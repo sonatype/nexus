@@ -8,7 +8,7 @@
   </parent>
   <groupId>org.sonatype.nexus</groupId>
   <artifactId>nexus-parent</artifactId>
-  <version>10</version>
+  <version>10.1-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>Sonatype Nexus Parent</name>
 
@@ -21,7 +21,7 @@
   <properties>
     <jetty.version>6.1.19</jetty.version>
     <plexus-utils.version>1.5.5</plexus-utils.version>
-    <plexus-container.version>1.2.1</plexus-container.version>
+    <plexus-container.version>1.2.1.1</plexus-container.version>
   </properties>
 
   <dependencyManagement>
