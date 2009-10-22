@@ -214,7 +214,7 @@ public class NexusApplication
     /**
      * Listener.
      */
-    public void onEvent( Event evt )
+    public void onEvent( Event<?> evt )
     {
         if ( NexusStartedEvent.class.isAssignableFrom( evt.getClass() ) )
         {
@@ -232,6 +232,9 @@ public class NexusApplication
     @Override
     protected void doConfigure()
     {
+        // NEXUS-2883: turning off Range support for now
+        getRangeService().setEnabled( false );
+        
         // adding ourselves as listener
         applicationEventMulticaster.addEventListener( this );
     }
