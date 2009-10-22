@@ -24,7 +24,11 @@ public abstract class AbstractRESTTest
 
     protected static final String TEST_NX_API_VERSION_SYSPROP = "test.nexus.api.version";
 
-    private static final String DEFAULT_TEST_NX_API_VERSION = "1.3.1";
+    private static final String DEFAULT_TEST_NX_API_VERSION = "1.3.2";
+
+    protected static final String DEFAULT_EXPECTED_USER = "user";
+
+    protected static final String DEFAULT_EXPECTED_PASSWORD = "password";
 
     /**
      * <p>
@@ -36,6 +40,16 @@ public abstract class AbstractRESTTest
      * </p>
      */
     protected abstract RESTTestFixture getTestFixture();
+
+    protected String getExpectedUser()
+    {
+        return DEFAULT_EXPECTED_USER;
+    }
+
+    protected String getExpectedPassword()
+    {
+        return DEFAULT_EXPECTED_PASSWORD;
+    }
 
     /**
      * Retrieve the base URL used by the test-harness server. This will serve as the base Nexus URL for tests.
@@ -114,7 +128,7 @@ public abstract class AbstractRESTTest
      */
     protected final GETFixture getVersionCheckFixture()
     {
-        GETFixture fixture = new GETFixture();
+        GETFixture fixture = new GETFixture( getExpectedUser(), getExpectedPassword() );
 
         Document doc = new Document().setRootElement( new Element( "status" ) );
         Element data = new Element( "data" );
