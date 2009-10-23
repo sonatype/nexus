@@ -12,6 +12,11 @@
 
   <dependencies>
     <dependency>
+        <groupId>org.sonatype.nexus.restlight</groupId>
+        <artifactId>nexus-restlight-client-common</artifactId>
+        <version>${project.version}</version>
+    </dependency>
+    <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <!-- Override scope from dependencyManagement. -->
@@ -29,7 +34,6 @@
     <dependency>
     	<groupId>commons-httpclient</groupId>
     	<artifactId>commons-httpclient</artifactId>
-    	<scope>test</scope>
     </dependency>
     <dependency>
     	<groupId>org.slf4j</groupId>

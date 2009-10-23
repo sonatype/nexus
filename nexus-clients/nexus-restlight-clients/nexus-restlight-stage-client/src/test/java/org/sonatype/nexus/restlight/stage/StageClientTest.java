@@ -42,7 +42,7 @@ public class StageClientTest
     extends AbstractRESTTest
 {
 
-    private final ConversationalFixture fixture = new ConversationalFixture();
+    private final ConversationalFixture fixture = new ConversationalFixture( getExpectedUser(), getExpectedPassword() );
 
     @Test
     public void queryAllOpenRepositoriesForUser()
@@ -50,7 +50,7 @@ public class StageClientTest
     {
         setupOpenReposConversation();
 
-        StageClient client = new StageClient( getBaseUrl(), "testuser", "unused" );
+        StageClient client = new StageClient( getBaseUrl(), getExpectedUser(), getExpectedPassword() );
 
         List<StageRepository> repositories = client.getOpenStageRepositoriesForUser();
 
@@ -78,7 +78,7 @@ public class StageClientTest
     {
         setupOpenReposConversation();
 
-        StageClient client = new StageClient( getBaseUrl(), "testuser", "unused" );
+        StageClient client = new StageClient( getBaseUrl(), getExpectedUser(), getExpectedPassword() );
 
         StageRepository repo = client.getOpenStageRepositoryForUser( "group", "artifact", "version" );
 
@@ -101,7 +101,7 @@ public class StageClientTest
     {
         setupOpenReposConversation();
         
-        POSTFixture finishPost = new POSTFixture();
+        POSTFixture finishPost = new POSTFixture( getExpectedUser(), getExpectedPassword() );
         
         finishPost.setExactURI( StageClient.PROFILES_PATH + "/112cc490b91265a1" + StageClient.STAGE_REPO_FINISH_ACTION );
         
@@ -118,7 +118,7 @@ public class StageClientTest
         
         fixture.getConversation().add( finishPost );
 
-        StageClient client = new StageClient( getBaseUrl(), "testuser", "unused" );
+        StageClient client = new StageClient( getBaseUrl(), getExpectedUser(), getExpectedPassword() );
 
         StageRepository repo = client.getOpenStageRepositoryForUser( "group", "artifact", "version" );
         
@@ -127,7 +127,7 @@ public class StageClientTest
         assertEquals( "tp1-002", repo.getRepositoryId() );
         assertEquals( "http://localhost:8082/nexus/content/repositories/tp1-002", repo.getUrl() );
         
-        client.finishRepository( repo );
+        client.finishRepository( repo, "this is a description" );
 
         List<RESTTestFixture> unused = fixture.verifyConversationWasFinished();
         if ( unused != null && !unused.isEmpty() )
@@ -143,7 +143,7 @@ public class StageClientTest
     {
         setupClosedReposConversation();
 
-        StageClient client = new StageClient( getBaseUrl(), "testuser", "unused" );
+        StageClient client = new StageClient( getBaseUrl(), getExpectedUser(), getExpectedPassword() );
 
         List<StageRepository> repos = client.getClosedStageRepositoriesForUser( "group", "artifact", "version" );
 
@@ -170,7 +170,7 @@ public class StageClientTest
     {
         setupClosedReposConversation();
 
-        StageClient client = new StageClient( getBaseUrl(), "testuser", "unused" );
+        StageClient client = new StageClient( getBaseUrl(), getExpectedUser(), getExpectedPassword() );
 
         List<StageRepository> repos = client.getClosedStageRepositoriesForUser();
 
@@ -198,13 +198,13 @@ public class StageClientTest
 
         conversation.add( getVersionCheckFixture() );
 
-        GETFixture repoListGet = new GETFixture();
+        GETFixture repoListGet = new GETFixture( getExpectedUser(), getExpectedPassword() );
         repoListGet.setExactURI( StageClient.PROFILES_PATH );
         repoListGet.setResponseDocument( readTestDocumentResource( "profile-list.xml" ) );
 
         conversation.add( repoListGet );
 
-        GETFixture reposGet = new GETFixture();
+        GETFixture reposGet = new GETFixture( getExpectedUser(), getExpectedPassword() );
         reposGet.setExactURI( StageClient.PROFILE_REPOS_PATH_PREFIX + "112cc490b91265a1" );
         reposGet.setResponseDocument( readTestDocumentResource( "profile-repo-list.xml" ) );
 
@@ -220,13 +220,13 @@ public class StageClientTest
 
         conversation.add( getVersionCheckFixture() );
 
-        GETFixture repoListGet = new GETFixture();
+        GETFixture repoListGet = new GETFixture( getExpectedUser(), getExpectedPassword() );
         repoListGet.setExactURI( StageClient.PROFILES_PATH );
         repoListGet.setResponseDocument( readTestDocumentResource( "profile-list-closed.xml" ) );
 
         conversation.add( repoListGet );
 
-        GETFixture reposGet = new GETFixture();
+        GETFixture reposGet = new GETFixture( getExpectedUser(), getExpectedPassword() );
         reposGet.setExactURI( StageClient.PROFILE_REPOS_PATH_PREFIX + "112cc490b91265a1" );
         reposGet.setResponseDocument( readTestDocumentResource( "profile-repo-list-closed.xml" ) );
 

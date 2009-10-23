@@ -12,9 +12,6 @@ import org.jdom.input.SAXBuilder;
 import org.jdom.output.Format;
 import org.jdom.output.XMLOutputter;
 import org.junit.Test;
-import org.sonatype.nexus.restlight.testharness.AbstractRESTTest;
-import org.sonatype.nexus.restlight.testharness.GETFixture;
-import org.sonatype.nexus.restlight.testharness.RESTTestFixture;
 
 import java.io.IOException;
 
@@ -23,7 +20,7 @@ public class GETFixtureTest
     extends AbstractRESTTest
 {
     
-    private final GETFixture fixture = new GETFixture();
+    private final GETFixture fixture = new GETFixture( getExpectedUser(), getExpectedPassword() );
     
     @Test
     public void testGet()
@@ -35,6 +32,7 @@ public class GETFixtureTest
         
         String url = "http://localhost:" + fixture.getPort();
         HttpClient client = new HttpClient();
+        setupAuthentication( client );
         
         GetMethod get = new GetMethod( url );
         

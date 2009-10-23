@@ -43,7 +43,7 @@ public class M2SettingsClientTest
     extends AbstractRESTTest
 {
     
-    private final ConversationalFixture fixture = new ConversationalFixture();
+    private final ConversationalFixture fixture = new ConversationalFixture( getExpectedUser(), getExpectedPassword() );
     
     @Test
     public void getSettingsTemplateUsingToken()
@@ -55,7 +55,7 @@ public class M2SettingsClientTest
         
         String token = "testToken";
         
-        GETFixture settingsGet = new GETFixture();
+        GETFixture settingsGet = new GETFixture( getExpectedUser(), getExpectedPassword() );
         settingsGet.setExactURI( M2SettingsClient.SETTINGS_TEMPLATE_BASE + token + M2SettingsClient.GET_CONTENT_ACTION );
         
         Document testDoc = readTestDocumentResource( "settings-template-" + token + ".xml" );
@@ -66,7 +66,7 @@ public class M2SettingsClientTest
         
         fixture.setConversation( conversation );
         
-        M2SettingsClient client = new M2SettingsClient( getBaseUrl(), "unused", "unused" );
+        M2SettingsClient client = new M2SettingsClient( getBaseUrl(), getExpectedUser(), getExpectedPassword() );
         
         Document doc = client.getSettingsTemplate( token );
         
@@ -84,7 +84,7 @@ public class M2SettingsClientTest
         
         String token = "testToken";
         
-        GETFixture settingsGet = new GETFixture();
+        GETFixture settingsGet = new GETFixture( getExpectedUser(), getExpectedPassword() );
         settingsGet.setExactURI( M2SettingsClient.SETTINGS_TEMPLATE_BASE + token + M2SettingsClient.GET_CONTENT_ACTION );
         
         Document testDoc = readTestDocumentResource( "settings-template-" + token + ".xml" );
@@ -95,7 +95,7 @@ public class M2SettingsClientTest
         
         fixture.setConversation( conversation );
         
-        M2SettingsClient client = new M2SettingsClient( getBaseUrl(), "unused", "unused" );
+        M2SettingsClient client = new M2SettingsClient( getBaseUrl(), getExpectedUser(), getExpectedPassword() );
         
         String url = getBaseUrl() + M2SettingsClient.SETTINGS_TEMPLATE_BASE + token + M2SettingsClient.GET_CONTENT_ACTION;
         Document doc = client.getSettingsTemplateAbsolute( url );

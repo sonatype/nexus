@@ -12,9 +12,6 @@ import org.jdom.JDOMException;
 import org.jdom.output.Format;
 import org.jdom.output.XMLOutputter;
 import org.junit.Test;
-import org.sonatype.nexus.restlight.testharness.AbstractRESTTest;
-import org.sonatype.nexus.restlight.testharness.POSTFixture;
-import org.sonatype.nexus.restlight.testharness.RESTTestFixture;
 
 import java.io.IOException;
 
@@ -25,7 +22,7 @@ public class POSTFixtureTest
     extends AbstractRESTTest
 {
     
-    private POSTFixture fixture = new POSTFixture();
+    private final POSTFixture fixture = new POSTFixture( getExpectedUser(), getExpectedPassword() );
 
     @Test
     public void testPost()
@@ -37,6 +34,7 @@ public class POSTFixtureTest
         
         String url = "http://localhost:" + fixture.getPort();
         HttpClient client = new HttpClient();
+        setupAuthentication( client );
         
         PostMethod post = new PostMethod( url );
         

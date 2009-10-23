@@ -2,17 +2,24 @@ package org.sonatype.nexus.restlight.testharness;
 
 import static junit.framework.Assert.fail;
 
+import org.apache.commons.httpclient.HttpClient;
+import org.apache.commons.httpclient.UsernamePasswordCredentials;
+import org.apache.commons.httpclient.auth.AuthPolicy;
+import org.apache.commons.httpclient.auth.AuthScope;
 import org.jdom.Document;
 import org.jdom.Element;
 import org.jdom.JDOMException;
 import org.jdom.input.SAXBuilder;
 import org.junit.After;
 import org.junit.Before;
+import org.sonatype.nexus.restlight.common.NxBasicScheme;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Abstract test class that provides convenience methods for reading XML request/response documents from various
@@ -24,7 +31,11 @@ public abstract class AbstractRESTTest
 
     protected static final String TEST_NX_API_VERSION_SYSPROP = "test.nexus.api.version";
 
-    private static final String DEFAULT_TEST_NX_API_VERSION = "1.3.1";
+    private static final String DEFAULT_TEST_NX_API_VERSION = "1.3.2";
+
+    protected static final String DEFAULT_EXPECTED_USER = "testuser";
+
+    protected static final String DEFAULT_EXPECTED_PASSWORD = "password";
 
     /**
      * <p>
@@ -36,6 +47,35 @@ public abstract class AbstractRESTTest
      * </p>
      */
     protected abstract RESTTestFixture getTestFixture();
+
+    protected void setupAuthentication( final HttpClient client )
+    {
+        setupAuthentication( client, getExpectedUser(), getExpectedPassword() );
+    }
+
+    protected void setupAuthentication( final HttpClient client, final String user, final String password )
+    {
+        UsernamePasswordCredentials creds = new UsernamePasswordCredentials( user, password );
+
+        List<String> policies = new ArrayList<String>();
+        policies.add( NxBasicScheme.POLICY_NAME );
+
+        AuthPolicy.registerAuthScheme( NxBasicScheme.POLICY_NAME, NxBasicScheme.class );
+
+        client.getParams().setParameter( AuthPolicy.AUTH_SCHEME_PRIORITY, policies );
+
+        client.getState().setCredentials( AuthScope.ANY, creds );
+    }
+
+    protected String getExpectedUser()
+    {
+        return DEFAULT_EXPECTED_USER;
+    }
+
+    protected String getExpectedPassword()
+    {
+        return DEFAULT_EXPECTED_PASSWORD;
+    }
 
     /**
      * Retrieve the base URL used by the test-harness server. This will serve as the base Nexus URL for tests.
@@ -114,7 +154,7 @@ public abstract class AbstractRESTTest
      */
     protected final GETFixture getVersionCheckFixture()
     {
-        GETFixture fixture = new GETFixture();
+        GETFixture fixture = new GETFixture( getExpectedUser(), getExpectedPassword() );
 
         Document doc = new Document().setRootElement( new Element( "status" ) );
         Element data = new Element( "data" );
