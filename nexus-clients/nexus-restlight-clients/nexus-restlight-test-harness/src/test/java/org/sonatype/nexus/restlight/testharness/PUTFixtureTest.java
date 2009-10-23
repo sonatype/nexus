@@ -36,6 +36,7 @@ public class PUTFixtureTest
         String url = "http://localhost:" + fixture.getPort();
 
         HttpClient client = new HttpClient();
+        setupAuthentication( client );
 
         PutMethod put = new PutMethod( url );
 

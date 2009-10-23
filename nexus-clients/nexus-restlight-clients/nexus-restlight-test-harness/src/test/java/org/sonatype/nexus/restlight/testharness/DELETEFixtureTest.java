@@ -36,6 +36,7 @@ public class DELETEFixtureTest
         
         String url = "http://localhost:" + fixture.getPort();
         HttpClient client = new HttpClient();
+        setupAuthentication( client );
         
         DeleteMethod get = new DeleteMethod( url );
         

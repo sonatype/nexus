@@ -24,6 +24,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
+import org.apache.log4j.ConsoleAppender;
+import org.apache.log4j.Level;
+import org.apache.log4j.LogManager;
+import org.apache.log4j.SimpleLayout;
 import org.jdom.JDOMException;
 import org.junit.Test;
 import org.sonatype.nexus.restlight.common.RESTLightClientException;
@@ -50,7 +54,14 @@ public class StageClientTest
     {
         setupOpenReposConversation();
 
-        StageClient client = new StageClient( getBaseUrl(), "testuser", "unused" );
+        StageClient client = new StageClient( getBaseUrl(), getExpectedUser(), getExpectedPassword() );
+
+        fixture.setDebugEnabled( true );
+        LogManager.getRootLogger().setLevel( Level.DEBUG );
+        if ( !LogManager.getRootLogger().getAllAppenders().hasMoreElements() )
+        {
+            LogManager.getRootLogger().addAppender( new ConsoleAppender( new SimpleLayout() ) );
+        }
 
         List<StageRepository> repositories = client.getOpenStageRepositoriesForUser();
 
@@ -78,7 +89,7 @@ public class StageClientTest
     {
         setupOpenReposConversation();
 
-        StageClient client = new StageClient( getBaseUrl(), "testuser", "unused" );
+        StageClient client = new StageClient( getBaseUrl(), getExpectedUser(), getExpectedPassword() );
 
         StageRepository repo = client.getOpenStageRepositoryForUser( "group", "artifact", "version" );
 
@@ -118,7 +129,7 @@ public class StageClientTest
         
         fixture.getConversation().add( finishPost );
 
-        StageClient client = new StageClient( getBaseUrl(), "testuser", "unused" );
+        StageClient client = new StageClient( getBaseUrl(), getExpectedUser(), getExpectedPassword() );
 
         StageRepository repo = client.getOpenStageRepositoryForUser( "group", "artifact", "version" );
         
@@ -143,7 +154,7 @@ public class StageClientTest
     {
         setupClosedReposConversation();
 
-        StageClient client = new StageClient( getBaseUrl(), "testuser", "unused" );
+        StageClient client = new StageClient( getBaseUrl(), getExpectedUser(), getExpectedPassword() );
 
         List<StageRepository> repos = client.getClosedStageRepositoriesForUser( "group", "artifact", "version" );
 
@@ -170,7 +181,7 @@ public class StageClientTest
     {
         setupClosedReposConversation();
 
-        StageClient client = new StageClient( getBaseUrl(), "testuser", "unused" );
+        StageClient client = new StageClient( getBaseUrl(), getExpectedUser(), getExpectedPassword() );
 
         List<StageRepository> repos = client.getClosedStageRepositoriesForUser();
 

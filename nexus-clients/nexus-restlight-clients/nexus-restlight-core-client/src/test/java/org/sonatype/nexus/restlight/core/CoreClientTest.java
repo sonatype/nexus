@@ -49,7 +49,7 @@ public class CoreClientTest
         conversation.add( userListGetFixture );
         fixture.setConversation( conversation );
 
-        CoreClient client = new CoreClient( getBaseUrl(), "testuser", "unused" );
+        CoreClient client = new CoreClient( getBaseUrl(), getExpectedUser(), getExpectedPassword() );
 
         List<User> users = client.listUser();
 
@@ -85,7 +85,7 @@ public class CoreClientTest
         conversation.add( userListGetFixture );
         fixture.setConversation( conversation );
 
-        CoreClient client = new CoreClient( getBaseUrl(), "testuser", "unused" );
+        CoreClient client = new CoreClient( getBaseUrl(), getExpectedUser(), getExpectedPassword() );
 
         User user = client.getUser( userId );
 
@@ -124,7 +124,7 @@ public class CoreClientTest
         user.setUserManaged( true );
         user.getRoles().add( "admin" );
 
-        CoreClient client = new CoreClient( getBaseUrl(), "testuser", "unused" );
+        CoreClient client = new CoreClient( getBaseUrl(), getExpectedUser(), getExpectedPassword() );
 
         User userResp = client.postUser( user );
 
@@ -159,7 +159,7 @@ public class CoreClientTest
         user.setUserManaged( true );
         user.getRoles().add( "admin" );
 
-        CoreClient client = new CoreClient( getBaseUrl(), "testuser", "unused" );
+        CoreClient client = new CoreClient( getBaseUrl(), getExpectedUser(), getExpectedPassword() );
 
         User userResp = client.putUser( user );
 
@@ -187,7 +187,7 @@ public class CoreClientTest
         conversation.add( userDeleteFixture );
         fixture.setConversation( conversation );
 
-        CoreClient client = new CoreClient( getBaseUrl(), "testuser", "unused" );
+        CoreClient client = new CoreClient( getBaseUrl(), getExpectedUser(), getExpectedPassword() );
 
         client.deleteUser( userId );
     }
@@ -204,7 +204,7 @@ public class CoreClientTest
         conversation.add( userListGetFixture );
         fixture.setConversation( conversation );
 
-        CoreClient client = new CoreClient( getBaseUrl(), "testuser", "unused" );
+        CoreClient client = new CoreClient( getBaseUrl(), getExpectedUser(), getExpectedPassword() );
 
         List<Role> roles = client.listRole();
 
@@ -252,7 +252,7 @@ public class CoreClientTest
         role.getRoles().add( "anonymous" );
         role.getPrivileges().add( "18" );
 
-        CoreClient client = new CoreClient( getBaseUrl(), "testuser", "unused" );
+        CoreClient client = new CoreClient( getBaseUrl(), getExpectedUser(), getExpectedPassword() );
 
         Role roleResp = client.postRole( role );
 
@@ -290,7 +290,7 @@ public class CoreClientTest
         userToRole.getRoles().add( "anonymous" );
         userToRole.getRoles().add( "developer" );
 
-        CoreClient client = new CoreClient( getBaseUrl(), "testuser", "unused" );
+        CoreClient client = new CoreClient( getBaseUrl(), getExpectedUser(), getExpectedPassword() );
         client.putUserToRole( userToRole );
     }
     
@@ -309,7 +309,7 @@ public class CoreClientTest
         conversation.add( getFixture );
         fixture.setConversation( conversation );
 
-        CoreClient client = new CoreClient( getBaseUrl(), "testuser", "unused" );
+        CoreClient client = new CoreClient( getBaseUrl(), getExpectedUser(), getExpectedPassword() );
         UserToRole result = client.getUserToRole( userId, source );
 
         assertNotNull( result );
@@ -333,7 +333,7 @@ public class CoreClientTest
         conversation.add( getFixture );
         fixture.setConversation( conversation );
 
-        CoreClient client = new CoreClient( getBaseUrl(), "testuser", "unused" );
+        CoreClient client = new CoreClient( getBaseUrl(), getExpectedUser(), getExpectedPassword() );
 
         PlexusUser plexusUser = client.getPlexusUser( userId );
 
