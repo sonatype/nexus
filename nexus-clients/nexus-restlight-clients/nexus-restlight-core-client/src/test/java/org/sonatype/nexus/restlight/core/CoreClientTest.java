@@ -4,10 +4,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.sonatype.nexus.restlight.testharness.AbstractRESTTest;
@@ -18,11 +14,15 @@ import org.sonatype.nexus.restlight.testharness.POSTFixture;
 import org.sonatype.nexus.restlight.testharness.PUTFixture;
 import org.sonatype.nexus.restlight.testharness.RESTTestFixture;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 public class CoreClientTest
     extends AbstractRESTTest
 {
 
-    private final ConversationalFixture fixture = new ConversationalFixture();
+    private final ConversationalFixture fixture = new ConversationalFixture( getExpectedUser(), getExpectedPassword() );
 
     @BeforeClass
     public static void setUpClass()
@@ -42,7 +42,7 @@ public class CoreClientTest
         throws Exception
     {
         List<RESTTestFixture> conversation = new ArrayList<RESTTestFixture>();
-        GETFixture userListGetFixture = new GETFixture();
+        GETFixture userListGetFixture = new GETFixture( getExpectedUser(), getExpectedPassword() );
         userListGetFixture.setExactURI( CoreClient.USER_PATH );
         userListGetFixture.setResponseDocument( readTestDocumentResource( "user-list.xml" ) );
         conversation.add( getVersionCheckFixture() );
@@ -78,7 +78,7 @@ public class CoreClientTest
         final String userId = "deployment";
 
         List<RESTTestFixture> conversation = new ArrayList<RESTTestFixture>();
-        GETFixture userListGetFixture = new GETFixture();
+        GETFixture userListGetFixture = new GETFixture( getExpectedUser(), getExpectedPassword() );
         userListGetFixture.setExactURI( CoreClient.USER_PATH + "/" + userId );
         userListGetFixture.setResponseDocument( readTestDocumentResource( "user-get.xml" ) );
         conversation.add( getVersionCheckFixture() );
@@ -108,7 +108,7 @@ public class CoreClientTest
         throws Exception
     {
         List<RESTTestFixture> conversation = new ArrayList<RESTTestFixture>();
-        POSTFixture userPostFixture = new POSTFixture();
+        POSTFixture userPostFixture = new POSTFixture( getExpectedUser(), getExpectedPassword() );
         userPostFixture.setExactURI( CoreClient.USER_PATH );
         userPostFixture.setRequestDocument( readTestDocumentResource( "user-post-req.xml" ) );
         userPostFixture.setResponseDocument( readTestDocumentResource( "user-post-resp.xml" ) );
@@ -144,7 +144,7 @@ public class CoreClientTest
         throws Exception
     {
         List<RESTTestFixture> conversation = new ArrayList<RESTTestFixture>();
-        PUTFixture userPutFixture = new PUTFixture();
+        PUTFixture userPutFixture = new PUTFixture( getExpectedUser(), getExpectedPassword() );
         userPutFixture.setExactURI( CoreClient.USER_PATH + "/bbb" );
         userPutFixture.setResponseDocument( readTestDocumentResource( "user-put.xml" ) );
         conversation.add( getVersionCheckFixture() );
@@ -181,7 +181,7 @@ public class CoreClientTest
         String userId = "user-test";
 
         List<RESTTestFixture> conversation = new ArrayList<RESTTestFixture>();
-        DELETEFixture userDeleteFixture = new DELETEFixture();
+        DELETEFixture userDeleteFixture = new DELETEFixture( getExpectedUser(), getExpectedPassword() );
         userDeleteFixture.setExactURI( CoreClient.USER_PATH + "/" + userId );
         conversation.add( getVersionCheckFixture() );
         conversation.add( userDeleteFixture );
@@ -197,7 +197,7 @@ public class CoreClientTest
         throws Exception
     {
         List<RESTTestFixture> conversation = new ArrayList<RESTTestFixture>();
-        GETFixture userListGetFixture = new GETFixture();
+        GETFixture userListGetFixture = new GETFixture( getExpectedUser(), getExpectedPassword() );
         userListGetFixture.setExactURI( CoreClient.ROLE_PATH );
         userListGetFixture.setResponseDocument( readTestDocumentResource( "role-list.xml" ) );
         conversation.add( getVersionCheckFixture() );
@@ -236,7 +236,7 @@ public class CoreClientTest
         throws Exception
     {
         List<RESTTestFixture> conversation = new ArrayList<RESTTestFixture>();
-        POSTFixture postFixture = new POSTFixture();
+        POSTFixture postFixture = new POSTFixture( getExpectedUser(), getExpectedPassword() );
         postFixture.setExactURI( CoreClient.ROLE_PATH );
         postFixture.setRequestDocument( readTestDocumentResource( "role-post-req.xml" ) );
         postFixture.setResponseDocument( readTestDocumentResource( "role-post-resp.xml" ) );
@@ -277,7 +277,7 @@ public class CoreClientTest
         String userId = "test";
 
         List<RESTTestFixture> conversation = new ArrayList<RESTTestFixture>();
-        PUTFixture putFixture = new PUTFixture();
+        PUTFixture putFixture = new PUTFixture( getExpectedUser(), getExpectedPassword() );
         putFixture.setExactURI( CoreClient.USER_TO_ROLE_PATH + "/" + source + "/" + userId );
         putFixture.setRequestDocument( readTestDocumentResource( "user-to-role-put.xml" ) );
         conversation.add( getVersionCheckFixture() );
@@ -302,7 +302,7 @@ public class CoreClientTest
         String userId = "juven";
 
         List<RESTTestFixture> conversation = new ArrayList<RESTTestFixture>();
-        GETFixture getFixture = new GETFixture();
+        GETFixture getFixture = new GETFixture( getExpectedUser(), getExpectedPassword() );
         getFixture.setExactURI( CoreClient.USER_TO_ROLE_PATH + "/" + source + "/" + userId );
         getFixture.setResponseDocument( readTestDocumentResource( "user-to-role-get.xml" ) );
         conversation.add( getVersionCheckFixture() );
@@ -326,7 +326,7 @@ public class CoreClientTest
         final String userId = "deployment";
 
         List<RESTTestFixture> conversation = new ArrayList<RESTTestFixture>();
-        GETFixture getFixture = new GETFixture();
+        GETFixture getFixture = new GETFixture( getExpectedUser(), getExpectedPassword() );
         getFixture.setExactURI( CoreClient.PLEXUS_USER_PATH + "/" + userId );
         getFixture.setResponseDocument( readTestDocumentResource( "plexus-user-get.xml" ) );
         conversation.add( getVersionCheckFixture() );
