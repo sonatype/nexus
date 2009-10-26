@@ -1078,5 +1078,13 @@ public abstract class AbstractProxyRepository
             return null;
         }
     }
+    
+    // Need to allow delete for proxy repos
+    @Override
+    protected boolean isActionAllowedReadOnly( Action action )
+    {
+        return action.equals( Action.read )
+            || action.equals( Action.delete );
+    }
 
 }

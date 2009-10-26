@@ -114,7 +114,8 @@ public class Nexus1170ReducePermissionChecking
         this.checkPermission( permissions, "security:users", 0 );
         this.checkPermission( permissions, "nexus:logs", 0 );
         this.checkPermission( permissions, "nexus:configuration", 0 );
-        this.checkPermission( permissions, "nexus:feeds", 1 );
+        //feed no longer available by default
+        //this.checkPermission( permissions, "nexus:feeds", 1 );
         this.checkPermission( permissions, "nexus:targets", 0 );
 
         this.checkPermission( permissions, "nexus:wastebasket", 0 );
