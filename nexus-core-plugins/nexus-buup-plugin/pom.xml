@@ -6,7 +6,7 @@
   <parent>
     <groupId>org.sonatype.nexus.plugins</groupId>
     <artifactId>nexus-core-plugins</artifactId>
-    <version>1.4.1-SNAPSHOT</version>
+    <version>1.4.1.1-SNAPSHOT</version>
   </parent>
 
   <artifactId>nexus-buup-plugin</artifactId>
@@ -37,6 +37,13 @@
       <groupId>org.sonatype.nexus</groupId>
       <artifactId>nexus-rest-api</artifactId>
       <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.codehaus.plexus</groupId>
+      <artifactId>plexus-archiver</artifactId>
+      <version>1.0-alpha-12</version>
+      <scope>compile</scope>
     </dependency>
 
     <dependency>
