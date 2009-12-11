@@ -15,8 +15,6 @@
 
 Sonatype.utils = {
   passwordPlaceholder : '|$|N|E|X|U|S|$|',
-  version : '',
-  versionShort: '',
   edition : '',
   editionShort : '',
   authToken : '',
@@ -742,12 +740,6 @@ Sonatype.utils = {
         
         if ( success ) {
           var respObj = Ext.decode(response.responseText);
-  
-          Sonatype.utils.versionShort = respObj.data.version;
-          Sonatype.utils.version = 'Version ' + respObj.data.version + ' ' + respObj.data.editionLong;
-          if ( respObj.data.version != respObj.data.apiVersion ){
-            Sonatype.utils.version += ' (Core ' + respObj.data.apiVersion + ')';
-          }
           
           Sonatype.utils.edition = respObj.data.editionLong;
           Sonatype.utils.editionShort = respObj.data.editionShort;
@@ -756,7 +748,8 @@ Sonatype.utils = {
           Ext.get('logo').update('<span>' 
               + Sonatype.utils.formattedAppName 
               + '</span>');
-          Sonatype.view.viewport.doLayout();
+          
+          Sonatype.view.headerPanel.doLayout();
 
           Sonatype.user.curr.repoServer = respObj.data.clientPermissions.permissions;
           Sonatype.user.curr.isLoggedIn = respObj.data.clientPermissions.loggedIn;
@@ -774,17 +767,13 @@ Sonatype.utils = {
           baseUrlMismatch = ( baseUrl.toLowerCase() != window.location.href.substring( 0, baseUrl.length ).toLowerCase() );
         }
         else {
-          Sonatype.utils.version = 'Version unavailable';
           Sonatype.utils.edition = '';
-          Sonatype.utils.versionShort = '';
           
           Sonatype.user.curr.repoServer = null;
           Sonatype.user.curr.isLoggedIn = null;
           Sonatype.user.curr.username = null;
           Sonatype.user.curr.loggedInUserSource = null;
         }
-        
-        Ext.get('version').update(Sonatype.utils.version);
 
         Sonatype.Events.fireEvent('initHeadLinks');
         
