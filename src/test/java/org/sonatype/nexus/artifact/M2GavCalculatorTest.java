@@ -332,6 +332,43 @@ public class M2GavCalculatorTest
         path = gavCalculator.gavToPath( gav );
         assertEquals( "/foo1/foo1/0.0.1-SNAPSHOT/foo1-0.0.1-SNAPSHOT.pom", path );
 
+        // NEXUS-3148
+        gav = gavCalculator.pathToGav( "/foo1/foo1/0.0.1SNAPSHOT/foo1-0.0.1SNAPSHOT.pom" );
+        assertEquals( "foo1", gav.getGroupId() );
+        assertEquals( "foo1", gav.getArtifactId() );
+        assertEquals( "0.0.1SNAPSHOT", gav.getVersion() );
+        assertEquals( "0.0.1SNAPSHOT", gav.getBaseVersion() );
+        assertEquals( null, gav.getClassifier() );
+        assertEquals( "pom", gav.getExtension() );
+        assertEquals( null, gav.getSnapshotBuildNumber() );
+        assertEquals( null, gav.getSnapshotTimeStamp() );
+        assertEquals( "foo1-0.0.1SNAPSHOT.pom", gav.getName() );
+        assertEquals( true, gav.isSnapshot() );
+        assertEquals( false, gav.isHash() );
+        assertEquals( null, gav.getHashType() );
+        
+        path = gavCalculator.gavToPath( gav );
+        assertEquals( "/foo1/foo1/0.0.1SNAPSHOT/foo1-0.0.1SNAPSHOT.pom", path );
+        
+        gav = gavCalculator.pathToGav( "/foo1/foo1/0.0.1.SNAPSHOT/foo1-0.0.1.SNAPSHOT.pom" );
+        assertEquals( "foo1", gav.getGroupId() );
+        assertEquals( "foo1", gav.getArtifactId() );
+        assertEquals( "0.0.1.SNAPSHOT", gav.getVersion() );
+        assertEquals( "0.0.1.SNAPSHOT", gav.getBaseVersion() );
+        assertEquals( null, gav.getClassifier() );
+        assertEquals( "pom", gav.getExtension() );
+        assertEquals( null, gav.getSnapshotBuildNumber() );
+        assertEquals( null, gav.getSnapshotTimeStamp() );
+        assertEquals( "foo1-0.0.1.SNAPSHOT.pom", gav.getName() );
+        assertEquals( true, gav.isSnapshot() );
+        assertEquals( false, gav.isHash() );
+        assertEquals( null, gav.getHashType() );
+        
+        path = gavCalculator.gavToPath( gav );
+        assertEquals( "/foo1/foo1/0.0.1.SNAPSHOT/foo1-0.0.1.SNAPSHOT.pom", path );
+
+        // NEXUS-3148 ends
+
         gav = gavCalculator.pathToGav( "/foo1/foo1/0.0.1-SNAPSHOT/foo1-0.0.1-SNAPSHOT-jdk14.jar" );
         assertEquals( "foo1", gav.getGroupId() );
         assertEquals( "foo1", gav.getArtifactId() );
@@ -679,5 +716,20 @@ public class M2GavCalculatorTest
         assertEquals( "pom", gav.getExtension() );
         assertEquals( "1.0.20100111.064938-1", gav.getVersion() );
         assertEquals( "1.0.SNAPSHOT", gav.getBaseVersion() );
+        assertEquals( "org.sonatype", gav.getGroupId() );
+        assertEquals( "nexus-3148", gav.getArtifactId() );
+        assertEquals( null, gav.getClassifier() );
+        assertEquals( "pom", gav.getExtension() );
+        assertEquals( new Integer(1), gav.getSnapshotBuildNumber() );
+        // the timestamp is UTC, not EST timezoned!
+        // also, the Gav is it seems TZ sensitive!!!
+        assertEquals( parseTimestamp("20100111.064938"), gav.getSnapshotTimeStamp() );
+        assertEquals( "nexus-3148-1.0.20100111.064938-1.pom", gav.getName() );
+        assertEquals( true, gav.isSnapshot() );
+        assertEquals( false, gav.isHash() );
+        assertEquals( null, gav.getHashType() );
+        
+        String path = gavCalculator.gavToPath( gav );
+        assertEquals( "/org/sonatype/nexus-3148/1.0.SNAPSHOT/nexus-3148-1.0.20100111.064938-1.pom", path );
     }
 }
