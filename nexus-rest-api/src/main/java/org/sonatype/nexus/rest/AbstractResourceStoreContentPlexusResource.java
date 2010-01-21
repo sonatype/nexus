@@ -455,7 +455,7 @@ public abstract class AbstractResourceStoreContentPlexusResource
 
             dataModel.put( "nexusVersion", getNexus().getSystemStatus().getVersion() );
 
-            dataModel.put( "nexusRoot", req.getRootRef().toString() );
+            dataModel.put( "nexusRoot", getContextRoot( req ).toString() );
 
             // Load up the template, and pass in the data
             VelocityRepresentation representation =
@@ -736,7 +736,14 @@ public abstract class AbstractResourceStoreContentPlexusResource
 
             String realm = (String) servletRequest.getAttribute( NexusHttpAuthenticationFilter.AUTH_REALM_KEY );
 
-            res.setStatus( Status.CLIENT_ERROR_UNAUTHORIZED );
+            if ( servletRequest.getAttribute( NexusHttpAuthenticationFilter.ANONYMOUS_LOGIN ) != null )
+            {
+                res.setStatus( Status.CLIENT_ERROR_UNAUTHORIZED );
+            }
+            else
+            {
+                res.setStatus( Status.CLIENT_ERROR_FORBIDDEN );
+            }
 
             res.getChallengeRequests().add( new ChallengeRequest( challengeScheme, realm ) );
 
