@@ -23,11 +23,9 @@ import org.sonatype.nexus.proxy.target.TargetRegistry;
  */
 public class TargetRegistryEventRemove
     extends TargetRegistryEvent
-{
-
+{    
     public TargetRegistryEventRemove( final TargetRegistry targetRegistry, final Target target )
     {
         super( targetRegistry, target );
     }
-
 }

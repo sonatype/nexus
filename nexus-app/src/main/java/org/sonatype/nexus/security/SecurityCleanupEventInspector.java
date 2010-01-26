@@ -63,7 +63,7 @@ public class SecurityCleanupEventInspector
         if ( evt instanceof TargetRegistryEventRemove )
         {
             TargetRegistryEventRemove rEvt = (TargetRegistryEventRemove) evt;
-
+            
             String targetId = rEvt.getTarget().getId();
 
             try
