@@ -285,7 +285,7 @@
                     tabCode : Sonatype.repoServer.SchedulesEditPanel
                   }, {
                     enabled : sp.checkPermission('nexus:settings', sp.READ),
-                    title : 'Generate Problem Report',
+                    title : 'Report Problem',
                     tabId : 'error-report',
                     handler : Sonatype.utils.generateErrorReportHandler
                   }, {
