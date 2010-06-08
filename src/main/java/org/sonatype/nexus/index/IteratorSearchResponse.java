@@ -35,8 +35,7 @@ public class IteratorSearchResponse
 
     // ==
 
-    public static final IteratorSearchResponse EMPTY_RESPONSE =
-        new IteratorSearchResponse( null, 0, new IteratorResultSet()
+    public static final IteratorResultSet EMPTY_ITERATOR_RESULT_SET = new IteratorResultSet()
         {
             public boolean hasNext()
             {
@@ -57,6 +56,12 @@ public class IteratorSearchResponse
             {
                 return this;
             }
-        } );
+    };
+
+    public static final IteratorSearchResponse EMPTY_ITERATOR_SEARCH_RESPONSE =
+        new IteratorSearchResponse( null, 0, EMPTY_ITERATOR_RESULT_SET );
+
+    public static final IteratorSearchResponse TOO_MANY_HITS_ITERATOR_SEARCH_RESPONSE =
+        new IteratorSearchResponse( null, LIMIT_EXCEEDED, EMPTY_ITERATOR_RESULT_SET );
 
 }
