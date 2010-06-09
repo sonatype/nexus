@@ -154,12 +154,6 @@ public class DefaultIteratorResultSet
             pointer++;
         }
 
-        if ( result == null )
-        {
-            // we are done
-            close();
-        }
-
         return result;
     }
 
@@ -303,36 +297,4 @@ public class DefaultIteratorResultSet
     {
         return this;
     }
-
-    protected void close()
-    {
-        for ( Searchable searchable : searcher.getSearchables() )
-        {
-            try
-            {
-                ( (NexusIndexSearcher) searchable ).close();
             }
-            catch ( IOException e )
-            {
-                // uh oh
-            }
-
-            try
-            {
-                ( (NexusIndexSearcher) searchable ).getIndexReader().close();
-            }
-            catch ( IOException e )
-            {
-                // uh oh
-            }
-        }
-    }
-
-    protected void finalize()
-        throws Throwable
-    {
-        super.finalize();
-
-        close();
-    }
-}
