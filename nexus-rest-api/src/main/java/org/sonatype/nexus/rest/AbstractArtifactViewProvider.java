@@ -11,7 +11,7 @@ import org.sonatype.nexus.proxy.ResourceStoreRequest;
 import org.sonatype.nexus.proxy.item.RepositoryItemUid;
 import org.sonatype.nexus.proxy.item.StorageItem;
 import org.sonatype.nexus.proxy.item.StorageLinkItem;
-import org.sonatype.nexus.proxy.repository.ProxyRepository;
+import org.sonatype.nexus.proxy.repository.HostedRepository;
 import org.sonatype.nexus.proxy.repository.Repository;
 import org.sonatype.nexus.proxy.router.RepositoryRouter;
 import org.sonatype.nexus.proxy.router.RequestRoute;
@@ -102,7 +102,7 @@ public abstract class AbstractArtifactViewProvider
         // so, item may be null or non-null, if non-null, it may be link
 
         // check for item not found finally. Those may be allowed in proxy repositories only.
-        if ( item == null && !processNotFoundItems( itemUid ) )
+        if ( item == null && !processNotFoundItems( itemUid.getRepository() ) )
         {
             // return not-applicable. This is not a proxy repository, and the item is not found. Since it is not
             // proxy repo, it will be never cached from remote too, simply, it is not here.
@@ -131,9 +131,13 @@ public abstract class AbstractArtifactViewProvider
      * 
      * @return
      */
-    protected boolean processNotFoundItems( RepositoryItemUid uid )
+    protected boolean processNotFoundItems( Repository repo )
     {
-        return uid.getRepository().getRepositoryKind().isFacetAvailable( ProxyRepository.class );
+        if ( repo.getRepositoryKind().isFacetAvailable( HostedRepository.class ) )
+        {
+            return false;
+    }
+        return true;
     }
 
     /**
