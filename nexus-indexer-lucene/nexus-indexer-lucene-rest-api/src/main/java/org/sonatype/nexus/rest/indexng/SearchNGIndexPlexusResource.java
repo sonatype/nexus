@@ -69,11 +69,18 @@ public class SearchNGIndexPlexusResource
     extends AbstractIndexerNexusPlexusResource
 {
     /**
-     * Hard upper limit of the count of search hits delivered over REST API.
+     * Hard upper limit of the count of search hits delivered over REST API. In short: how many rows user sees in UI
+     * max. Note: this does not correspond to ArtifactInfo count! This is GA count that may be backed by a zillion
+     * ArtifactInfos! Before (old resource) this was 200.
      */
-    private static final int GA_HIT_LIMIT = 500;
+    private static final int GA_HIT_LIMIT = 200;
 
-    private static final int DOCUMENTS_HIT_LIMIT = 1000;
+    /**
+     * Hard upper limit of the ArtifactInfo count to process. In short, how many ArtifactInfos (lucene Documents) should
+     * be processed max for building up the response. Note: this does not respond to GA count! We can have 100 different
+     * versions of same GA! Before (old resource) this was 200.
+     */
+    private static final int DOCUMENTS_HIT_LIMIT = 600;
 
     /**
      * The treshold, that is used to "uncollapse" the collapsed results (if less hits than threshold).
@@ -356,6 +363,7 @@ public class SearchNGIndexPlexusResource
                             filter.addField( MAVEN.VERSION );
                         }
 
+                        // add this last, to collapse results but _after_ collectors collects!
                         actualFilters.add( filter );
                     }
                 }
@@ -430,6 +438,7 @@ public class SearchNGIndexPlexusResource
                 if ( artifact == null )
                 {
                     documentsHits++;
+
                     if ( documentsHits > DOCUMENTS_HIT_LIMIT || ( hits.size() + 1 ) > GA_HIT_LIMIT )
                     {
                         // check for HIT_LIMIT: if we are stepping it over, stop here
@@ -671,18 +680,6 @@ public class SearchNGIndexPlexusResource
 
         link.setClassifier( classifier );
 
-        /* REMOVED BLOATED CONTENT FROM DTO
-        // creating _redirect_ links to storage
-        String suffix =
-            "?r=" + repositoryId + "&g=" + groupId + "&a=" + artifactId + "&v=" + version + "&e=" + extension;
-
-        if ( StringUtils.isNotBlank( classifier ) )
-        {
-            suffix = suffix + "&c=" + classifier;
-        }
-
-        link.setArtifactLink( createRedirectBaseRef( request ).toString() + suffix );
-        */
         return link;
     }
 
