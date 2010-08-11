@@ -389,6 +389,8 @@ Ext.extend(Sonatype.repoServer.SearchPanel, Ext.Panel, {
           }
         }
 
+        this.lastbookmark = bookmark;
+
         return bookmark;
       }
     });
