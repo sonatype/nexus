@@ -73,7 +73,7 @@ public class SearchNGIndexPlexusResource
      * max. Note: this does not correspond to ArtifactInfo count! This is GA count that may be backed by a zillion
      * ArtifactInfos! Before (old resource) this was 200.
      */
-    private static final int GA_HIT_LIMIT = 200;
+    private static final int GA_HIT_LIMIT = 100;
 
     /**
      * Hard upper limit of the ArtifactInfo count to process. In short, how many ArtifactInfos (lucene Documents) should
