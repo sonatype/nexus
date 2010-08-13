@@ -278,7 +278,26 @@ Ext.extend(Sonatype.repoServer.SearchResultGrid, Ext.grid.GridPanel, {
         {
           var cls = record.data.artifactHits[hitIndex].artifactLinks[i].classifier;
           var ext = record.data.artifactHits[hitIndex].artifactLinks[i].extension;
-          var link = record.data.artifactHits[hitIndex].artifactLinks[i].artifactLink;
+          var rep = record.data.artifactHits[hitIndex].repositoryId;
+          var grp = record.data.groupId;
+          var art = record.data.artifactId;
+          var ver = record.data.version;
+
+          if (store.reader.jsonData.collapsed)
+          {
+            ver = record.data.latestRelease;
+            if (Ext.isEmpty(ver))
+            {
+              ver = record.data.latestSnapshot;
+            }
+          }
+
+          var link = Sonatype.config.repos.urls.redirect + '?r=' + rep + '&g=' + grp + '&a=' + art + '&v=' + ver + '&e=' + ext;
+
+          if (!Ext.isEmpty(cls))
+          {
+            link += '&c=' + cls;
+          }
 
           var icon = null;
           // if (ext == 'pom' && !cls)
@@ -387,7 +406,7 @@ Ext.extend(Sonatype.repoServer.SearchResultGrid, Ext.grid.GridPanel, {
 
         p.fetchMoreBar.items.items[0].destroy();
         p.fetchMoreBar.items.removeAt(0);
-        p.fetchMoreBar.insertButton(0, new Ext.Toolbar.TextItem('Displaying ' + count + ' records'));
+        p.fetchMoreBar.insertButton(0, new Ext.Toolbar.TextItem('Displaying Top ' + count + ' records'));
       },
 
       setWarningLabel : function(s) {

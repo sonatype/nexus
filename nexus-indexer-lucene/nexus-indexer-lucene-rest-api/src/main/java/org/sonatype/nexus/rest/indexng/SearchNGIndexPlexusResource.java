@@ -36,6 +36,8 @@ import org.restlet.data.Response;
 import org.restlet.data.Status;
 import org.restlet.resource.ResourceException;
 import org.restlet.resource.Variant;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.sonatype.nexus.index.ArtifactInfo;
 import org.sonatype.nexus.index.ArtifactInfoFilter;
 import org.sonatype.nexus.index.IteratorSearchResponse;
@@ -57,6 +59,7 @@ import org.sonatype.nexus.rest.AbstractIndexerNexusPlexusResource;
 import org.sonatype.nexus.rest.model.NexusNGArtifact;
 import org.sonatype.nexus.rest.model.NexusNGArtifactHit;
 import org.sonatype.nexus.rest.model.NexusNGArtifactLink;
+import org.sonatype.nexus.rest.model.NexusNGRepositoryDetail;
 import org.sonatype.nexus.rest.model.SearchNGResponse;
 import org.sonatype.nexus.rest.model.SearchResponse;
 import org.sonatype.plexus.rest.resource.PathProtectionDescriptor;
@@ -68,11 +71,40 @@ public class SearchNGIndexPlexusResource
     extends AbstractIndexerNexusPlexusResource
 {
     /**
-     * Hard upper limit of the count of search hits delivered over REST API.
+     * Hard upper limit of the count of search hits delivered over REST API. In short: how many rows user sees in UI
+     * max. Note: this does not correspond to ArtifactInfo count! This is GA count that may be backed by a zillion
+     * ArtifactInfos! Before (old resource) this was 200 (well, the max count of ROWS user would see was 200).
      */
-    private static final int GA_HIT_LIMIT = 500;
+    private static final int DEFAULT_GA_HIT_LIMIT = 200;
+    
+    /**
+     * The actual limit value, that may be overridden by users using Java System Properties, and defaults to
+     * DEFAULT_GA_HIT_LIMIT.
+     */
+    private static final int GA_HIT_LIMIT =
+        Integer.getInteger( "plexus.search.ga.hit.limit", DEFAULT_GA_HIT_LIMIT ).intValue();
 
-    private static final int DOCUMENTS_HIT_LIMIT = 1000;
+    /**
+     * Time to spend in 1st processing loop before bail out. It defaults to 30sec (UI timeout is 60secs).
+     */
+    private static final long DEFAULT_FIRST_LOOP_EXECUTION_TIME_LIMIT = 30000;
+
+    /**
+     * The actual time limit to spend in search, that may be overridden by users using Java System Properties, and
+     * defaults to DEFAULT_FIRST_LOOP_EXECUTION_TIME_LIMIT.
+     */
+    private static final long FIRST_LOOP_EXECUTION_TIME_LIMIT = Long.getLong( "plexus.search.ga.firstLoopTime",
+        DEFAULT_FIRST_LOOP_EXECUTION_TIME_LIMIT );
+
+    /**
+     * The threshold of change size in relevance, from where we may "cut" the results.
+     */
+    private static final float DOCUMENT_RELEVANCE_HIT_CHANGE_THRESHOLD = 0.35f;
+
+    /**
+     * The treshold of change from the very 1st hit. from where we may "cut" the results.
+     */
+    private static final float DOCUMENT_TOP_RELEVANCE_HIT_CHANGE_THRESHOLD = 0.75f;
 
     /**
      * The treshold, that is used to "uncollapse" the collapsed results (if less hits than threshold).
@@ -80,6 +112,16 @@ public class SearchNGIndexPlexusResource
     private static final int COLLAPSE_OVERRIDE_TRESHOLD = 35;
 
     public static final String RESOURCE_URI = "/lucene/search";
+
+    /**
+     * Separate logger for "diagnostic" messages regarding searchNG. Just add following line to log4j.properties of
+     * Nexus (in sonatype-work/nexus/conf directory) to get diagnostic loglines about search:
+     * 
+     * <pre>
+     * log4j.logger.search.ng.diagnostic = DEBUG
+     * </pre>
+     */
+    private Logger searchDiagnosticLogger = LoggerFactory.getLogger( "search.ng.diagnostic" );
 
     @Requirement( role = Searcher.class )
     private List<Searcher> searchers;
@@ -222,13 +264,28 @@ public class SearchNGIndexPlexusResource
             {
                 List<ArtifactInfoFilter> filters = new ArrayList<ArtifactInfoFilter>();
 
+                // filters.add( new ArtifactInfoFilter()
+                // {
+                // public boolean accepts( IndexingContext ctx, ArtifactInfo ai )
+                // {
+                // System.out.println( "    " + ai.context + " : " + ai.toString() + " -- " + ai.getLuceneScore()
+                // + " -- " + ai.getAttributes().get( Explanation.class.getName() ) );
+                //
+                // return true;
+                // }
+                // } );
+
                 // we need to save this reference to later
                 SystemWideLatestVersionCollector systemWideCollector = new SystemWideLatestVersionCollector();
-                RepositoryWideLatestVersionCollector repositoryWideCollector =
-                    new RepositoryWideLatestVersionCollector();
-
                 filters.add( systemWideCollector );
+
+                RepositoryWideLatestVersionCollector repositoryWideCollector = null;
+
+                if ( collapseResults )
+                {
+                    repositoryWideCollector = new RepositoryWideLatestVersionCollector();
                 filters.add( repositoryWideCollector );
+                }
 
                 searchResult =
                     searchByTerms( terms, repositoryId, from, count, exact, expandVersion, collapseResults, filters );
@@ -241,7 +298,7 @@ public class SearchNGIndexPlexusResource
                 }
                 else
                 {
-                    repackIteratorSearchResponse( request, result, collapseResults, from, count, searchResult,
+                    repackIteratorSearchResponse( request, terms, result, collapseResults, from, count, searchResult,
                         systemWideCollector, repositoryWideCollector );
 
                     if ( !result.isTooManyResults() )
@@ -275,7 +332,7 @@ public class SearchNGIndexPlexusResource
                 runCount++;
 
                 getLogger().info(
-                    "*** NexusIndexer bug, we got AlreadyClosedException that should never happen with ReadOnly IndexReaders! Please put Nexus into DEBUG log mode and report this issue together with the stack trace!" );
+                    "NexusIndexer issue (NEXUS-3702), we got AlreadyClosedException that happens when Reindexing or other \"indexer intensive\" task is running on instance while searching! Redoing search again." );
 
                 if ( getLogger().isDebugEnabled() )
                 {
@@ -291,7 +348,7 @@ public class SearchNGIndexPlexusResource
         {
             try
             {
-                repackIteratorSearchResponse( request, result, collapseResults, from, count,
+                repackIteratorSearchResponse( request, terms, result, collapseResults, from, count,
                     IteratorSearchResponse.TOO_MANY_HITS_ITERATOR_SEARCH_RESPONSE, null, null );
             }
             catch ( NoSuchRepositoryException e )
@@ -300,11 +357,17 @@ public class SearchNGIndexPlexusResource
             }
 
             getLogger().info(
-                "Nexus BUG: Was unable to perform search " + RETRIES
-                    + " times, giving up, and lying about TooManyResults." );
+                "Nexus issue (NEXUS-3702): Was unable to perform search "
+                    + RETRIES
+                    + " times, giving up, and lying about TooManyResults. Please retry to reproduce this with DEBUG logs and report this issue!" );
         }
 
         return result;
+    }
+
+    protected Logger getSearchDiagnosticLogger()
+    {
+        return searchDiagnosticLogger;
     }
 
     private IteratorSearchResponse searchByTerms( final Map<String, String> terms, final String repositoryId,
@@ -355,6 +418,7 @@ public class SearchNGIndexPlexusResource
                             filter.addField( MAVEN.VERSION );
                         }
 
+                        // add this last, to collapse results but _after_ collectors collects!
                         actualFilters.add( filter );
                     }
                 }
@@ -394,8 +458,9 @@ public class SearchNGIndexPlexusResource
         throw new ResourceException( Status.CLIENT_ERROR_BAD_REQUEST, "Requested search query is not supported" );
     }
 
-    protected void repackIteratorSearchResponse( Request request, SearchNGResponse response, boolean collapsed,
-                                                 Integer from, Integer count, IteratorSearchResponse iterator,
+    protected void repackIteratorSearchResponse( Request request, Map<String, String> terms, SearchNGResponse response,
+                                                 boolean collapsed, Integer from, Integer count,
+                                                 IteratorSearchResponse iterator,
                                                  SystemWideLatestVersionCollector systemWideCollector,
                                                  RepositoryWideLatestVersionCollector repositoryWideCollector )
         throws NoSuchRepositoryException
@@ -410,14 +475,20 @@ public class SearchNGIndexPlexusResource
 
         response.setCount( count == null ? -1 : count );
 
+        // System.out.println( "** Query is \"" + iterator.getQuery().toString() + "\"." );
+
         if ( !response.isTooManyResults() )
         {
             // 1st pass, collect results
             LinkedHashMap<String, NexusNGArtifact> hits = new LinkedHashMap<String, NexusNGArtifact>();
 
-            int documentsHits = 0;
-
             NexusNGArtifact artifact;
+
+            float firstDocumentScore = -1f;
+
+            float lastDocumentScore = -1f;
+
+            final long startedAtMillis = System.currentTimeMillis();
 
             // 1sd pass, build first two level (no links), and actually consume the iterator and collectors will be set
             for ( ArtifactInfo ai : iterator )
@@ -426,11 +497,54 @@ public class SearchNGIndexPlexusResource
 
                 artifact = hits.get( key );
 
+                // System.out.println( "* " + ai.context + " : " + ai.toString() + " -- " + ai.getLuceneScore() + " -- "
+                // + ( artifact != null ? "F" : "N" ) );
+
                 if ( artifact == null )
                 {
-                    documentsHits++;
-                    if ( documentsHits > DOCUMENTS_HIT_LIMIT || ( hits.size() + 1 ) > GA_HIT_LIMIT )
+                    if ( System.currentTimeMillis() - startedAtMillis > FIRST_LOOP_EXECUTION_TIME_LIMIT )
                     {
+                        getSearchDiagnosticLogger().debug(
+                            "Stopping delivering search results since we spent more than "
+                                + FIRST_LOOP_EXECUTION_TIME_LIMIT + " millis in 1st loop processing results." );
+
+                        break;
+                    }
+
+                    // we stop if we delivered "most important" hits (change of relevance from 1st document we got)
+                    if ( hits.size() > 10
+                        && ( firstDocumentScore - ai.getLuceneScore() ) > DOCUMENT_TOP_RELEVANCE_HIT_CHANGE_THRESHOLD )
+                    {
+                        getSearchDiagnosticLogger().debug(
+                            "Stopping delivering search results since we span "
+                                + DOCUMENT_TOP_RELEVANCE_HIT_CHANGE_THRESHOLD + " of score change (firstDocScore="
+                                + firstDocumentScore + ", currentDocScore=" + ai.getLuceneScore() + ")." );
+
+                        break;
+                    }
+
+                    // we stop if we detect a "big drop" in relevance in relation to previous document's score
+                    if ( hits.size() > 10 && lastDocumentScore > 0 )
+                    {
+                        if ( ( lastDocumentScore - ai.getLuceneScore() ) > DOCUMENT_RELEVANCE_HIT_CHANGE_THRESHOLD )
+                        {
+                            getSearchDiagnosticLogger().debug(
+                                "Stopping delivering search results since we hit a relevance drop bigger than "
+                                    + DOCUMENT_RELEVANCE_HIT_CHANGE_THRESHOLD + " (lastDocScore=" + lastDocumentScore
+                                    + ", currentDocScore=" + ai.getLuceneScore() + ")." );
+
+                            // the relevance change was big, so we stepped over "trash" results that are
+                            // probably not relevant at all, just stop here then
+                            break;
+                        }
+                    }
+
+                    // we stop if we hit the GA limit
+                    if ( ( hits.size() + 1 ) > GA_HIT_LIMIT )
+                    {
+                        getSearchDiagnosticLogger().debug(
+                            "Stopping delivering search results since we hit a GA hit limit of " + GA_HIT_LIMIT + "." );
+
                         // check for HIT_LIMIT: if we are stepping it over, stop here
                         break;
                     }
@@ -452,6 +566,8 @@ public class SearchNGIndexPlexusResource
 
                 Repository repository = getUnprotectedRepositoryRegistry().getRepository( ai.repository );
 
+                addRepositoryDetails( request, response, repository );
+
                 NexusNGArtifactHit hit = null;
 
                 for ( NexusNGArtifactHit artifactHit : artifact.getArtifactHits() )
@@ -469,21 +585,6 @@ public class SearchNGIndexPlexusResource
                     hit = new NexusNGArtifactHit();
 
                     hit.setRepositoryId( repository.getId() );
-
-                    hit.setRepositoryName( repository.getName() );
-
-                    hit.setRepositoryURL( createRepositoryReference( request, repository.getId() ).getTargetRef().toString() );
-
-                    hit.setRepositoryContentClass( repository.getRepositoryContentClass().getId() );
-
-                    hit.setRepositoryKind( extractRepositoryKind( repository ) );
-
-                    MavenRepository mavenRepo = repository.adaptToFacet( MavenRepository.class );
-
-                    if ( mavenRepo != null )
-                    {
-                        hit.setRepositoryPolicy( mavenRepo.getRepositoryPolicy().name() );
-                    }
 
                     // if collapsed, we add links in 2nd pass, otherwise here
                     if ( !collapsed )
@@ -529,7 +630,23 @@ public class SearchNGIndexPlexusResource
                         hit.addArtifactLink( link );
                     }
                 }
+
+                if ( firstDocumentScore < 0 )
+                {
+                    firstDocumentScore = ai.getLuceneScore();
             }
+
+                lastDocumentScore = ai.getLuceneScore();
+            }
+
+            // summary:
+            getSearchDiagnosticLogger().debug(
+                "Query terms \"" + terms + "\" (LQL \"" + iterator.getQuery().toString() + "\") matched total of "
+                    + iterator.getTotalHits() + " records, " + iterator.getTotalProcessedArtifactInfoCount()
+                    + " records were processed out of those, resulting in " + hits.size()
+                    + " unique GA records. Lucene scored documents first=" + firstDocumentScore + ", last="
+                    + lastDocumentScore + ". Main processing loop took "
+                    + ( System.currentTimeMillis() - startedAtMillis ) + " ms." );
 
             // 2nd pass, set versions
             for ( NexusNGArtifact artifactNg : hits.values() )
@@ -634,6 +751,44 @@ public class SearchNGIndexPlexusResource
         }
     }
 
+    protected void addRepositoryDetails( Request request, SearchNGResponse response, Repository repository )
+    {
+        boolean add = true;
+        
+        for ( NexusNGRepositoryDetail repoDetail : response.getRepoDetails() )
+        {
+            if ( repoDetail.getRepositoryId().equals( repository.getId() ) )
+            {
+                add = false;
+                break;
+            }
+        }
+        
+        if ( add )
+        {
+            NexusNGRepositoryDetail repoDetail = new NexusNGRepositoryDetail();
+            
+            repoDetail.setRepositoryId( repository.getId() );
+
+            repoDetail.setRepositoryName( repository.getName() );
+
+            repoDetail.setRepositoryURL( createRepositoryReference( request, repository.getId() ).getTargetRef().toString() );
+
+            repoDetail.setRepositoryContentClass( repository.getRepositoryContentClass().getId() );
+
+            repoDetail.setRepositoryKind( extractRepositoryKind( repository ) );
+
+            MavenRepository mavenRepo = repository.adaptToFacet( MavenRepository.class );
+
+            if ( mavenRepo != null )
+            {
+                repoDetail.setRepositoryPolicy( mavenRepo.getRepositoryPolicy().name() );
+            }
+            
+            response.addRepoDetail( repoDetail );
+        }
+    }
+
     protected NexusNGArtifactLink createNexusNGArtifactLink( final Request request, final String repositoryId,
                                                              final String groupId, final String artifactId,
                                                              final String version, final String extension,
@@ -644,17 +799,6 @@ public class SearchNGIndexPlexusResource
         link.setExtension( extension );
 
         link.setClassifier( classifier );
-
-        // creating _redirect_ links to storage
-        String suffix =
-            "?r=" + repositoryId + "&g=" + groupId + "&a=" + artifactId + "&v=" + version + "&e=" + extension;
-
-        if ( StringUtils.isNotBlank( classifier ) )
-        {
-            suffix = suffix + "&c=" + classifier;
-        }
-
-        link.setArtifactLink( createRedirectBaseRef( request ).toString() + suffix );
 
         return link;
     }
@@ -685,4 +829,4 @@ public class SearchNGIndexPlexusResource
             return repository.getRepositoryKind().getMainFacet().getName();
         }
     }
-}
+        }
