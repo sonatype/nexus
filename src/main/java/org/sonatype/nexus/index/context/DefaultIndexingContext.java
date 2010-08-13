@@ -421,12 +421,24 @@ public class DefaultIndexingContext
         }
     }
 
+    protected boolean isIndexWriterDirty()
+    {
+        if ( indexWriter == null )
+        {
+            return false;
+        }
+        else
+        {
+            return indexWriter.hasUncommitedChanges();
+        }
+    }
+
     public IndexReader getIndexReader()
         throws IOException
     {
         synchronized ( indexLock )
         {
-            if ( indexReader == null || !indexReader.isCurrent() )
+            if ( indexReader == null || (!indexReader.isCurrent() && !isIndexWriterDirty()) )
             {
                 if ( indexReader != null )
                 {
@@ -504,10 +516,18 @@ public class DefaultIndexingContext
 
             w.commit();
         }
-        finally
+        catch ( CorruptIndexException e )
         {
             w.close();
+
+            throw e;
         }
+        catch ( IOException e )
+        {
+            w.close();
+
+            throw e;
+    }
     }
 
     public void close( boolean deleteFiles )
@@ -592,8 +612,6 @@ public class DefaultIndexingContext
     {
         synchronized ( indexLock )
         {
-            closeReaders();
-
             IndexWriter w = getIndexWriter();
 
             IndexSearcher s = getIndexSearcher();
@@ -648,7 +666,8 @@ public class DefaultIndexingContext
             finally
             {
                 r.close();
-                closeReaders();
+
+                w.commit();
             }
 
             rebuildGroups();
