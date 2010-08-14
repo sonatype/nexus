@@ -15,17 +15,16 @@ package org.sonatype.nexus.proxy.access;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import org.codehaus.plexus.component.annotations.Component;
 import org.codehaus.plexus.component.annotations.Requirement;
 import org.codehaus.plexus.logging.AbstractLogEnabled;
+import org.jsecurity.SecurityUtils;
 import org.jsecurity.subject.Subject;
+import org.sonatype.nexus.proxy.NoSuchRepositoryException;
 import org.sonatype.nexus.proxy.ResourceStoreRequest;
 import org.sonatype.nexus.proxy.registry.RepositoryRegistry;
-import org.sonatype.nexus.proxy.repository.GroupRepository;
 import org.sonatype.nexus.proxy.repository.Repository;
 import org.sonatype.nexus.proxy.target.TargetMatch;
 import org.sonatype.nexus.proxy.target.TargetSet;
@@ -44,41 +43,25 @@ public class DefaultNexusItemAuthorizer
 
     @Requirement
     private RepositoryRegistry repoRegistry;
-
+    
     public boolean authorizePath( Repository repository, ResourceStoreRequest request, Action action )
     {
-        Set<Repository> repos = new HashSet<Repository>();
-        repos.add( repository );
-        repos.addAll( getGroupsOfRepo( repository ) );
+        TargetSet matched = repository.getTargetsForRequest( request );
 
-        for ( Repository repo : repos )
+        if ( matched == null )
         {
-            if ( authorizePath( repo.getTargetsForRequest( request ), action ) )
-            {
-                return true;
-            }
+            matched = new TargetSet();
         }
 
-        return false;
+        // if this repository is contained in any group, we need to get those targets, and tweak the TargetMatch
+        matched.addTargetSet( this.getGroupsTargetSet( repository, request ) );
+
+        return authorizePath( matched, action );
     }
 
     public boolean authorizePermission( String permission )
     {
         return isPermitted( Collections.singletonList( permission ) );
-    }
-
-    protected Set<GroupRepository> getGroupsOfRepo( Repository repository )
-    {
-        List<GroupRepository> groups = repoRegistry.getGroupsOfRepository( repository );
-        Set<GroupRepository> all = new HashSet<GroupRepository>();
-        all.addAll( groups );
-
-        for ( GroupRepository group : groups )
-        {
-            all.addAll( getGroupsOfRepo( group ) );
-        }
-
-        return all;
     }
 
     // ===
@@ -87,19 +70,43 @@ public class DefaultNexusItemAuthorizer
     {
         TargetSet targetSet = new TargetSet();
 
-        for ( GroupRepository group : repoRegistry.getGroupsOfRepository( repository ) )
+        for ( Repository group : getListOfGroups( repository.getId() ) )
         {
             // are the perms transitively inherited from the groups where it is member?
-            // if ( !group.isExposed() )
-            TargetSet groupMatched = group.getTargetsForRequest( request );
+            // !group.isExposed()
+            if ( true )
+            {
+                TargetSet groupMatched = group.getTargetsForRequest( request );
 
-            targetSet.addTargetSet( groupMatched );
-
-            // now that we have groups of groups, this needs to be a recursive check
-            targetSet.addTargetSet( getGroupsTargetSet( group, request ) );
+                targetSet.addTargetSet( groupMatched );
+                
+                // now that we have groups of groups, this needs to be a recursive check
+                targetSet.addTargetSet( getGroupsTargetSet( group, request ) );
+            }
         }
 
         return targetSet;
+    }
+
+    protected List<Repository> getListOfGroups( String repositoryId )
+    {
+        List<Repository> groups = new ArrayList<Repository>();
+
+        List<String> groupIds = repoRegistry.getGroupsOfRepository( repositoryId );
+
+        for ( String groupId : groupIds )
+        {
+            try
+            {
+                groups.add( repoRegistry.getRepository( groupId ) );
+            }
+            catch ( NoSuchRepositoryException e )
+            {
+                // ignored
+            }
+        }
+
+        return groups;
     }
 
     public boolean authorizePath( TargetSet matched, Action action )
@@ -125,7 +132,8 @@ public class DefaultNexusItemAuthorizer
         // nexus : 'target' + targetId : repoId : read
         for ( TargetMatch match : matched.getMatches() )
         {
-            perms.add( "nexus:target:" + match.getTarget().getId() + ":" + match.getRepository().getId() + ":" + action );
+            perms
+                .add( "nexus:target:" + match.getTarget().getId() + ":" + match.getRepository().getId() + ":" + action );
         }
 
         return perms;
