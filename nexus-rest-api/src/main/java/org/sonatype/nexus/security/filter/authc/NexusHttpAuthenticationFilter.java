@@ -434,7 +434,19 @@ public class NexusHttpAuthenticationFilter
     {
         String decoded = Base64.decodeToString( encoded );
 
+        // no credentials, no auth
+        if ( StringUtils.isEmpty( encoded ) )
+        {
+           return null;
+        }
+
         String[] parts = decoded.split( ":" );
+
+        // invalid credentials, no auth
+        if ( parts == null || parts.length < 2 )
+        {
+            return null;
+        }
 
         return new String[] { parts[0], decoded.substring( parts[0].length() + 1 ) };
     }
