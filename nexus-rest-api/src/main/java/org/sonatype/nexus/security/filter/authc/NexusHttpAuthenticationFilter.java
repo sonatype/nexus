@@ -292,8 +292,20 @@ public class NexusHttpAuthenticationFilter
         {
             evt.getEventContext().put( AccessManager.REQUEST_REMOTE_ADDRESS, ip );
         }
+        
+        Nexus nexus = getNexus();
 
-        getNexus().addAuthcAuthzEvent( evt );
+        if ( nexus != null )
+        {
+            try
+            {
+                getNexus().addAuthcAuthzEvent( evt );
+            }
+            catch ( Exception e )
+            {
+                // just neglect it, it should not disturb actual authc operation
+            }
+        }
 
         currentAuthcEvt = evt;
     }
