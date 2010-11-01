@@ -4,13 +4,13 @@
   <parent>
     <groupId>org.sonatype.nexus</groupId>
     <artifactId>nexus-parent</artifactId>
-    <version>18-SNAPSHOT</version>
+    <version>18-M1-SNAPSHOT</version>
     <relativePath>../nexus-parent/pom.xml</relativePath>
   </parent>
 
   <groupId>org.sonatype.nexus</groupId>
   <artifactId>nexus-repository-metadata</artifactId>
-  <version>1.1-SNAPSHOT</version>
+  <version>1.1-M1-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>Sonatype Nexus Repository Metadata</name>
