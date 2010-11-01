@@ -4,14 +4,14 @@
   <parent>
     <groupId>org.sonatype.nexus</groupId>
     <artifactId>nexus-parent</artifactId>
-    <version>18-SNAPSHOT</version>
+    <version>18-M1-SNAPSHOT</version>
     <relativePath>../nexus-parent/pom.xml</relativePath>
   </parent>
 
   <artifactId>nexus</artifactId>
   <packaging>pom</packaging>
   <name>Sonatype Nexus Repository Manager</name>
-  <version>1.9-SNAPSHOT</version>
+  <version>1.9-M1-SNAPSHOT</version>
   <description>Sonatype Nexus Repository Manager</description>
   <inceptionYear>2007</inceptionYear>
   <mailingLists />
@@ -142,9 +142,9 @@
     <plexus-security.version>2.0.0-SNAPSHOT</plexus-security.version>
     <shiro.version>1.0.0-incubating</shiro.version>
     <slf4j.version>1.5.6</slf4j.version>
-    <nexus.indexer.version>3.1-SNAPSHOT</nexus.indexer.version>
-    <nexus.indexer.artifact.version>1.1-SNAPSHOT</nexus.indexer.artifact.version>
-    <nexus.repository.metadata.version>1.1-SNAPSHOT</nexus.repository.metadata.version>
+    <nexus.indexer.version>3.1-M1-SNAPSHOT</nexus.indexer.version>
+    <nexus.indexer.artifact.version>1.1-M1-SNAPSHOT</nexus.indexer.artifact.version>
+    <nexus.repository.metadata.version>1.1-M1-SNAPSHOT</nexus.repository.metadata.version>
     <!-- Shared with nexus-client, hence it is properties'ed -->
     <plexus.restlet.bridge.version>1.16</plexus.restlet.bridge.version>
     <micromailer.version>1.1.0</micromailer.version>

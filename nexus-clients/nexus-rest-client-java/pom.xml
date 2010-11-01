@@ -5,7 +5,7 @@
   <parent>
     <artifactId>nexus-clients</artifactId>
     <groupId>org.sonatype.nexus</groupId>
-    <version>1.9-SNAPSHOT</version>
+    <version>1.9-M1-SNAPSHOT</version>
   </parent>
 
   <groupId>org.sonatype.nexus</groupId>

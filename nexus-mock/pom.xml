@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.sonatype.nexus</groupId>
     <artifactId>nexus</artifactId>
-    <version>1.9-SNAPSHOT</version>
+    <version>1.9-M1-SNAPSHOT</version>
   </parent>
   <!-- a unique name for this project -->
   <artifactId>nexus-mock</artifactId>
@@ -93,6 +93,20 @@
     <dependency>
       <groupId>org.sonatype.security</groupId>
       <artifactId>security-rest-api</artifactId>
+    </dependency>
+    
+    <dependency>
+      <groupId>org.sonatype.nexus</groupId>
+      <artifactId>nexus-oss-webapp</artifactId>
+      <version>${project.version}</version>
+      <type>zip</type>
+      <classifier>bundle</classifier>
+      <exclusions>
+        <exclusion>
+          <groupId>org.sonatype.nexus.plugins.ldap</groupId>
+          <artifactId>nexus-ldap-realm-plugin</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <dependency>
