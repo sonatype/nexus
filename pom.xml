@@ -4,13 +4,13 @@
   <parent>
     <groupId>org.sonatype.nexus</groupId>
     <artifactId>nexus-parent</artifactId>
-    <version>18-SNAPSHOT</version>
+    <version>18-M1-SNAPSHOT</version>
     <relativePath>../nexus-parent/pom.xml</relativePath>
   </parent>
 
   <groupId>org.sonatype.nexus</groupId>
   <artifactId>nexus-indexer</artifactId>
-  <version>3.1-SNAPSHOT</version>
+  <version>3.1-M1-SNAPSHOT</version>
 
   <name>Sonatype Nexus Indexer</name>
 
@@ -36,7 +36,7 @@
     <dependency>
       <groupId>org.sonatype.nexus</groupId>
       <artifactId>nexus-indexer-artifact</artifactId>
-      <version>1.1-SNAPSHOT</version>
+      <version>1.1-M1-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.sonatype.plugin</groupId>
