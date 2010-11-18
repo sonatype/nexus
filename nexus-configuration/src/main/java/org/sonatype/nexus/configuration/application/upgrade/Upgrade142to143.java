@@ -23,6 +23,7 @@ import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 import org.sonatype.configuration.upgrade.ConfigurationIsCorruptedException;
 import org.sonatype.configuration.upgrade.SingleVersionUpgrader;
 import org.sonatype.configuration.upgrade.UpgradeMessage;
+import org.sonatype.nexus.configuration.model.CRestApiSettings;
 import org.sonatype.nexus.configuration.model.v1_4_3.upgrade.BasicVersionConverter;
 
 /**
@@ -76,6 +77,13 @@ public class Upgrade142to143
 
         org.sonatype.nexus.configuration.model.Configuration newc =
             new BasicVersionConverter().convertConfiguration( oldc );
+            
+        // NEXUS-3840
+        if ( newc.getRestApi() == null )
+        {
+            newc.setRestApi( new CRestApiSettings() );
+        }
+        newc.getRestApi().setUiTimeout( 60000 );
 
         newc.setVersion( org.sonatype.nexus.configuration.model.Configuration.MODEL_VERSION );
         message.setModelVersion( org.sonatype.nexus.configuration.model.Configuration.MODEL_VERSION );
