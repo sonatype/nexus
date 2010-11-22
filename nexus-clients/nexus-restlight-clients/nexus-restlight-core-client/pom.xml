@@ -5,7 +5,7 @@
   <parent>
     <artifactId>nexus-restlight-clients</artifactId>
     <groupId>org.sonatype.nexus.restlight</groupId>
-    <version>1.8.0.1</version>
+    <version>1.8.0.1.1</version>
   </parent>
 
   <groupId>org.sonatype.nexus.restlight</groupId>
