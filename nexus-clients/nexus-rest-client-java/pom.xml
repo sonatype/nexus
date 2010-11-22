@@ -5,7 +5,7 @@
   <parent>
     <artifactId>nexus-clients</artifactId>
     <groupId>org.sonatype.nexus</groupId>
-    <version>1.8.0.1</version>
+    <version>1.8.0.1.1-SNAPSHOT</version>
   </parent>
 
   <groupId>org.sonatype.nexus</groupId>
@@ -16,14 +16,14 @@
     <dependency>
       <groupId>org.sonatype.nexus</groupId>
       <artifactId>nexus-rest-api</artifactId>
-      <version>${project.version}</version>
+      <version>${nexus-core.version}</version>
       <scope>compile</scope>
     </dependency>
 
     <dependency>
       <groupId>org.sonatype.nexus</groupId>
       <artifactId>nexus-indexer-lucene-rest-api</artifactId>
-      <version>${project.version}</version>
+      <version>${nexus-core.version}</version>
       <scope>compile</scope>
     </dependency>
 

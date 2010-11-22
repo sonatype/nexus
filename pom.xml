@@ -11,7 +11,7 @@
   <artifactId>nexus</artifactId>
   <packaging>pom</packaging>
   <name>Sonatype Nexus Repository Manager</name>
-  <version>1.8.0.1</version>
+  <version>1.8.0.1.1-SNAPSHOT</version>
   <description>Sonatype Nexus Repository Manager</description>
   <inceptionYear>2007</inceptionYear>
   <mailingLists />
@@ -137,6 +137,7 @@
 
   <!-- Shortcuts for outnumbered deps :) -->
   <properties>
+    <nexus-core.version>1.8.0.1</nexus-core.version>
     <plexus.appbooter.version>2.1.1</plexus.appbooter.version>
     <jsw.binaries.version>3.2.3.5</jsw.binaries.version>
     <plexus-security.version>1.1.8</plexus-security.version>
@@ -871,88 +872,88 @@
       <dependency>
         <groupId>org.sonatype.nexus</groupId>
         <artifactId>nexus-utils</artifactId>
-        <version>${project.version}</version>
+        <version>${nexus-core.version}</version>
       </dependency>
       <dependency>
         <groupId>org.sonatype.nexus</groupId>
         <artifactId>nexus-web-utils</artifactId>
-        <version>${project.version}</version>
+        <version>${nexus-core.version}</version>
       </dependency>
       <dependency>
         <groupId>org.sonatype.nexus</groupId>
         <artifactId>nexus-logging-extras</artifactId>
-        <version>${project.version}</version>
+        <version>${nexus-core.version}</version>
       </dependency>
       <dependency>
         <groupId>org.sonatype.nexus</groupId>
         <artifactId>nexus-api</artifactId>
-        <version>${project.version}</version>
+        <version>${nexus-core.version}</version>
       </dependency>
       <dependency>
         <groupId>org.sonatype.nexus</groupId>
         <artifactId>nexus-oss-edition</artifactId>
-        <version>${project.version}</version>
+        <version>${nexus-core.version}</version>
       </dependency>
       <dependency>
         <groupId>org.sonatype.nexus</groupId>
         <artifactId>nexus-configuration</artifactId>
-        <version>${project.version}</version>
+        <version>${nexus-core.version}</version>
       </dependency>
       <dependency>
         <groupId>org.sonatype.nexus</groupId>
         <artifactId>nexus-configuration</artifactId>
-        <version>${project.version}</version>
+        <version>${nexus-core.version}</version>
         <classifier>tests</classifier>
         <scope>test</scope>
       </dependency>
       <dependency>
         <groupId>org.sonatype.nexus</groupId>
         <artifactId>nexus-proxy</artifactId>
-        <version>${project.version}</version>
+        <version>${nexus-core.version}</version>
       </dependency>
       <dependency>
         <groupId>org.sonatype.nexus</groupId>
         <artifactId>nexus-proxy</artifactId>
-        <version>${project.version}</version>
+        <version>${nexus-core.version}</version>
         <classifier>tests</classifier>
         <scope>test</scope>
       </dependency>
       <dependency>
         <groupId>org.sonatype.nexus</groupId>
         <artifactId>nexus-app</artifactId>
-        <version>${project.version}</version>
+        <version>${nexus-core.version}</version>
       </dependency>
       <dependency>
         <groupId>org.sonatype.nexus</groupId>
         <artifactId>nexus-app</artifactId>
-        <version>${project.version}</version>
+        <version>${nexus-core.version}</version>
         <classifier>tests</classifier>
         <scope>test</scope>
       </dependency>
       <dependency>
         <groupId>org.sonatype.nexus</groupId>
         <artifactId>nexus-indexer-lucene-app</artifactId>
-        <version>${project.version}</version>
+        <version>${nexus-core.version}</version>
       </dependency>
       <dependency>
         <groupId>org.sonatype.nexus</groupId>
         <artifactId>nexus-indexer-lucene-rest-api</artifactId>
-        <version>${project.version}</version>
+        <version>${nexus-core.version}</version>
       </dependency>
       <dependency>
         <groupId>org.sonatype.nexus</groupId>
         <artifactId>nexus-webapp</artifactId>
-        <version>${project.version}</version>
+        <version>${nexus-core.version}</version>
       </dependency>
       <dependency>
         <groupId>org.sonatype.nexus</groupId>
         <artifactId>nexus-rest-api</artifactId>
-        <version>${project.version}</version>
+        <version>${nexus-core.version}</version>
       </dependency>
       <dependency>
         <groupId>org.sonatype.nexus</groupId>
         <artifactId>nexus-rest-api</artifactId>
-        <version>${project.version}</version>
+        <version>${nexus-core.version}</version>
         <classifier>tests</classifier>
         <scope>test</scope>
       </dependency>
@@ -962,17 +963,17 @@
       <dependency>
         <groupId>org.sonatype.nexus</groupId>
         <artifactId>nexus-plugin-api</artifactId>
-        <version>${project.version}</version>
+        <version>${nexus-core.version}</version>
       </dependency>
       <dependency>
         <groupId>org.sonatype.nexus</groupId>
         <artifactId>nexus-plugin-host-api</artifactId>
-        <version>${project.version}</version>
+        <version>${nexus-core.version}</version>
       </dependency>
       <dependency>
         <groupId>org.sonatype.nexus</groupId>
         <artifactId>spice-inject-nexus</artifactId>
-        <version>${project.version}</version>
+        <version>${nexus-core.version}</version>
       </dependency>
       <dependency>
         <groupId>org.sonatype.spice</groupId>
@@ -1186,24 +1187,7 @@
   </scm>
 
   <modules>
-    <module>nexus-indexer-lucene</module>
-    <module>nexus-plugins</module>
-    <!-- New Guice based IoC cannot cope with it currently <module>nexus-mock</module> -->
-    <module>nexus-utils</module>
-    <module>nexus-web-utils</module>
-    <module>nexus-logging-extras</module>
-    <module>nexus-api</module>
-    <module>nexus-oss-edition</module>
-    <module>nexus-configuration</module>
-    <module>nexus-proxy</module>
-    <module>nexus-app</module>
-    <module>nexus-rest-api</module>
-    <module>nexus-migration-tool</module>
-    <module>nexus-core-plugins</module>
-    <module>nexus-webapp</module>
     <module>nexus-clients</module>
-    <module>nexus-distributions</module>
-    <module>nexus-test-harness</module>
   </modules>
 
   <profiles>
