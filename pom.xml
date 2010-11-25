@@ -1,5 +1,4 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
   <modelVersion>4.0.0</modelVersion>
 
@@ -18,41 +17,35 @@
   <name>Sonatype Nexus Parent</name>
 
   <scm>
-    <connection>scm:svn:http://svn.sonatype.org/nexus/trunk/nexus-parent</connection>
-    <url>http://svn.sonatype.org/nexus/trunk/nexus-parent</url>
-    <developerConnection>scm:svn:https://svn.sonatype.org/nexus/trunk/nexus-parent</developerConnection>
+    <connection>scm:svn:http://svn.sonatype.org/nexus/tags/nexus-parent-18-M1</connection>
+    <url>http://svn.sonatype.org/nexus/tags/nexus-parent-18-M1</url>
+    <developerConnection>scm:svn:https://svn.sonatype.org/nexus/tags/nexus-parent-18-M1</developerConnection>
   </scm>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
+    <jetty.version>6.1.19</jetty.version>
+    <sisu-guice.version>2.9.1</sisu-guice.version>
     <sisu-inject.version>1.4.3</sisu-inject.version>
     <sisu-inject-plexus.version>${sisu-inject.version}</sisu-inject-plexus.version>
-    <plexus-component-metadata.version>1.5.5</plexus-component-metadata.version>
-    <plexus-utils.version>2.0.5</plexus-utils.version>
+    <plexus-component-metadata.version>1.5.4</plexus-component-metadata.version>
 
-    <jetty.version>6.1.19</jetty.version>
     <maven.version>2.2.1</maven.version>
   </properties>
 
   <dependencyManagement>
     <dependencies>
-
-      <!-- SISU and Plexus support (the version should be tied to SISU used ones!) -->
       <dependency>
         <groupId>org.sonatype.sisu</groupId>
         <artifactId>sisu-inject-plexus</artifactId>
         <version>${sisu-inject-plexus.version}</version>
       </dependency>
-      <dependency>
-        <groupId>org.codehaus.plexus</groupId>
-        <artifactId>plexus-component-annotations</artifactId>
-        <version>${plexus-component-metadata.version}</version>
-      </dependency>
+      <!-- This below is actually tied to this above, but some modules like modello only modules does need p-u only as dependency -->
       <dependency>
         <groupId>org.codehaus.plexus</groupId>
         <artifactId>plexus-utils</artifactId>
-        <version>${plexus-utils.version}</version>
+        <version>2.0.5</version>
       </dependency>
 
       <dependency>
@@ -267,7 +260,6 @@
         <invoker.skip>true</invoker.skip>
         <source.skip>true</source.skip>
         <enunciate.skip>true</enunciate.skip>
-        <tattletale.skip>true</tattletale.skip>
       </properties>
       <build>
         <plugins>
@@ -358,7 +350,7 @@
         <plugin>
           <groupId>org.sonatype.plugins</groupId>
           <artifactId>nexus-test-environment-maven-plugin</artifactId>
-          <version>1.6-SNAPSHOT</version>
+          <version>1.6</version>
         </plugin>
       </plugins>
     </pluginManagement>
@@ -366,7 +358,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-enforcer-plugin</artifactId>
-        <version>1.0</version>
+        <version>1.0-beta-1</version>
         <executions>
           <execution>
             <id>enforce-java</id>
@@ -376,23 +368,12 @@
             <configuration>
               <rules>
                 <requireMavenVersion>
-                  <version>3.0</version>
+                  <version>3.0-alpha</version>
                 </requireMavenVersion>
-                <requireJavaVersion>
-                  <version>1.6.0</version>
-                </requireJavaVersion>
               </rules>
             </configuration>
           </execution>
         </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <configuration>
-          <source>1.6</source>
-          <target>1.6</target>
-        </configuration>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
