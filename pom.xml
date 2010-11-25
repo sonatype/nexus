@@ -8,7 +8,7 @@
   </parent>
   <groupId>org.sonatype.nexus</groupId>
   <artifactId>nexus-indexer-artifact</artifactId>
-  <version>1.1-M1-SNAPSHOT</version>
+  <version>1.1-M1</version>
 
   <!-- a short but descriptive name for the project -->
   <name>Sonatype Nexus Indexer Artifact</name>
@@ -34,9 +34,9 @@
   </build>
   
   <scm>
-    <connection>scm:svn:http://svn.sonatype.org/nexus/branches/nexus-1.9-M1/nexus-indexer-artifact</connection>
-    <developerConnection>scm:svn:https://svn.sonatype.org/nexus/branches/nexus-1.9-M1/nexus-indexer-artifact</developerConnection>
-    <url>http://svn.sonatype.org/nexus/branches/nexus-1.9-M1/nexus-indexer-artifact</url>
+    <connection>scm:svn:http://svn.sonatype.org/nexus/tags/nexus-indexer-artifact-1.1-M1</connection>
+    <developerConnection>scm:svn:https://svn.sonatype.org/nexus/tags/nexus-indexer-artifact-1.1-M1</developerConnection>
+    <url>http://svn.sonatype.org/nexus/tags/nexus-indexer-artifact-1.1-M1</url>
   </scm>  
 
 </project>
