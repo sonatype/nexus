@@ -22,9 +22,9 @@
   </licenses>
 
   <scm>
-    <connection>scm:svn:http://svn.sonatype.org/nexus/trunk/nexus-indexer</connection>
-    <developerConnection>scm:svn:https://svn.sonatype.org/nexus/trunk/nexus-indexer</developerConnection>
-    <url>http://svn.sonatype.org/nexus/trunk/nexus-indexer</url>
+    <connection>scm:svn:http://svn.sonatype.org/nexus/branches/nexus-1.9-M1/nexus-indexer</connection>
+    <developerConnection>scm:svn:https://svn.sonatype.org/nexus/branches/nexus-1.9-M1/nexus-indexer</developerConnection>
+    <url>http://svn.sonatype.org/nexus/branches/nexus-1.9-M1/nexus-indexer</url>
   </scm>
 
   <properties>
