@@ -1175,9 +1175,9 @@
   </reporting>
 
   <scm>
-    <connection>scm:svn:http://svn.sonatype.org/nexus/trunk/nexus</connection>
-    <developerConnection>scm:svn:https://svn.sonatype.org/nexus/trunk/nexus</developerConnection>
-    <url>http://svn.sonatype.org/nexus/trunk/nexus</url>
+    <connection>scm:svn:http://svn.sonatype.org/nexus/branches/nexus-1.9-M1/nexus</connection>
+    <developerConnection>scm:svn:https://svn.sonatype.org/nexus/branches/nexus-1.9-M1/nexus</developerConnection>
+    <url>http://svn.sonatype.org/nexus/branches/nexus-1.9-M1/nexus</url>
   </scm>
 
   <modules>
