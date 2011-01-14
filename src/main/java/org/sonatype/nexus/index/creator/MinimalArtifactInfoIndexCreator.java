@@ -203,16 +203,6 @@ public class MinimalArtifactInfoIndexCreator
 
         doc.add( new Field( ArtifactInfo.VERSION, ai.version, Field.Store.NO, Field.Index.TOKENIZED ) );
 
-        if ( ai.name != null )
-        {
-            doc.add( new Field( ArtifactInfo.NAME, ai.name, Field.Store.YES, Field.Index.NO ) );
-        }
-
-        if ( ai.description != null )
-        {
-            doc.add( new Field( ArtifactInfo.DESCRIPTION, ai.description, Field.Store.YES, Field.Index.NO ) );
-        }
-
         if ( ai.packaging != null )
         {
             doc.add( new Field( ArtifactInfo.PACKAGING, ai.packaging, Field.Store.NO, Field.Index.UN_TOKENIZED ) );

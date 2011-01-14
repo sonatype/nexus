@@ -160,8 +160,6 @@ public class NexusIndexerTest
 
         ArtifactInfo ai = res1.iterator().next();
 
-        assertEquals( "Maven Core Integration Test Plugin", ai.name );
-
         long oldSize = ai.size;
 
         ai.name = "bla bla bla";
@@ -186,8 +184,6 @@ public class NexusIndexerTest
         ArtifactInfo ai2 = res2.iterator().next();
 
         assertEquals( oldSize + 100, ai2.size );
-
-        assertEquals( "bla bla bla", ai2.name );
     }
 
     public void testUnpack()
