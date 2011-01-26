@@ -34,9 +34,9 @@
   <version>1.9</version>
   <description>Sonatype Nexus Repository Manager</description>
   <inceptionYear>2007</inceptionYear>
-  
+
   <url>${nexus-site-base-url}/nexus</url>
-  
+
   <mailingLists />
   <licenses>
     <license>
@@ -631,7 +631,7 @@
           </exclusion>
         </exclusions>
       </dependency>
-      
+
       <!-- Restlet.org et al -->
       <dependency>
         <groupId>org.restlet</groupId>
@@ -1135,6 +1135,11 @@
             </properties>
           </configuration>
         </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-release-plugin</artifactId>
+          <version>2.1</version>
+        </plugin>
       </plugins>
     </pluginManagement>
   </build>
@@ -1168,7 +1173,7 @@
     <developerConnection>scm:svn:https://svn.sonatype.org/nexus/tags/nexus-1.9</developerConnection>
     <url>http://svn.sonatype.org/nexus/tags/nexus-1.9</url>
   </scm>
-  
+
   <distributionManagement>
     <site>
       <id>forge-sites</id>
