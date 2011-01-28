@@ -162,8 +162,9 @@
   <properties>
     <maven.indexer.version>4.0.0</maven.indexer.version>
     <maven.version>3.0.1</maven.version>
-    <aether.version>1.8</aether.version>
+    <aether.version>1.8.1</aether.version>
 
+    <sisu-inject.version>1.4.3-server</sisu-inject.version>
     <spice-timeline.version>2.0</spice-timeline.version>
     <plexus.appbooter.version>2.1.1</plexus.appbooter.version>
     <jsw.binaries.version>3.2.3.5</jsw.binaries.version>
