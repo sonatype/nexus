@@ -1170,8 +1170,8 @@
   </reporting>
 
   <scm>
-    <connection>scm:svn:http://svn.sonatype.org/nexus/trunk/nexus</connection>
-    <developerConnection>scm:svn:https://svn.sonatype.org/nexus/trunk/nexus</developerConnection>
+    <connection>scm:svn:http://svn.sonatype.org/nexus/branches/nexus-1.9.x/</connection>
+    <developerConnection>scm:svn:https://svn.sonatype.org/nexus/branches/nexus-1.9.x/</developerConnection>
     <url>http://svn.sonatype.org/nexus/tags/nexus-1.9</url>
   </scm>
 
