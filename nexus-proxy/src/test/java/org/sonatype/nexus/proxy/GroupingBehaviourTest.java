@@ -49,8 +49,8 @@ public class GroupingBehaviourTest
     {
         String spoofedPath = "/spoof/simple.txt";
 
-        File md1File = File.createTempFile( "md1", "tmp" );
-        File md2File = File.createTempFile( "md2", "tmp" );
+        File md1File = createTempFile( "md1", "tmp" );
+        File md2File = createTempFile( "md2", "tmp" );
 
         // get metadata directly from repo1, no aggregation, no spoofing
         StorageItem item1 = getRepositoryRegistry().getRepository( "repo1" ).retrieveItem(
@@ -89,8 +89,8 @@ public class GroupingBehaviourTest
     {
         String spoofedPath = "/spoof/maven-metadata.xml";
 
-        File md1File = File.createTempFile( "md1", "tmp" );
-        File md2File = File.createTempFile( "md2", "tmp" );
+        File md1File = createTempFile( "md1", "tmp" );
+        File md2File = createTempFile( "md2", "tmp" );
 
         Metadata md1, md2;
 
@@ -152,7 +152,7 @@ public class GroupingBehaviourTest
     {
         String spoofedPath = "/merge-version/maven-metadata.xml";
 
-        File mdmFile = File.createTempFile( "mdm", "tmp" );
+        File mdmFile = createTempFile( "mdm", "tmp" );
 
         Metadata mdm;
 
@@ -200,7 +200,7 @@ public class GroupingBehaviourTest
     {
         String spoofedPath = "/merge-plugins/maven-metadata.xml";
 
-        File mdmFile = File.createTempFile( "mdm", "tmp" );
+        File mdmFile = createTempFile( "mdm", "tmp" );
 
         Metadata mdm;
 
@@ -242,4 +242,5 @@ public class GroupingBehaviourTest
         sha1Digester.verify( mdmFile, sha1hash );
 
     }
+
 }
