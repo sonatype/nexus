@@ -168,7 +168,8 @@
     <spice-timeline.version>2.0</spice-timeline.version>
     <plexus.appbooter.version>2.1.1</plexus.appbooter.version>
     <jsw.binaries.version>3.2.3.5</jsw.binaries.version>
-    <plexus-security.version>2.2</plexus-security.version>
+    <plexus-security.version>2.2.1-SNAPSHOT</plexus-security.version>
+    <plexus-security-rest.version>2.2</plexus-security-rest.version>
     <shiro.version>1.0.0-incubating</shiro.version>
     <slf4j.version>1.5.6</slf4j.version>
     <nexus.repository.metadata.version>1.1</nexus.repository.metadata.version>
@@ -473,7 +474,7 @@
       <dependency>
         <groupId>org.sonatype.security</groupId>
         <artifactId>security-rest-api</artifactId>
-        <version>${plexus-security.version}</version>
+        <version>${plexus-security-rest.version}</version>
         <exclusions>
           <exclusion>
             <groupId>javax.activation</groupId>
