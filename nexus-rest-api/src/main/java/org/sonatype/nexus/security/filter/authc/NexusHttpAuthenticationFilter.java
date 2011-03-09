@@ -33,6 +33,7 @@ import org.apache.shiro.authc.AuthenticationToken;
 import org.apache.shiro.authc.ExpiredCredentialsException;
 import org.apache.shiro.authc.UsernamePasswordToken;
 import org.apache.shiro.codec.Base64;
+import org.apache.shiro.session.UnknownSessionException;
 import org.apache.shiro.subject.Subject;
 import org.apache.shiro.web.filter.authc.BasicHttpAuthenticationFilter;
 import org.apache.shiro.web.util.WebUtils;
@@ -356,8 +357,15 @@ public class NexusHttpAuthenticationFilter
     {
         if ( request.getAttribute( ANONYMOUS_LOGIN ) != null )
         {
-            getSubject( request, response ).logout();
-
+            try
+            {
+                getSubject( request, response ).logout();
+            }
+            catch( UnknownSessionException e )
+            {
+                // we need to prevent log spam, just log this as trace
+                this.logger.trace( "Failed to find session for anonymous user.", e );
+            }
             if ( HttpServletRequest.class.isAssignableFrom( request.getClass() ) )
             {
                 HttpSession session = ( (HttpServletRequest) request ).getSession( false );
@@ -472,4 +480,57 @@ public class NexusHttpAuthenticationFilter
         return this.getFilterConfig().getServletContext().getAttribute( key );
     }
 
+    @Override
+    public void afterCompletion( ServletRequest request, ServletResponse response, Exception exception )
+        throws Exception
+    {
+        if ( isStatelessClient( request ) )
+        {
+            getSubject( request, response ).logout();
+        }
+    }
+
+    // ==
+
+    protected boolean isStatelessClient( final ServletRequest request )
+    {
+        final String userAgent = ( (HttpServletRequest) request ).getHeader( "User-Agent" );
+
+        if ( userAgent != null && userAgent.trim().length() > 0 )
+        {
+            // maven 2.0.10+
+            if ( userAgent.startsWith( "Apache-Maven" ) )
+            {
+                return true;
+            }
+
+            // maven pre 2.0.10 and all Java based clients relying on java.net.UrlConnection
+            if ( userAgent.startsWith( "Java/" ) )
+            {
+                return true;
+            }
+
+            // ivy
+            if ( userAgent.startsWith( "Apache Ivy/" ) )
+            {
+                return true;
+            }
+
+            // curl
+            if ( userAgent.startsWith( "curl/" ) )
+            {
+                return true;
+            }
+
+            // wget
+            if ( userAgent.startsWith( "Wget/" ) )
+            {
+                return true;
+            }
+
+        }
+
+        // we can't decided for sure, let's return the safest
+        return false;
+    }
 }
