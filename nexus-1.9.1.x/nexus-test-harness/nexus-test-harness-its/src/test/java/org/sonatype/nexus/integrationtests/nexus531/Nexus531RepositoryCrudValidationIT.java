@@ -1,0 +1,454 @@
+/**
+ * Copyright (c) 2008-2011 Sonatype, Inc.
+ * All rights reserved. Includes the third-party code listed at http://www.sonatype.com/products/nexus/attributions.
+ *
+ * This program is free software: you can redistribute it and/or modify it only under the terms of the GNU Affero General
+ * Public License Version 3 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Affero General Public License Version 3
+ * for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License Version 3 along with this program.  If not, see
+ * http://www.gnu.org/licenses.
+ *
+ * Sonatype Nexus (TM) Open Source Version is available from Sonatype, Inc. Sonatype and Sonatype Nexus are trademarks of
+ * Sonatype, Inc. Apache Maven is a trademark of the Apache Foundation. M2Eclipse is a trademark of the Eclipse Foundation.
+ * All other trademarks are the property of their respective owners.
+ */
+package org.sonatype.nexus.integrationtests.nexus531;
+
+import java.io.IOException;
+
+import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
+import org.restlet.data.MediaType;
+import org.restlet.data.Method;
+import org.restlet.data.Response;
+import org.sonatype.nexus.integrationtests.AbstractPrivilegeTest;
+import org.sonatype.nexus.integrationtests.TestContainer;
+import org.sonatype.nexus.proxy.maven.RepositoryPolicy;
+import org.sonatype.nexus.rest.model.RepositoryBaseResource;
+import org.sonatype.nexus.rest.model.RepositoryResource;
+import org.sonatype.nexus.rest.model.RepositoryResourceRemoteStorage;
+import org.sonatype.nexus.test.utils.RepositoryMessageUtil;
+import org.testng.Assert;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Test;
+
+import com.thoughtworks.xstream.converters.ConversionException;
+
+public class Nexus531RepositoryCrudValidationIT
+    extends AbstractPrivilegeTest
+{
+
+    private RepositoryMessageUtil messageUtil;
+
+    @BeforeClass
+    public void setSecureTest()
+        throws ComponentLookupException
+    {
+        this.messageUtil = new RepositoryMessageUtil( this, this.getXMLXStream(), MediaType.APPLICATION_XML );
+        TestContainer.getInstance().getTestContext().setSecureTest( true );
+    }
+
+    @Test
+    public void createNoCheckSumTest()
+        throws IOException
+    {
+        RepositoryResource resource = new RepositoryResource();
+
+        resource.setId( "createNoCheckSumTest" );
+        resource.setRepoType( "proxy" ); // [hosted, proxy, virtual]
+        resource.setName( "Create Test Repo" );
+        resource.setProvider( "maven2" );
+        // format is neglected by server from now on, provider is the new guy in the town
+        resource.setFormat( "maven2" ); // Repository Format, maven1, maven2, maven-site, eclipse-update-site
+        // resource.setAllowWrite( true );
+        // resource.setBrowseable( true );
+        // resource.setIndexable( true );
+        // resource.setNotFoundCacheTTL( 1440 );
+        resource.setRepoPolicy( RepositoryPolicy.RELEASE.name() ); // [snapshot, release] Note: needs param name change
+        // resource.setRealmnId(?)
+        // resource.setOverrideLocalStorageUrl( "" ); //file://repos/internal
+        // resource.setDefaultLocalStorageUrl( "" ); //file://repos/internal
+        // resource.setDownloadRemoteIndexes( true );
+        // resource.setChecksumPolicy( "ignore" ); // [ignore, warn, strictIfExists, strict]
+
+        Response response = this.messageUtil.sendMessage( Method.POST, resource );
+        String responseText = response.getEntity().getText();
+
+        if ( response.getStatus().isSuccess() )
+        {
+            Assert.fail( "Repo should not have been created: " + response.getStatus() + "\n" + responseText );
+        }
+        Assert.assertTrue( responseText.contains( "<errors>" ),
+            "Response text did not contain an error message. \nResponse Text:\n " + responseText );
+    }
+
+    @Test
+    public void createNoRepoPolicyTest()
+        throws IOException
+    {
+        RepositoryResource resource = new RepositoryResource();
+
+        resource.setId( "createNoRepoPolicyTest" );
+        resource.setRepoType( "hosted" ); // [hosted, proxy, virtual]
+        resource.setName( "Create Test Repo" );
+        resource.setProvider( "maven2" );
+        // format is neglected by server from now on, provider is the new guy in the town
+        resource.setFormat( "maven2" ); // Repository Format, maven1, maven2, maven-site, eclipse-update-site
+        // resource.setAllowWrite( true );
+        // resource.setBrowseable( true );
+        // resource.setIndexable( true );
+        // resource.setNotFoundCacheTTL( 1440 );
+        // resource.setRepoPolicy( "release" ); // [snapshot, release] Note: needs param name change
+        // resource.setRealmnId(?)
+        // resource.setOverrideLocalStorageUrl( "" ); //file://repos/internal
+        // resource.setDefaultLocalStorageUrl( "" ); //file://repos/internal
+        // resource.setDownloadRemoteIndexes( true );
+        // resource.setChecksumPolicy( "IGNORE" ); // [ignore, warn, strictIfExists, strict]
+
+        Response response = this.messageUtil.sendMessage( Method.POST, resource );
+        String responseText = response.getEntity().getText();
+
+        if ( response.getStatus().isSuccess() )
+        {
+            Assert.fail( "Repo should not have been created: " + response.getStatus() + "\n" + responseText );
+        }
+        Assert.assertTrue( responseText.contains( "<errors>" ),
+            "Response text did not contain an error message. \nResponse Text:\n " + responseText );
+    }
+
+    @Test
+    public void createNoRepoTypeTest()
+        throws IOException
+    {
+
+        RepositoryResource resource = new RepositoryResource();
+
+        resource.setId( "createNoRepoTypeTest" );
+        resource.setRepoType( "hosted" ); // [hosted, proxy, virtual]
+        resource.setName( "Create Test Repo" );
+        resource.setProvider( "maven2" );
+        // format is neglected by server from now on, provider is the new guy in the town
+        resource.setFormat( "maven2" ); // Repository Format, maven1, maven2, maven-site, eclipse-update-site
+        // resource.setAllowWrite( true );
+        // resource.setBrowseable( true );
+        // resource.setIndexable( true );
+        // resource.setNotFoundCacheTTL( 1440 );
+        resource.setRepoPolicy( RepositoryPolicy.RELEASE.name() ); // [snapshot, release] Note: needs param name change
+        // resource.setRealmnId(?)
+        // resource.setOverrideLocalStorageUrl( "" ); //file://repos/internal
+        // resource.setDefaultLocalStorageUrl( "" ); //file://repos/internal
+        // resource.setDownloadRemoteIndexes( true );
+        resource.setChecksumPolicy( "IGNORE" ); // [ignore, warn, strictIfExists, strict]
+
+        Response response = this.messageUtil.sendMessage( Method.POST, resource );
+        String responseText = response.getEntity().getText();
+
+        Assert.assertTrue( response.getStatus().isSuccess(), "Expected RepoType to default: " + response.getStatus()
+            + "\n" + responseText );
+        // change in functionality
+        // Assert.assertFalse( "Expected failure: "+ response.getStatus()+"\n"+responseText,
+        // response.getStatus().isSuccess() );
+    }
+
+    @Test
+    public void noRepoTypeSerializationError()
+        throws IOException
+    {
+
+        RepositoryResource resource = new RepositoryResource();
+
+        resource.setId( "createNoRepoTypeTest" );
+        // resource.setRepoType( "hosted" ); // [hosted, proxy, virtual]
+        resource.setName( "Create Test Repo" );
+        resource.setProvider( "maven2" );
+        // format is neglected by server from now on, provider is the new guy in the town
+        resource.setFormat( "maven2" ); // Repository Format, maven1, maven2, maven-site, eclipse-update-site
+        // resource.setAllowWrite( true );
+        // resource.setBrowseable( true );
+        // resource.setIndexable( true );
+        // resource.setNotFoundCacheTTL( 1440 );
+        resource.setRepoPolicy( RepositoryPolicy.RELEASE.name() ); // [snapshot, release] Note: needs param name change
+        // resource.setRealmnId(?)
+        // resource.setOverrideLocalStorageUrl( "" ); //file://repos/internal
+        // resource.setDefaultLocalStorageUrl( "" ); //file://repos/internal
+        // resource.setDownloadRemoteIndexes( true );
+        resource.setChecksumPolicy( "IGNORE" ); // [ignore, warn, strictIfExists, strict]
+
+        try
+        {
+            this.messageUtil.sendMessage( Method.POST, resource );
+            Assert.fail( "Expected to throw ConversionException" );
+        }
+        catch ( ConversionException e )
+        {
+            // expected
+        }
+    }
+
+    @Test
+    public void createNoIdTest()
+        throws IOException
+    {
+
+        RepositoryResource resource = new RepositoryResource();
+
+        resource.setId( "" );
+        resource.setRepoType( "hosted" ); // [hosted, proxy, virtual]
+        resource.setName( "Create Test Repo" );
+        resource.setProvider( "maven2" );
+        // format is neglected by server from now on, provider is the new guy in the town
+        resource.setFormat( "maven2" ); // Repository Format, maven1, maven2, maven-site, eclipse-update-site
+        // resource.setAllowWrite( true );
+        // resource.setBrowseable( true );
+        // resource.setIndexable( true );
+        // resource.setNotFoundCacheTTL( 1440 );
+        resource.setRepoPolicy( RepositoryPolicy.RELEASE.name() ); // [snapshot, release] Note: needs param name change
+        // resource.setRealmnId(?)
+        // resource.setOverrideLocalStorageUrl( "" ); //file://repos/internal
+        // resource.setDefaultLocalStorageUrl( "" ); //file://repos/internal
+        // resource.setDownloadRemoteIndexes( true );
+        resource.setChecksumPolicy( "IGNORE" ); // [ignore, warn, strictIfExists, strict]
+
+        Response response = this.messageUtil.sendMessage( Method.POST, resource );
+        String responseText = response.getEntity().getText();
+
+        Assert.assertFalse( response.getStatus().isSuccess(),
+            "Repo should not have been created: " + response.getStatus() + "\n" + responseText );
+        Assert.assertTrue( responseText.contains( "<errors>" ),
+            "Response text did not contain an error message. \nResponse Text:\n " + responseText );
+
+        // with null
+
+        resource.setId( null );
+
+        response = this.messageUtil.sendMessage( Method.POST, resource );
+        responseText = response.getEntity().getText();
+
+        Assert.assertFalse( response.getStatus().isSuccess(),
+            "Repo should not have been created: " + response.getStatus() + "\n" + responseText );
+        Assert.assertTrue( responseText.contains( "<errors>" ),
+            "Response text did not contain an error message. \nResponse Text:\n " + responseText );
+
+    }
+
+    @Test
+    public void createNoNameTest()
+        throws IOException
+    {
+
+        RepositoryResource resource = new RepositoryResource();
+
+        resource.setId( "createNoNameTest" );
+        resource.setRepoType( "hosted" ); // [hosted, proxy, virtual]
+        resource.setName( "" );
+        resource.setProvider( "maven2" );
+        // format is neglected by server from now on, provider is the new guy in the town
+        resource.setFormat( "maven2" ); // Repository Format, maven1, maven2, maven-site, eclipse-update-site
+        // resource.setAllowWrite( true );
+        // resource.setBrowseable( true );
+        // resource.setIndexable( true );
+        // resource.setNotFoundCacheTTL( 1440 );
+        resource.setRepoPolicy( RepositoryPolicy.RELEASE.name() ); // [snapshot, release] Note: needs param name change
+        // resource.setRealmnId(?)
+        // resource.setOverrideLocalStorageUrl( "" ); //file://repos/internal
+        // resource.setDefaultLocalStorageUrl( "" ); //file://repos/internal
+        // resource.setDownloadRemoteIndexes( true );
+        resource.setChecksumPolicy( "IGNORE" ); // [ignore, warn, strictIfExists, strict]
+
+        Response response = this.messageUtil.sendMessage( Method.POST, resource );
+        String responseText = response.getEntity().getText();
+
+        Assert.assertTrue( response.getStatus().isSuccess(), "Expected name to default." + responseText );
+        Assert.assertTrue( this.messageUtil.getRepository( "createNoNameTest" ).getName().equals( "createNoNameTest" ),
+            "Expected name to default to id" );
+
+        // with null
+        resource.setId( "createNoNameTestnull" );
+        resource.setName( null );
+
+        response = this.messageUtil.sendMessage( Method.POST, resource );
+        responseText = response.getEntity().getText();
+
+        Assert.assertTrue( response.getStatus().isSuccess(), "Expected name to default." + responseText );
+        Assert.assertTrue(
+            this.messageUtil.getRepository( "createNoNameTestnull" ).getName().equals( "createNoNameTestnull" ),
+            "Expected name to default to id" );
+
+    }
+
+    @Test
+    public void createJunkOverrideUrlTest()
+        throws IOException
+    {
+
+        RepositoryResource resource = new RepositoryResource();
+
+        resource.setId( "createJunkOverrideUrlTest" );
+        resource.setRepoType( "hosted" ); // [hosted, proxy, virtual]
+        resource.setName( "Create Test Repo" );
+        resource.setProvider( "maven2" );
+        // format is neglected by server from now on, provider is the new guy in the town
+        resource.setFormat( "maven2" ); // Repository Format, maven1, maven2, maven-site, eclipse-update-site
+        // resource.setAllowWrite( true );
+        // resource.setBrowseable( true );
+        // resource.setIndexable( true );
+        // resource.setNotFoundCacheTTL( 1440 );
+        resource.setRepoPolicy( RepositoryPolicy.RELEASE.name() ); // [snapshot, release] Note: needs param name change
+        // resource.setRealmnId(?)
+        resource.setOverrideLocalStorageUrl( "foo.bar" ); // file://repos/internal
+        // resource.setDefaultLocalStorageUrl( "" ); //file://repos/internal
+        // resource.setDownloadRemoteIndexes( true );
+        resource.setChecksumPolicy( "IGNORE" ); // [ignore, warn, strictIfExists, strict]
+
+        Response response = this.messageUtil.sendMessage( Method.POST, resource );
+        String responseText = response.getEntity().getText();
+
+        Assert.assertFalse( response.getStatus().isSuccess(),
+            "Repo should not have been created: " + response.getStatus() + "\n" + responseText );
+        Assert.assertTrue( responseText.contains( "<errors>" ),
+            "Response text did not contain an error message. \nResponse Text:\n " + responseText );
+    }
+
+    @Test
+    public void createJunkDefaultStorageUrlTest()
+        throws IOException
+    {
+
+        RepositoryResource resource = new RepositoryResource();
+
+        resource.setId( "createJunkDefaultStorageUrlTest" );
+        resource.setRepoType( "proxy" ); // [hosted, proxy, virtual]
+        resource.setName( "Create Test Repo" );
+        resource.setProvider( "maven2" );
+        // format is neglected by server from now on, provider is the new guy in the town
+        resource.setFormat( "maven2" ); // Repository Format, maven1, maven2, maven-site, eclipse-update-site
+        // resource.setAllowWrite( true );
+        // resource.setBrowseable( true );
+        // resource.setIndexable( true );
+        // resource.setNotFoundCacheTTL( 1440 );
+        resource.setRepoPolicy( RepositoryPolicy.RELEASE.name() ); // [snapshot, release] Note: needs param name change
+        // resource.setRealmnId(?)
+        // resource.setOverrideLocalStorageUrl( "" ); //file://repos/internal
+        resource.setDefaultLocalStorageUrl( "foo.bar" ); // file://repos/internal
+        // resource.setDownloadRemoteIndexes( true );
+        resource.setChecksumPolicy( "IGNORE" ); // [ignore, warn, strictIfExists, strict]
+
+        Response response = this.messageUtil.sendMessage( Method.POST, resource );
+        String responseText = response.getEntity().getText();
+
+        Assert.assertTrue( response.getStatus().isSuccess(), "Expected DefaultLocalStorageUrl to be ignored on create"
+            + response.getStatus() + responseText );
+    }
+
+    @Test
+    public void updateValidatioinTest()
+        throws IOException
+    {
+        RepositoryResource resource = new RepositoryResource();
+
+        resource.setId( "updateValidatioinTest" );
+        resource.setRepoType( "proxy" ); // [hosted, proxy, virtual]
+        resource.setName( "Update Test Repo" );
+        // resource.setRepoType( ? )
+        resource.setProvider( "maven2" );
+        // format is neglected by server from now on, provider is the new guy in the town
+        resource.setFormat( "maven2" ); // Repository Format, maven1, maven2, maven-site, eclipse-update-site
+        // resource.setAllowWrite( true );
+        // resource.setBrowseable( true );
+        // resource.setIndexable( true );
+        // resource.setNotFoundCacheTTL( 1440 );
+        resource.setRepoPolicy( RepositoryPolicy.RELEASE.name() ); // [snapshot, release] Note: needs param name change
+        // resource.setRealmnId(?)
+        // resource.setOverrideLocalStorageUrl( "" ); //file://repos/internal
+        // resource.setDefaultLocalStorageUrl( "" ); //file://repos/internal
+        // resource.setDownloadRemoteIndexes( true );
+        resource.setChecksumPolicy( "IGNORE" ); // [ignore, warn, strictIfExists, strict]
+        RepositoryResourceRemoteStorage remote = new RepositoryResourceRemoteStorage();
+        remote.setRemoteStorageUrl( "http://localhost:123/remote_resource_repo/" );
+        resource.setRemoteStorage( remote );
+
+        // this also validates
+        resource = (RepositoryResource) this.messageUtil.createRepository( resource );
+
+        // invalid policy
+        resource.setRepoPolicy( "junk" );
+        this.sendAndExpectError( Method.PUT, resource );
+        resource.setRepoPolicy( RepositoryPolicy.RELEASE.name() );
+
+        // invalid policy
+        resource.setRepoPolicy( "junk" );
+        Response response = this.messageUtil.sendMessage( Method.PUT, resource );
+        this.sendAndExpectError( Method.PUT, resource );
+        resource.setRepoPolicy( RepositoryPolicy.RELEASE.name() );
+
+        // no policy
+        resource.setRepoPolicy( null );
+        this.sendAndExpectError( Method.PUT, resource );
+        resource.setRepoPolicy( RepositoryPolicy.RELEASE.name() );
+
+        // invalid override local storage
+        resource.setOverrideLocalStorageUrl( "foo.bar" );
+        this.sendAndExpectError( Method.PUT, resource );
+        resource.setOverrideLocalStorageUrl( null );
+
+        // invalid checksum
+        resource.setChecksumPolicy( "JUNK" );
+        this.sendAndExpectError( Method.PUT, resource );
+        resource.setChecksumPolicy( "IGNORE" );
+
+        // no checksum
+        resource.setChecksumPolicy( null );
+        this.sendAndExpectError( Method.PUT, resource );
+        resource.setChecksumPolicy( "IGNORE" );
+
+        // FIXME: these tests are disabled... NEXUS-741 NEXUS-740
+        if ( !this.printKnownErrorButDoNotFail( this.getClass(), "updateValidatioinTest" ) )
+        {
+
+            // invalid repoType
+            resource.setRepoType( "junk" );
+            this.sendAndExpectError( Method.PUT, resource );
+            resource.setRepoType( "hosted" );
+
+            // empty name
+            resource.setName( "" );
+            this.sendAndExpectError( Method.PUT, resource );
+            resource.setName( "Update Test Repo" );
+
+            // null name
+            resource.setName( null );
+            this.sendAndExpectError( Method.PUT, resource );
+            resource.setName( "Update Test Repo" );
+
+            // change id
+            resource.setId( "newId" );
+
+            response = this.messageUtil.sendMessage( Method.PUT, resource, "updateValidatioinTest" );
+            String responseText = response.getEntity().getText();
+
+            Assert.assertFalse( response.getStatus().isSuccess(),
+                "Repo should not have been updated: " + response.getStatus() + "\n" + responseText );
+            Assert.assertTrue( responseText.contains( "<errors>" ),
+                "Response text did not contain an error message. Status: " + response.getStatus()
+                    + "\nResponse Text:\n " + responseText );
+            resource.setId( "updateValidatioinTest" );
+
+        }
+    }
+
+    private void sendAndExpectError( Method method, RepositoryBaseResource resource )
+        throws IOException
+    {
+        Response response = this.messageUtil.sendMessage( method, resource );
+        String responseText = response.getEntity().getText();
+
+        Assert.assertFalse( response.getStatus().isSuccess(),
+            "Repo should not have been updated: " + response.getStatus() + "\n" + responseText );
+        Assert.assertTrue( responseText.contains( "<errors>" ), "Response text did not contain an error message. "
+            + response.getStatus() + "\nResponse Text:\n " + responseText );
+    }
+
+}

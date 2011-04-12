@@ -1,0 +1,52 @@
+<!--
+
+    Copyright (c) 2008-2011 Sonatype, Inc.
+    All rights reserved. Includes the third-party code listed at http://www.sonatype.com/products/nexus/attributions.
+
+    This program is free software: you can redistribute it and/or modify it only under the terms of the GNU Affero General
+    Public License Version 3 as published by the Free Software Foundation.
+
+    This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
+    warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Affero General Public License Version 3
+    for more details.
+
+    You should have received a copy of the GNU Affero General Public License Version 3 along with this program.  If not, see
+    http://www.gnu.org/licenses.
+
+    Sonatype Nexus (TM) Open Source Version is available from Sonatype, Inc. Sonatype and Sonatype Nexus are trademarks of
+    Sonatype, Inc. Apache Maven is a trademark of the Apache Foundation. M2Eclipse is a trademark of the Eclipse Foundation.
+    All other trademarks are the property of their respective owners.
+
+-->
+<file>
+  <generation>45</generation>
+  <path>/org/sonatype/nexus/nexus/test/harness/snapshot-deploy-password/1.0.0-SNAPSHOT/maven-metadata.xml</path>
+  <readable>true</readable>
+  <writable>true</writable>
+  <repositoryId>snapshots</repositoryId>
+  <created>1258578500852</created>
+  <modified>1258578500852</modified>
+  <storedLocally>1258578500853</storedLocally>
+  <lastTouched>1258578500853</lastTouched>
+  <lastRequested>1258578500877</lastRequested>
+  <expired>false</expired>
+  <attributes>
+    <entry>
+      <string>digest.sha1</string>
+      <string>1f1b5bf1ecf5b210691bdf48ed815bd0b1fac78c</string>
+    </entry>
+    <entry>
+      <string>request.address</string>
+      <string>127.0.0.1</string>
+    </entry>
+    <entry>
+      <string>request.user</string>
+      <string>admin</string>
+    </entry>
+    <entry>
+      <string>digest.md5</string>
+      <string>e1d025cbf7eba30de5812748eb9893d4</string>
+    </entry>
+  </attributes>
+  <length>397</length>
+</file>

@@ -1,0 +1,154 @@
+<!--
+
+    Copyright (c) 2008-2011 Sonatype, Inc.
+    All rights reserved. Includes the third-party code listed at http://www.sonatype.com/products/nexus/attributions.
+
+    This program is free software: you can redistribute it and/or modify it only under the terms of the GNU Affero General
+    Public License Version 3 as published by the Free Software Foundation.
+
+    This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
+    warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Affero General Public License Version 3
+    for more details.
+
+    You should have received a copy of the GNU Affero General Public License Version 3 along with this program.  If not, see
+    http://www.gnu.org/licenses.
+
+    Sonatype Nexus (TM) Open Source Version is available from Sonatype, Inc. Sonatype and Sonatype Nexus are trademarks of
+    Sonatype, Inc. Apache Maven is a trademark of the Apache Foundation. M2Eclipse is a trademark of the Eclipse Foundation.
+    All other trademarks are the property of their respective owners.
+
+-->
+<model>
+
+  <id>model</id>
+  <name>Nexus Plugin Console Plugin Models</name>
+  <description>Nexus Plugin Console Plugin Models</description>
+
+  <defaults>
+    <default>
+      <key>package</key>
+      <value>org.sonatype.nexus.plugins.plugin.console.model</value>
+    </default>
+  </defaults>
+
+  <classes>
+    <class>
+      <name>PluginInfo</name>
+      <version>1.0.0+</version>
+      <description>Plugin Information</description>
+      <fields>
+        <field>
+          <name>name</name>
+          <version>1.0.0+</version>
+          <description>The name of the plugin.</description>
+          <type>String</type>
+          <required>true</required>
+        </field>
+        <field>
+          <name>version</name>
+          <version>1.0.0+</version>
+          <description>The version of the plugin.</description>
+          <type>String</type>
+          <required>true</required>
+        </field>
+        <field>
+          <name>description</name>
+          <version>1.0.0+</version>
+          <description>The description of the plugin.</description>
+          <type>String</type>
+          <required>false</required>
+        </field>
+        <field>
+          <name>status</name>
+          <version>1.0.0+</version>
+          <description>The status of the plugin.</description>
+          <type>String</type>
+          <required>true</required>
+        </field>
+        <field>
+          <name>failureReason</name>
+          <version>1.0.0+</version>
+          <description>If a plugin is failed to be activated, the reason for it.</description>
+          <type>String</type>
+          <required>false</required>
+        </field>
+        <field>
+          <name>scmVersion</name>
+          <version>1.0.0+</version>
+          <description>The scm last changed version of the plugin.</description>
+          <type>String</type>
+          <required>false</required>
+        </field>
+        <field>
+          <name>scmTimestamp</name>
+          <version>1.0.0+</version>
+          <description>The scm last changed timestamp of the plugin.</description>
+          <type>String</type>
+          <required>false</required>
+        </field>
+        <field>
+          <name>site</name>
+          <version>1.0.0+</version>
+          <description>The site of the plugin.</description>
+          <type>String</type>
+          <required>false</required>
+        </field>
+        <field>
+          <name>documentation</name>
+          <version>1.0.0+</version>
+          <description>Enunciate documentation.</description>
+          <association>
+            <type>DocumentationLink</type>
+            <multiplicity>*</multiplicity>
+          </association>
+        </field>
+        <field>
+          <name>restInfos</name>
+          <version>1.0.0+</version>
+          <description>The REST informations of this plugin.</description>
+          <association>
+            <type>RestInfo</type>
+            <multiplicity>*</multiplicity>
+          </association>
+        </field>
+      </fields>
+    </class>
+
+    <class>
+      <name>DocumentationLink</name>
+      <version>1.0.0+</version>
+      <description>REST resource information.</description>
+      <fields>
+        <field>
+          <name>label</name>
+          <version>1.0.0+</version>
+          <description>The link label.</description>
+          <type>String</type>
+          <resource>true</resource>
+        </field>
+        <field>
+          <name>url</name>
+          <version>1.0.0+</version>
+          <description>The link URL.</description>
+          <type>String</type>
+          <resource>true</resource>
+        </field>
+      </fields>
+    </class>
+    <class>
+      <name>RestInfo</name>
+      <version>1.0.0+</version>
+      <description>REST resource information.</description>
+      <fields>
+        <field>
+          <name>uri</name>
+          <version>1.0.0+</version>
+          <description>The service uri of this REST resource.</description>
+          <type>String</type>
+          <resource>true</resource>
+        </field>
+      </fields>
+    </class>
+  </classes>
+
+</model>

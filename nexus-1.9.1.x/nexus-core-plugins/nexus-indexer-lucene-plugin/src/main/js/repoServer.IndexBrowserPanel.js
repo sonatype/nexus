@@ -1,0 +1,232 @@
+/*
+ * Copyright (c) 2008-2011 Sonatype, Inc.
+ * All rights reserved. Includes the third-party code listed at http://www.sonatype.com/products/nexus/attributions.
+ *
+ * This program is free software: you can redistribute it and/or modify it only under the terms of the GNU Affero General
+ * Public License Version 3 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Affero General Public License Version 3
+ * for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License Version 3 along with this program.  If not, see
+ * http://www.gnu.org/licenses.
+ *
+ * Sonatype Nexus (TM) Open Source Version is available from Sonatype, Inc. Sonatype and Sonatype Nexus are trademarks of
+ * Sonatype, Inc. Apache Maven is a trademark of the Apache Foundation. M2Eclipse is a trademark of the Eclipse Foundation.
+ * All other trademarks are the property of their respective owners.
+ */
+Sonatype.repoServer.IndexBrowserPanel = function(config) {
+  var config = config || {};
+  var defaultConfig = {
+    url : '',
+    showRepositoryDropDown : false
+  };
+
+  Ext.apply(this, config, defaultConfig);
+
+  if (!this.root)
+  {
+    this.root = new Ext.tree.TreeNode({
+          text : '(Not Available)',
+          id : '/',
+          singleClickExpand : true,
+          expanded : true
+        });
+  }
+
+  if (this.showRepositoryDropDown)
+  {
+    this.toolbarInitEvent = 'indexBrowserToolbarInit';
+  }
+
+  Sonatype.repoServer.IndexBrowserPanel.superclass.constructor.call(this, {
+        nodeIconClass : 'x-tree-node-nexus-icon',
+        useNodeIconClassParam : 'locallyAvailable',
+        appendAttributeToId : 'type'
+      });
+};
+
+Sonatype.Events.addListener('indexBrowserToolbarInit', function(treepanel, toolbar) {
+      if (treepanel.showRepositoryDropDown)
+      {
+        var store = new Ext.data.SimpleStore({
+              fields : ['id', 'name']
+            });
+        treepanel.repocombo = new Ext.form.ComboBox({
+              width : 200,
+              store : store,
+              valueField : 'id',
+              displayField : 'name',
+              editable : false,
+              mode : 'local',
+              triggerAction : 'all',
+              listeners : {
+                select : {
+                  fn : function(combo, record, index) {
+                    for (var i = 0; i < treepanel.payload.data.hits.length; i++)
+                    {
+                      if (record.data.id == treepanel.payload.data.hits[i].repositoryId)
+                      {
+                        var repoDetails = treepanel.payload.data.getRepoDetails(record.data.id, treepanel.payload.data.repoList);
+                        treepanel.updatePayload({
+                              data : {
+                                showCtx : treepanel.payload.data.showCtx,
+                                id : repoDetails.repositoryId,
+                                name : repoDetails.repositoryName,
+                                resourceURI : repoDetails.repositoryURL,
+                                format : repoDetails.repositoryContentClass,
+                                repoType : repoDetails.repositoryKind,
+                                hitIndex : treepanel.payload.data.hitIndex,
+                                useHints : treepanel.payload.data.useHints,
+                                expandPath : treepanel.payload.data.expandPath,
+                                hits : treepanel.payload.data.hits,
+                                rec : treepanel.payload.data.rec,
+                                isSnapshot : repoDetails.repositoryPolicy == 'SNAPSHOT',
+                                repoList : treepanel.payload.data.repoList,
+                                getRepoDetails : treepanel.payload.data.getRepoDetails
+                              }
+                            }, true);
+                      }
+                    }
+                  },
+                  scope : treepanel
+                }
+              }
+            });
+
+        toolbar.push(' ', '-', ' ', 'Viewing Repository:', ' ', treepanel.repocombo);
+      }
+    });
+
+Ext.extend(Sonatype.repoServer.IndexBrowserPanel, Sonatype.panels.TreePanel, {
+      nodeExpandHandler : function() {
+        var parentContainer = this.parentContainer;
+
+        if (this.payload.data.expandPath)
+        {
+          this.selectPath(this.getDefaultPathFromPayload(), 'text', function(success, node) {
+                if (success)
+                {
+                  if (node.ownerTree.nodeClickEvent)
+                  {
+                    Sonatype.Events.fireEvent(node.ownerTree.nodeClickEvent, node, node.ownerTree.nodeClickPassthru);
+                  }
+                }
+                else if (parentContainer != null)
+                {
+                  parentContainer.loadComplete();
+                }
+              });
+        }
+      },
+      getDefaultPathFromPayload : function() {
+        var rec = this.payload.data.rec;
+        var hitIndex = this.payload.data.hitIndex;
+
+        var basePath = '/' + this.payload.data.name + '/' + rec.data.groupId.replace(/\./g, '/') + '/' + rec.data.artifactId + '/' + rec.data.version + '/' + rec.data.artifactId + '-' + rec.data.version;
+
+        for (var i = 0; i < rec.data.artifactHits[hitIndex].artifactLinks.length; i++)
+        {
+          var link = rec.data.artifactHits[hitIndex].artifactLinks[i];
+
+          if (Ext.isEmpty(link.classifier))
+          {
+            if (link.extension != 'pom')
+            {
+              return basePath + '.' + link.extension;
+            }
+          }
+        }
+
+        var link = rec.data.artifactHits[hitIndex].artifactLinks[0];
+        return basePath + (link.classifier ? ('-' + link.classifier) : '') + '.' + link.extension;
+      },
+      refreshHandler : function(button, e) {
+        Sonatype.Events.fireEvent(this.nodeClickEvent, null, this.nodeClickPassthru);
+        if (this.root)
+        {
+          this.root.destroy();
+        }
+        if (this.payload)
+        {
+          this.loader.url = this.payload.data.resourceURI + '/index_content';
+
+          if (this.payload.data.useHints)
+          {
+            this.loader.baseParams = {
+              groupIdHint : this.payload.data.rec.data.groupId,
+              artifactIdHint : this.payload.data.rec.data.artifactId
+            }
+          }
+          else
+          {
+            this.loader.baseParams = null;
+          }
+
+          this.setRootNode(new Ext.tree.AsyncTreeNode({
+                text : this.payload.data[this.titleColumn],
+                leaf : false,
+                path : '/',
+                singleClickExpand : true,
+                expanded : true,
+                listeners : {
+                  expand : {
+                    fn : this.nodeExpandHandler,
+                    scope : this
+                  }
+                }
+              }));
+        }
+        else
+        {
+          this.setRootNode(new Ext.tree.TreeNode({
+                text : '(Not Available)',
+                id : '/',
+                singleClickExpand : true,
+                expanded : true
+              }));
+        }
+
+        if (this.innerCt)
+        {
+          this.innerCt.update('');
+          this.afterRender();
+        }
+      },
+
+      updatePayload : function(payload, onlyPayload) {
+        this.oldPayload = this.payload;
+        this.payload = payload;
+
+        if (!onlyPayload && this.repocombo)
+        {
+          var store = this.repocombo.store;
+          store.removeAll();
+          if (this.payload)
+          {
+            for (var i = 0; i < this.payload.data.hits.length; i++)
+            {
+              var repoDetails = this.payload.data.getRepoDetails(this.payload.data.hits[i].repositoryId, this.payload.data.repoList);
+              if ((this.payload.data.isSnapshot && repoDetails.repositoryPolicy == 'SNAPSHOT') || (!this.payload.data.isSnapshot && repoDetails.repositoryPolicy == 'RELEASE'))
+              {
+                var record = new Ext.data.Record.create({
+                      name : 'id'
+                    }, {
+                      name : 'name'
+                    });
+
+                store.add(new record({
+                      id : repoDetails.repositoryId,
+                      name : repoDetails.repositoryName
+                    }));
+              }
+            }
+
+            this.repocombo.setValue(this.payload.data.id);
+          }
+        }
+
+        this.refreshHandler();
+      }
+    });

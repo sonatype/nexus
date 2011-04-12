@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    Copyright (c) 2008-2011 Sonatype, Inc.
+    All rights reserved. Includes the third-party code listed at http://www.sonatype.com/products/nexus/attributions.
+
+    This program is free software: you can redistribute it and/or modify it only under the terms of the GNU Affero General
+    Public License Version 3 as published by the Free Software Foundation.
+
+    This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
+    warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Affero General Public License Version 3
+    for more details.
+
+    You should have received a copy of the GNU Affero General Public License Version 3 along with this program.  If not, see
+    http://www.gnu.org/licenses.
+
+    Sonatype Nexus (TM) Open Source Version is available from Sonatype, Inc. Sonatype and Sonatype Nexus are trademarks of
+    Sonatype, Inc. Apache Maven is a trademark of the Apache Foundation. M2Eclipse is a trademark of the Eclipse Foundation.
+    All other trademarks are the property of their respective owners.
+
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.sonatype.nexus.plugins</groupId>
+    <artifactId>nexus-core-plugins</artifactId>
+    <version>1.9.1</version>
+  </parent>
+
+  <artifactId>nexus-rrb-plugin</artifactId>
+  <packaging>nexus-plugin</packaging>
+  <name>Nexus : Core Plugins : Remote Repository Browsing</name>
+  <description>Adds browsing support for proxied remote repositories</description>
+
+  <developers>
+    <developer>
+      <id>anders.hammar</id>
+      <name>Anders Hammar</name>
+      <email>anders.hammar@devoteam.com</email>
+      <organization>Devoteam Sweden</organization>
+      <organizationUrl>http://www.devoteam.se</organizationUrl>
+      <roles>
+        <role>developer</role>
+      </roles>
+    </developer>
+    <developer>
+      <id>bjorn.eiderback</id>
+      <name>Björn Eiderbäck</name>
+      <email>bjorn.eiderback@devoteam.com</email>
+      <organization>Devoteam Sweden</organization>
+      <organizationUrl>http://www.devoteam.se</organizationUrl>
+      <roles>
+        <role>developer</role>
+      </roles>
+    </developer>
+    <developer>
+      <id>torbjorn.ekmark</id>
+      <name>Torbjörn Ekmark</name>
+      <email>torbjorn.ekmark@devoteam.com</email>
+      <organization>Devoteam Sweden</organization>
+      <organizationUrl>http://www.devoteam.se</organizationUrl>
+      <roles>
+        <role>developer</role>
+      </roles>
+    </developer>
+  </developers>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.sonatype.nexus</groupId>
+      <artifactId>nexus-api</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.sonatype.plexus</groupId>
+      <artifactId>plexus-restlet-bridge</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>commons-httpclient</groupId>
+      <artifactId>commons-httpclient</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.restlet</groupId>
+      <artifactId>org.restlet</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.sonatype.nexus</groupId>
+      <artifactId>nexus-proxy</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.sonatype.nexus</groupId>
+      <artifactId>nexus-rest-api</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.codehaus.plexus</groupId>
+      <artifactId>plexus-utils</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.thoughtworks.xstream</groupId>
+      <artifactId>xstream</artifactId>
+      <scope>provided</scope>
+    </dependency>
+
+    <!-- Test -->
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>4.7</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-log4j12</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.sonatype.plexus</groupId>
+      <artifactId>plexus-jetty-testsuite</artifactId>
+      <version>1.3</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mortbay.jetty</groupId>
+      <artifactId>jetty</artifactId>
+      <version>6.1.19</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.sonatype.nexus</groupId>
+      <artifactId>nexus-plugin-test-api</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-all</artifactId>
+      <version>1.8.2</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <!-- Needed to make Maven "know" nexus-plugin packaging -->
+      <plugin>
+        <groupId>org.sonatype.plugins</groupId>
+        <artifactId>app-lifecycle-maven-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>org.sonatype.plugins</groupId>
+        <artifactId>yuicompressor-maven-plugin</artifactId>
+        <configuration>
+          <sourceDirectory>${project.build.directory}/classes/static/js/</sourceDirectory>
+          <output>${project.build.directory}/classes/static/js/nexus-rrb-plugin-all.js</output>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>
