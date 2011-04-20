@@ -113,7 +113,6 @@ import org.sonatype.nexus.proxy.repository.ProxyRepository;
 import org.sonatype.nexus.proxy.repository.Repository;
 import org.sonatype.nexus.proxy.repository.ShadowRepository;
 import org.sonatype.nexus.proxy.storage.local.fs.DefaultFSLocalRepositoryStorage;
-import org.sonatype.scheduling.ProgressListener;
 import org.sonatype.scheduling.TaskUtil;
 
 /**
@@ -890,7 +889,7 @@ public class DefaultIndexerManager
 
             if ( !repository.getRepositoryKind().isFacetAvailable( GroupRepository.class ) )
             {
-                TaskUtil.getCurrentProgressListener().beginTask( "Reindexing local storage", ProgressListener.UNKNOWN );
+                TaskUtil.getCurrentProgressListener().beginTask( "Reindexing local storage" );
                 // update always true, since we manually manage ctx purge
                 nexusIndexer.scan( context, fromPath, null, true );
                 TaskUtil.getCurrentProgressListener().endTask( "Done" );
@@ -1033,7 +1032,7 @@ public class DefaultIndexerManager
     protected boolean updateRemoteIndex( final ProxyRepository repository, boolean forceFullUpdate )
         throws IOException, IllegalOperationException, ItemNotFoundException
     {
-        TaskUtil.getCurrentProgressListener().beginTask( "Updating from remote", ProgressListener.UNKNOWN );
+        TaskUtil.getCurrentProgressListener().beginTask( "Updating from remote" );
 
         // this will force remote check for newer files
         repository.expireCaches( new ResourceStoreRequest( PUBLISHING_PATH_PREFIX ) );
