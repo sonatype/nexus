@@ -26,9 +26,8 @@ import java.util.Map;
 
 import org.codehaus.plexus.component.annotations.Component;
 import org.codehaus.plexus.component.annotations.Requirement;
+import org.codehaus.plexus.logging.Logger;
 import org.codehaus.plexus.personality.plexus.lifecycle.phase.Disposable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.sonatype.nexus.proxy.NoSuchRepositoryException;
 import org.sonatype.nexus.proxy.events.RepositoryRegistryEventAdd;
 import org.sonatype.nexus.proxy.events.RepositoryRegistryEventPostRemove;
@@ -67,17 +66,17 @@ public class DefaultRepositoryRegistry
     @Requirement
     private RepositoryTypeRegistry repositoryTypeRegistry;
 
-    /** The repository register */
-    private final Map<String, Repository> repositories = new HashMap<String, Repository>();
+    /** The repo register, [Repository.getId, Repository] */
+    private Map<String, Repository> repositories = new HashMap<String, Repository>();
 
     protected Logger getLogger()
     {
         return logger;
     }
 
-    public synchronized void addRepository( final Repository repository )
+    public void addRepository( Repository repository )
     {
-        final RepositoryTypeDescriptor rtd =
+        RepositoryTypeDescriptor rtd =
             repositoryTypeRegistry.getRepositoryTypeDescriptor( repository.getProviderRole(),
                 repository.getProviderHint() );
 
@@ -89,30 +88,45 @@ public class DefaultRepositoryRegistry
                 + repository.getRepositoryKind().getMainFacet().getName() + "')" );
     }
 
-    public synchronized void removeRepository( final String repoId )
+    public void removeRepository( String repoId )
         throws NoSuchRepositoryException
     {
-        doRemoveRepository( repoId, false );
+        Repository repository = getRepository( repoId );
+
+        RepositoryTypeDescriptor rtd =
+            repositoryTypeRegistry.getRepositoryTypeDescriptor( repository.getProviderRole(),
+                repository.getProviderHint() );
+
+        deleteRepository( rtd, repository, false );
+
+        getLogger().info(
+            "Removed repository ID='" + repository.getId() + "' (contentClass='"
+                + repository.getRepositoryContentClass().getId() + "', mainFacet='"
+                + repository.getRepositoryKind().getMainFacet().getName() + "')" );
     }
 
-    public synchronized void removeRepositorySilently( final String repoId )
+    public void removeRepositorySilently( String repoId )
         throws NoSuchRepositoryException
     {
-        doRemoveRepository( repoId, true );
+        Repository repository = getRepository( repoId );
+
+        RepositoryTypeDescriptor rtd =
+            repositoryTypeRegistry.getRepositoryTypeDescriptor( repository.getProviderRole(),
+                repository.getProviderHint() );
+
+        deleteRepository( rtd, repository, true );
     }
 
     public List<Repository> getRepositories()
     {
-        return Collections.unmodifiableList( new ArrayList<Repository>( getRepositoriesMap().values() ) );
+        return Collections.unmodifiableList( new ArrayList<Repository>( repositories.values() ) );
     }
 
-    public <T> List<T> getRepositoriesWithFacet( final Class<T> f )
+    public <T> List<T> getRepositoriesWithFacet( Class<T> f )
     {
-        final List<Repository> repositories = getRepositories();
+        ArrayList<T> result = new ArrayList<T>();
 
-        final ArrayList<T> result = new ArrayList<T>();
-
-        for ( Repository repository : repositories )
+        for ( Repository repository : repositories.values() )
         {
             if ( repository.getRepositoryKind().isFacetAvailable( f ) )
             {
@@ -123,11 +137,9 @@ public class DefaultRepositoryRegistry
         return Collections.unmodifiableList( result );
     }
 
-    public Repository getRepository( final String repoId )
+    public Repository getRepository( String repoId )
         throws NoSuchRepositoryException
     {
-        final Map<String, Repository> repositories = getRepositoriesMap();
-
         if ( repositories.containsKey( repoId ) )
         {
             return repositories.get( repoId );
@@ -138,10 +150,10 @@ public class DefaultRepositoryRegistry
         }
     }
 
-    public <T> T getRepositoryWithFacet( final String repoId, final Class<T> f )
+    public <T> T getRepositoryWithFacet( String repoId, Class<T> f )
         throws NoSuchRepositoryException
     {
-        final Repository r = getRepository( repoId );
+        Repository r = getRepository( repoId );
 
         if ( r.getRepositoryKind().isFacetAvailable( f ) )
         {
@@ -153,18 +165,18 @@ public class DefaultRepositoryRegistry
         }
     }
 
-    public boolean repositoryIdExists( final String repositoryId )
+    public boolean repositoryIdExists( String repositoryId )
     {
-        return getRepositoriesMap().containsKey( repositoryId );
+        return repositories.containsKey( repositoryId );
     }
 
-    public List<String> getGroupsOfRepository( final String repositoryId )
+    public List<String> getGroupsOfRepository( String repositoryId )
     {
-        final ArrayList<String> result = new ArrayList<String>();
+        ArrayList<String> result = new ArrayList<String>();
 
         try
         {
-            final Repository repository = getRepository( repositoryId );
+            Repository repository = getRepository( repositoryId );
 
             for ( GroupRepository group : getGroupsOfRepository( repository ) )
             {
@@ -179,16 +191,16 @@ public class DefaultRepositoryRegistry
         return result;
     }
 
-    public List<GroupRepository> getGroupsOfRepository( final Repository repository )
+    public List<GroupRepository> getGroupsOfRepository( Repository repository )
     {
-        final ArrayList<GroupRepository> result = new ArrayList<GroupRepository>();
+        ArrayList<GroupRepository> result = new ArrayList<GroupRepository>();
 
         for ( Repository repo : getRepositories() )
         {
             if ( !repo.getId().equals( repository.getId() )
                 && repo.getRepositoryKind().isFacetAvailable( GroupRepository.class ) )
             {
-                final GroupRepository group = repo.adaptToFacet( GroupRepository.class );
+                GroupRepository group = repo.adaptToFacet( GroupRepository.class );
 
                 members: for ( Repository member : group.getMemberRepositories() )
                 {
@@ -204,56 +216,13 @@ public class DefaultRepositoryRegistry
         return result;
     }
 
-    // Disposable plexus iface
-
-    public void dispose()
-    {
-        // kill the checker daemon threads
-        for ( Repository repository : getRepositoriesMap().values() )
-        {
-            killMonitorThread( repository.adaptToFacet( ProxyRepository.class ) );
-        }
-    }
-
     //
     // priv
     //
 
-    /**
-     * Returns a copy of map with repositories. Is synchronized method, to allow consistent-read access. Methods
-     * modifying this map are all also synchronized (see API Interface and above), while all the "reading" methods from
-     * public API will boil down to this single method.
-     */
-    protected synchronized Map<String, Repository> getRepositoriesMap()
-    {
-        return Collections.unmodifiableMap( new HashMap<String, Repository>( repositories ) );
-    }
-
-    protected void doRemoveRepository( final String repoId, final boolean silently )
-        throws NoSuchRepositoryException
-    {
-        Repository repository = getRepository( repoId );
-
-        RepositoryTypeDescriptor rtd =
-            repositoryTypeRegistry.getRepositoryTypeDescriptor( repository.getProviderRole(),
-                repository.getProviderHint() );
-
-        deleteRepository( rtd, repository, silently );
-
-        if ( !silently )
-        {
-            getLogger().info(
-                "Removed repository ID='" + repository.getId() + "' (contentClass='"
-                    + repository.getRepositoryContentClass().getId() + "', mainFacet='"
-                    + repository.getRepositoryKind().getMainFacet().getName() + "')" );
-        }
-    }
-
-    private void insertRepository( final RepositoryTypeDescriptor rtd, final Repository repository )
+    private void insertRepository( RepositoryTypeDescriptor rtd, Repository repository )
     {
         repositories.put( repository.getId(), repository );
-
-        rtd.instanceRegistered( this );
 
         if ( repository.getRepositoryKind().isFacetAvailable( ProxyRepository.class ) )
         {
@@ -262,8 +231,8 @@ public class DefaultRepositoryRegistry
             killMonitorThread( proxy );
 
             RepositoryStatusCheckerThread thread =
-                new RepositoryStatusCheckerThread( LoggerFactory.getLogger( getClass().getName() + "-"
-                    + repository.getId() ), (ProxyRepository) repository );
+                new RepositoryStatusCheckerThread( getLogger().getChildLogger( repository.getId() ),
+                    (ProxyRepository) repository );
 
             proxy.setRepositoryStatusCheckerThread( thread );
 
@@ -274,11 +243,12 @@ public class DefaultRepositoryRegistry
             thread.start();
         }
 
+        rtd.instanceRegistered( this );
+
         applicationEventMulticaster.notifyEventListeners( new RepositoryRegistryEventAdd( this, repository ) );
     }
 
-    private void deleteRepository( final RepositoryTypeDescriptor rtd, final Repository repository,
-                                   final boolean silently )
+    private void deleteRepository( RepositoryTypeDescriptor rtd, Repository repository, boolean silently )
     {
         if ( !silently )
         {
@@ -296,16 +266,24 @@ public class DefaultRepositoryRegistry
         repositories.remove( repository.getId() );
 
         killMonitorThread( repository.adaptToFacet( ProxyRepository.class ) );
-
-        if ( !silently )
-        {
+        
+        if (!silently) {
             applicationEventMulticaster.notifyEventListeners( new RepositoryRegistryEventPostRemove( this, repository ) );
+        }
+    }
+
+    public void dispose()
+    {
+        // kill the checker daemon threads
+        for ( Repository repository : repositories.values() )
+        {
+            killMonitorThread( repository.adaptToFacet( ProxyRepository.class ) );
         }
     }
 
     // ==
 
-    protected void killMonitorThread( final ProxyRepository proxy )
+    protected void killMonitorThread( ProxyRepository proxy )
     {
         if ( null == proxy )
         {
@@ -323,4 +301,5 @@ public class DefaultRepositoryRegistry
             thread.interrupt();
         }
     }
+
 }

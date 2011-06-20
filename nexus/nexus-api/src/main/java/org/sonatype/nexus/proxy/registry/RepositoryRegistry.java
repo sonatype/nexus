@@ -25,7 +25,7 @@ import org.sonatype.nexus.proxy.repository.GroupRepository;
 import org.sonatype.nexus.proxy.repository.Repository;
 
 /**
- * The Interface RepositoryRegistry. It holds the Repositories.
+ * The Interface RepositoryRegistry. It holds the Repositories and repo groups.
  *
  * @author cstamas
  */
