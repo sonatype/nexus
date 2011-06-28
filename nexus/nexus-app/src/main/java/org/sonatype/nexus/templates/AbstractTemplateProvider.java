@@ -23,7 +23,7 @@ import org.codehaus.plexus.util.StringUtils;
 import org.sonatype.nexus.configuration.application.ApplicationConfiguration;
 
 public abstract class AbstractTemplateProvider<T extends Template>
-    implements TemplateProvider
+    implements TemplateProvider<T>
 {
     @Requirement
     private ApplicationConfiguration applicationConfiguration;
@@ -33,12 +33,12 @@ public abstract class AbstractTemplateProvider<T extends Template>
         return applicationConfiguration;
     }
 
-    public Template getTemplateById( String id )
+    public T getTemplateById( String id )
         throws NoSuchTemplateIdException
     {
-        TemplateSet templates = getTemplates();
+        TemplateSet<T> templates = getTemplates();
 
-        for ( Template template : templates )
+        for ( T template : templates )
         {
             if ( StringUtils.equals( id, template.getId() ) )
             {

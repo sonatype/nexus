@@ -56,7 +56,7 @@ public class DefaultApplicationRuntimeConfigurationBuilder
     // ----------------------------------------
     // private stuff
 
-    private Repository createRepository( String role, String hint )
+    public Repository createRepository( String role, String hint )
         throws InvalidConfigurationException
     {
         try

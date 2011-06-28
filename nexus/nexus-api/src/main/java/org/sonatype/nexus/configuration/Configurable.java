@@ -46,6 +46,13 @@ public interface Configurable
         throws ConfigurationException;
 
     /**
+     * Sets the configuration object without commiting it.
+     * @throws ConfigurationException
+     */
+    void configureWithoutCommit( Object config )
+        throws ConfigurationException;
+
+    /**
      * Returns true if there are some unsaved changes.
      * 
      * @return

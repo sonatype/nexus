@@ -18,14 +18,15 @@
  */
 package org.sonatype.nexus.templates.repository;
 
-import java.io.IOException;
-
 import org.sonatype.configuration.ConfigurationException;
+import org.sonatype.nexus.configuration.model.CRepository;
 import org.sonatype.nexus.configuration.model.CRepositoryCoreConfiguration;
 import org.sonatype.nexus.proxy.registry.ContentClass;
 import org.sonatype.nexus.proxy.repository.ConfigurableRepository;
 import org.sonatype.nexus.proxy.repository.Repository;
 import org.sonatype.nexus.templates.AbstractConfigurableTemplate;
+
+import java.io.IOException;
 
 public abstract class AbstractRepositoryTemplate
     extends AbstractConfigurableTemplate
@@ -61,8 +62,8 @@ public abstract class AbstractRepositoryTemplate
     @Override
     public boolean targetFits( Object clazz )
     {
-        return super.targetFits( clazz ) || targetIsClassAndFitsClass( clazz, getMainFacet() )
-            || ( targetIsClassAndFitsClass( clazz, getContentClass().getClass() ) || getContentClass().equals( clazz ) );
+        return super.targetFits( clazz ) || targetIsClassAndFitsClass( clazz, getMainFacet() ) || (
+            targetIsClassAndFitsClass( clazz, getContentClass().getClass() ) || getContentClass().equals( clazz ) );
     }
 
     @Override
@@ -98,6 +99,20 @@ public abstract class AbstractRepositoryTemplate
             }
         }
         return configurableRepository;
+    }
+
+    public Repository createWithoutCommit()
+        throws IOException, ConfigurationException
+    {
+        Repository repository =
+            getTemplateProvider().getRuntimeConfigurationBuilder().createRepository( this.getRepositoryProviderRole(), this.getRepositoryProviderHint() );
+
+        // reset the template
+        setCoreConfiguration( null );
+
+        repository.configureWithoutCommit( getCoreConfiguration() );
+
+        return repository;
     }
 
     public Repository create()

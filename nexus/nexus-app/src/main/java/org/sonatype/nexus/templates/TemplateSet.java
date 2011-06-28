@@ -18,28 +18,28 @@
  */
 package org.sonatype.nexus.templates;
 
+import org.codehaus.plexus.util.StringUtils;
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 
-import org.codehaus.plexus.util.StringUtils;
-
-public class TemplateSet
-    extends HashSet<Template>
+public class TemplateSet<T extends Template>
+    extends HashSet<T>
     implements TemplateProvider
 {
     private static final long serialVersionUID = 552419423510140977L;
 
     private final Object clazz;
 
-    private final TemplateSet parent;
+    private final TemplateSet<T> parent;
 
     public TemplateSet( Object clazz )
     {
         this( clazz, null );
     }
 
-    public TemplateSet( Object clazz, TemplateSet templates )
+    public TemplateSet( Object clazz, TemplateSet<T> templates )
     {
         super();
 
@@ -55,7 +55,7 @@ public class TemplateSet
             }
             else
             {
-                for ( Template template : parent )
+                for ( T template : parent )
                 {
                     if ( template.targetFits( clazz ) )
                     {
@@ -67,7 +67,7 @@ public class TemplateSet
     }
 
     @Override
-    public boolean add( Template elem )
+    public boolean add( T elem )
     {
         if ( getClazz() != null && elem.targetFits( getClazz() ) )
         {
@@ -85,11 +85,11 @@ public class TemplateSet
 
     /**
      * Picks the only one remained template in this set.
-     * 
+     *
      * @return
      * @throws IllegalStateException
      */
-    public Template pick()
+    public T pick()
         throws IllegalStateException
     {
         return pick( true );
@@ -97,12 +97,12 @@ public class TemplateSet
 
     /**
      * Picks one template from this set. Will enforce that set has only one member if the forceSingleHit is true.
-     * 
+     *
      * @param forceSingleHit
      * @return
      * @throws IllegalStateException
      */
-    public Template pick( boolean forceSingleHit )
+    public T pick( boolean forceSingleHit )
         throws IllegalStateException
     {
         if ( !forceSingleHit || size() == 1 )
@@ -120,27 +120,27 @@ public class TemplateSet
         return clazz;
     }
 
-    public TemplateSet getParent()
+    public TemplateSet<T> getParent()
     {
         return parent;
     }
 
-    public List<Template> getTemplatesList()
+    public List<T> getTemplatesList()
     {
-        return new ArrayList<Template>( this );
+        return new ArrayList<T>( this );
     }
 
-    public TemplateSet getTemplates()
+    public TemplateSet<T> getTemplates()
     {
         return this;
     }
 
-    public TemplateSet getTemplates( Object filter )
+    public TemplateSet<T> getTemplates( Object filter )
     {
         return new TemplateSet( filter, this );
     }
 
-    public TemplateSet getTemplates( Object... filters )
+    public TemplateSet<T> getTemplates( Object... filters )
     {
         TemplateSet par = this;
 
@@ -152,10 +152,10 @@ public class TemplateSet
         return par;
     }
 
-    public Template getTemplateById( String id )
+    public T getTemplateById( String id )
         throws NoSuchTemplateIdException
     {
-        for ( Template template : this )
+        for ( T template : this )
         {
             if ( StringUtils.equals( id, template.getId() ) )
             {

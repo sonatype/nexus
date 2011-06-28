@@ -94,7 +94,7 @@ public class RepositoryTypesComponentListPlexusResource
         // such horrible terminology for this class, its actually repo providers that are being returned
         String repoType = form.getFirstValue( "repoType" );
 
-        TemplateSet templateSet = getNexus().getRepositoryTemplates();
+        TemplateSet<RepositoryTemplate> templateSet = getNexus().getRepositoryTemplates();
 
         if ( "hosted".equals( repoType ) )
         {
@@ -120,12 +120,12 @@ public class RepositoryTypesComponentListPlexusResource
             throw new ResourceException( Status.CLIENT_ERROR_NOT_FOUND );
         }
 
-        for ( Template template : templateSet.getTemplatesList() )
+        for ( RepositoryTemplate template : templateSet.getTemplatesList() )
         {
             NexusRepositoryTypeListResource resource = new NexusRepositoryTypeListResource();
 
-            String providerRole = ( (RepositoryTemplate) template ).getRepositoryProviderRole();
-            String providerHint = ( (RepositoryTemplate) template ).getRepositoryProviderHint();
+            String providerRole = template.getRepositoryProviderRole();
+            String providerHint = template.getRepositoryProviderHint();
 
             resource.setProvider( providerHint );
 

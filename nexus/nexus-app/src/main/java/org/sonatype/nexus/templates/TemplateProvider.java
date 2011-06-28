@@ -29,7 +29,7 @@ import org.sonatype.plugin.ExtensionPoint;
  */
 @ExtensionPoint
 @Singleton
-public interface TemplateProvider
+public interface TemplateProvider<T extends Template>
 {
     /**
      * Lists all templates.
@@ -47,7 +47,7 @@ public interface TemplateProvider
 
     /**
      * Lists all templates that fits supplied filters.
-     * @param clazz
+     * @param filters
      * @return
      */
     TemplateSet getTemplates( Object... filters );
@@ -59,6 +59,6 @@ public interface TemplateProvider
      * @return
      * @throws NoSuchTemplateIdException
      */
-    Template getTemplateById( String id )
+    T getTemplateById( String id )
         throws NoSuchTemplateIdException;
 }

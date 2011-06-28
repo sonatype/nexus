@@ -174,6 +174,21 @@ public abstract class AbstractConfigurable
         doConfigure();
     }
 
+    public final void configureWithoutCommit( Object config )
+        throws ConfigurationException
+    {
+        this.coreConfiguration = wrapConfiguration( config );
+
+        // "pull" the config to make it dirty
+        getCurrentConfiguration( true );
+
+        if ( getConfigurator() != null )
+        {
+            // apply config, transfer what is not mappable (if any) from model
+            getConfigurator().applyConfiguration( this, getApplicationConfiguration(), getCurrentCoreConfiguration() );
+        }
+    }
+
     public boolean isDirty()
     {
         return getCurrentCoreConfiguration().isDirty();

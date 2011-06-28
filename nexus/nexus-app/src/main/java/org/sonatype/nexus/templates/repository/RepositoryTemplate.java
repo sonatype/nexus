@@ -44,4 +44,14 @@ public interface RepositoryTemplate
 
     Repository create()
         throws ConfigurationException, IOException;
+
+    /**
+     * Creates a Repository object without performing any validation or persistence.  The Repository is NOT added to the
+     * repository registry, the caller of this method MUST call Repository.commit() and RepositoryRegistry.addRepository() prior to calling this method.
+     * @return
+     * @throws IOException
+     * @throws ConfigurationException
+     */
+    Repository createWithoutCommit()
+        throws IOException, ConfigurationException;
 }

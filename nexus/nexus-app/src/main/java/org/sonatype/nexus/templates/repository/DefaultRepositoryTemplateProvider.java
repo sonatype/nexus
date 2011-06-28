@@ -54,7 +54,7 @@ public class DefaultRepositoryTemplateProvider
 
     private static final String DEFAULT_GROUP = "default_group";
 
-    public TemplateSet getTemplates()
+    public TemplateSet<RepositoryTemplate> getTemplates()
     {
         TemplateSet templates = new TemplateSet( null );
 

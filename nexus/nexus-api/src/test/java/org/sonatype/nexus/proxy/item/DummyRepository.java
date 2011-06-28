@@ -129,6 +129,12 @@ public class DummyRepository
 
     }
 
+    public void configureWithoutCommit( Object config )
+        throws ConfigurationException
+    {
+        // TODO Auto-generated method stub
+    }
+
     public boolean isDirty()
     {
         // TODO Auto-generated method stub

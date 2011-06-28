@@ -19,6 +19,7 @@
 package org.sonatype.nexus.configuration.application.runtime;
 
 import org.sonatype.configuration.ConfigurationException;
+import org.sonatype.configuration.validation.InvalidConfigurationException;
 import org.sonatype.nexus.configuration.model.CRepository;
 import org.sonatype.nexus.configuration.model.Configuration;
 import org.sonatype.nexus.proxy.repository.Repository;
@@ -33,4 +34,14 @@ public interface ApplicationRuntimeConfigurationBuilder
 {
     Repository createRepositoryFromModel( Configuration configuration, CRepository repoConf )
         throws ConfigurationException;
+
+    /**
+     * Creates an empty Repository object based on the role and hint.
+     * @param role
+     * @param hint
+     * @return
+     * @throws InvalidConfigurationException
+     */
+    Repository createRepository( String role, String hint )
+        throws InvalidConfigurationException;
 }

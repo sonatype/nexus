@@ -86,12 +86,10 @@ public class RepositoryTemplateListPlexusResource
 
         RepositoryListResource repoRes;
 
-        TemplateSet repoTemplates = getNexus().getRepositoryTemplates();
+        TemplateSet<RepositoryTemplate> repoTemplates = getNexus().getRepositoryTemplates();
 
-        for ( Template tmp : repoTemplates )
+        for ( RepositoryTemplate template : repoTemplates )
         {
-            RepositoryTemplate template = (RepositoryTemplate) tmp;
-
             repoRes = new RepositoryListResource();
 
             repoRes.setResourceURI( createChildReference( request, this, template.getId() ).toString() );

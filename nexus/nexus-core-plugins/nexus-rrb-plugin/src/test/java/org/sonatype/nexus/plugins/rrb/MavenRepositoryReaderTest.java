@@ -869,6 +869,13 @@ public class MavenRepositoryReaderTest
 
         }
 
+        public void configureWithoutCommit( Object config )
+            throws ConfigurationException
+        {
+
+        }
+
+
         public boolean isDirty()
         {
 

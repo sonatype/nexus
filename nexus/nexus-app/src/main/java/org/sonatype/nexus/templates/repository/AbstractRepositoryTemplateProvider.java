@@ -23,6 +23,7 @@ import java.io.IOException;
 import org.codehaus.plexus.component.annotations.Requirement;
 import org.sonatype.configuration.ConfigurationException;
 import org.sonatype.nexus.configuration.application.NexusConfiguration;
+import org.sonatype.nexus.configuration.application.runtime.ApplicationRuntimeConfigurationBuilder;
 import org.sonatype.nexus.configuration.model.CRepository;
 import org.sonatype.nexus.configuration.model.CRepositoryCoreConfiguration;
 import org.sonatype.nexus.proxy.registry.ContentClass;
@@ -35,7 +36,7 @@ import org.sonatype.nexus.templates.TemplateSet;
 
 /**
  * An abstract class for template providers that provides templates for Repositories.
- * 
+ *
  * @author cstamas
  */
 public abstract class AbstractRepositoryTemplateProvider
@@ -50,6 +51,12 @@ public abstract class AbstractRepositoryTemplateProvider
     @Requirement
     private RemoteProviderHintFactory remoteProviderHintFactory;
 
+    /**
+     * The runtime configuration builder.
+     */
+    @Requirement
+    private ApplicationRuntimeConfigurationBuilder runtimeConfigurationBuilder;
+
     protected Repository createRepository( CRepository repository )
         throws ConfigurationException, IOException
     {
@@ -61,17 +68,22 @@ public abstract class AbstractRepositoryTemplateProvider
         return remoteProviderHintFactory;
     }
 
+    public ApplicationRuntimeConfigurationBuilder getRuntimeConfigurationBuilder()
+    {
+        return runtimeConfigurationBuilder;
+    }
+
     public Class<RepositoryTemplate> getTemplateClass()
     {
         return RepositoryTemplate.class;
     }
 
-    public TemplateSet getTemplates( Object filter )
+    public TemplateSet<RepositoryTemplate> getTemplates( Object filter )
     {
         return getTemplates().getTemplates( filter );
     }
 
-    public TemplateSet getTemplates( Object... filters )
+    public TemplateSet<RepositoryTemplate> getTemplates( Object... filters )
     {
         return getTemplates().getTemplates( filters );
     }
