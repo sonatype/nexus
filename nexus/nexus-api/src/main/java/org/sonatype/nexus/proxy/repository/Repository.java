@@ -485,6 +485,12 @@ public interface Repository
     AccessManager getAccessManager();
 
     /**
+     * Returns the content URL of this repository.
+     * @return
+     */
+    String getContentURL();
+
+    /**
      * Sets the repository level AccessManager. Per repository instance may exists.
      * 
      * @param accessManager the access manager

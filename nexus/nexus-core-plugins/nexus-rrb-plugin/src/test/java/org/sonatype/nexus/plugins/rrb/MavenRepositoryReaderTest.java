@@ -755,6 +755,12 @@ public class MavenRepositoryReaderTest
             return null;
         }
 
+        @Override
+        public String getContentURL()
+        {
+            return null;
+        }
+
         public void setAccessManager( AccessManager accessManager )
         {
 

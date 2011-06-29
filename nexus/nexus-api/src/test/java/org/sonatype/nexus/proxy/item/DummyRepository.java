@@ -468,6 +468,12 @@ public class DummyRepository
         return null;
     }
 
+    @Override
+    public String getContentURL()
+    {
+        return null;
+    }
+
     public void setAccessManager( AccessManager accessManager )
     {
         // TODO Auto-generated method stub

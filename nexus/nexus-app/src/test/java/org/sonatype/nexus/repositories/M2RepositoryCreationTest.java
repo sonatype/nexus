@@ -2,6 +2,7 @@ package org.sonatype.nexus.repositories;
 
 import junit.framework.Assert;
 import org.junit.Test;
+import org.sonatype.nexus.configuration.application.GlobalRestApiSettings;
 import org.sonatype.nexus.configuration.application.NexusConfiguration;
 import org.sonatype.nexus.proxy.AbstractNexusTestCase;
 import org.sonatype.nexus.proxy.NoSuchRepositoryException;
@@ -23,6 +24,10 @@ public class M2RepositoryCreationTest
     {
         this.lookup( NexusConfiguration.class ).loadConfiguration();
 
+        GlobalRestApiSettings globalRestApiSettings = this.lookup( GlobalRestApiSettings.class );
+        globalRestApiSettings.setBaseUrl( "http://localhost:8080/nexus" );
+        globalRestApiSettings.commitChanges();
+
         AbstractRepositoryTemplateProvider repositoryTemplateProvider =
             (AbstractRepositoryTemplateProvider) this.lookup( TemplateProvider.class,
                                                               DefaultRepositoryTemplateProvider.PROVIDER_ID );
@@ -32,8 +37,9 @@ public class M2RepositoryCreationTest
 
         M2Repository repository = (M2Repository) template.createWithoutCommit();
         repository.setId( "foo" );
-        repository.setLocalUrl( "http://remote/url" );
+        repository.setLocalUrl( "http://local/url" );
         repository.commitChanges();
+        Assert.assertEquals( "http://localhost:8080/nexus/content/repositories/foo", repository.getContentURL() );
 
         // repo is NOT in the repository registry yet
         RepositoryRegistry repositoryRegistry = this.lookup( RepositoryRegistry.class );
@@ -51,10 +57,27 @@ public class M2RepositoryCreationTest
         repositoryRegistry.addRepository( repository );
         Repository repoFromReg = repositoryRegistry.getRepository( "foo" );
         Assert.assertEquals( "foo", repoFromReg.getName() ); // name defaults to id
-        Assert.assertEquals( "http://remote/url", repoFromReg.getLocalUrl() );
+        Assert.assertEquals( "http://local/url", repoFromReg.getLocalUrl() );
+    }
 
-        
+    @Test
+    public void testBaseURLNotSet() throws Exception
+    {
+        this.lookup( NexusConfiguration.class ).loadConfiguration();
 
+        AbstractRepositoryTemplateProvider repositoryTemplateProvider =
+            (AbstractRepositoryTemplateProvider) this.lookup( TemplateProvider.class,
+                                                              DefaultRepositoryTemplateProvider.PROVIDER_ID );
+
+        RepositoryTemplate template =
+            (RepositoryTemplate) repositoryTemplateProvider.getTemplateById( "default_hosted_release" );
+
+        M2Repository repository = (M2Repository) template.createWithoutCommit();
+        repository.setId( "foo" );
+        repository.setLocalUrl( "http://local/url" );
+        repository.commitChanges();
+        Assert.assertEquals( "http:/base-url-not-set/content/repositories/foo", repository.getContentURL() );
 
     }
+
 }

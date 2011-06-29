@@ -31,6 +31,7 @@ import org.codehaus.plexus.util.StringUtils;
 import org.sonatype.configuration.ConfigurationException;
 import org.sonatype.nexus.configuration.Configurator;
 import org.sonatype.nexus.configuration.application.ApplicationConfiguration;
+import org.sonatype.nexus.configuration.application.GlobalRestApiSettings;
 import org.sonatype.nexus.configuration.model.CRepositoryExternalConfigurationHolderFactory;
 import org.sonatype.nexus.feeds.FeedRecorder;
 import org.sonatype.nexus.mime.MimeUtil;
@@ -69,6 +70,8 @@ import org.sonatype.nexus.proxy.item.StorageCollectionItem;
 import org.sonatype.nexus.proxy.item.StorageFileItem;
 import org.sonatype.nexus.proxy.item.StorageItem;
 import org.sonatype.nexus.proxy.item.uid.RepositoryItemUidAttributeManager;
+import org.sonatype.nexus.proxy.registry.RepositoryTypeDescriptor;
+import org.sonatype.nexus.proxy.registry.RepositoryTypeRegistry;
 import org.sonatype.nexus.proxy.storage.UnsupportedStorageOperationException;
 import org.sonatype.nexus.proxy.storage.local.DefaultLocalStorageContext;
 import org.sonatype.nexus.proxy.storage.local.LocalRepositoryStorage;
@@ -138,6 +141,12 @@ public abstract class AbstractRepository
 
     @Requirement
     private AttributesHandler attributesHandler;
+
+    @Requirement
+    private RepositoryTypeRegistry repositoryTypeRegistry;
+
+    @Requirement
+    private GlobalRestApiSettings globalRestApiSettings;
 
     /** Local storage context to store storage-wide configs. */
     private LocalStorageContext localStorageContext;
@@ -394,6 +403,35 @@ public abstract class AbstractRepository
     public AccessManager getAccessManager()
     {
         return accessManager;
+    }
+
+    @Override
+    public String getContentURL()
+    {
+
+        String baseURL = globalRestApiSettings.getBaseUrl();
+        if ( baseURL == null )
+        {
+            baseURL = "http:/base-url-not-set/"; // TODO: what should we do here ?
+        }
+
+        StringBuffer url = new StringBuffer( baseURL );
+        if ( !baseURL.endsWith( "/" ) )
+        {
+            url.append( "/" );
+        }
+        String prefix = "repositories";
+
+        for ( RepositoryTypeDescriptor desc : repositoryTypeRegistry.getRegisteredRepositoryTypeDescriptors() )
+        {
+            if ( this.getProviderRole().equals( desc.getRole().getName() ) )
+            {
+                prefix = desc.getPrefix();
+            }
+        }
+        url.append( "content/" ).append( prefix ).append( "/" ).append( this.getId() );
+        
+        return url.toString();
     }
 
     public void setAccessManager( AccessManager accessManager )
