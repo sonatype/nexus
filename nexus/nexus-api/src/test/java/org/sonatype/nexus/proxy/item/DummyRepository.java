@@ -18,10 +18,6 @@
  */
 package org.sonatype.nexus.proxy.item;
 
-import java.io.InputStream;
-import java.util.Collection;
-import java.util.Map;
-
 import org.sonatype.configuration.ConfigurationException;
 import org.sonatype.nexus.configuration.CoreConfiguration;
 import org.sonatype.nexus.proxy.AccessDeniedException;
@@ -47,6 +43,10 @@ import org.sonatype.nexus.proxy.storage.local.LocalStorageContext;
 import org.sonatype.nexus.proxy.target.TargetSet;
 import org.sonatype.nexus.scheduling.RepositoryTaskFilter;
 
+import java.io.InputStream;
+import java.util.Collection;
+import java.util.Map;
+
 public class DummyRepository
     implements Repository
 {
@@ -70,40 +70,40 @@ public class DummyRepository
     }
 
     public void copyItem( ResourceStoreRequest from, ResourceStoreRequest to )
-        throws UnsupportedStorageOperationException, ItemNotFoundException, IllegalOperationException,
-        StorageException, AccessDeniedException
+        throws UnsupportedStorageOperationException, ItemNotFoundException, IllegalOperationException, StorageException,
+        AccessDeniedException
     {
         // TODO Auto-generated method stub
 
     }
 
     public void moveItem( ResourceStoreRequest from, ResourceStoreRequest to )
-        throws UnsupportedStorageOperationException, ItemNotFoundException, IllegalOperationException,
-        StorageException, AccessDeniedException
+        throws UnsupportedStorageOperationException, ItemNotFoundException, IllegalOperationException, StorageException,
+        AccessDeniedException
     {
         // TODO Auto-generated method stub
 
     }
 
     public void deleteItem( ResourceStoreRequest request )
-        throws UnsupportedStorageOperationException, ItemNotFoundException, IllegalOperationException,
-        StorageException, AccessDeniedException
+        throws UnsupportedStorageOperationException, ItemNotFoundException, IllegalOperationException, StorageException,
+        AccessDeniedException
     {
         // TODO Auto-generated method stub
 
     }
 
     public void storeItem( ResourceStoreRequest request, InputStream is, Map<String, String> userAttributes )
-        throws UnsupportedStorageOperationException, ItemNotFoundException, IllegalOperationException,
-        StorageException, AccessDeniedException
+        throws UnsupportedStorageOperationException, ItemNotFoundException, IllegalOperationException, StorageException,
+        AccessDeniedException
     {
         // TODO Auto-generated method stub
 
     }
 
     public void createCollection( ResourceStoreRequest request, Map<String, String> userAttributes )
-        throws UnsupportedStorageOperationException, ItemNotFoundException, IllegalOperationException,
-        StorageException, AccessDeniedException
+        throws UnsupportedStorageOperationException, ItemNotFoundException, IllegalOperationException, StorageException,
+        AccessDeniedException
     {
         // TODO Auto-generated method stub
 
@@ -468,12 +468,6 @@ public class DummyRepository
         return null;
     }
 
-    @Override
-    public String getContentURL()
-    {
-        return null;
-    }
-
     public void setAccessManager( AccessManager accessManager )
     {
         // TODO Auto-generated method stub
@@ -538,7 +532,7 @@ public class DummyRepository
     public void setAttributesHandler( AttributesHandler attributesHandler )
     {
         // TODO Auto-generated method stub
-        
+
     }
 
     public RepositoryItemUidAttributeManager getRepositoryItemUidAttributeManager()

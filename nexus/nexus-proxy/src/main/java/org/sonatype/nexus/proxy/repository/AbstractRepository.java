@@ -142,12 +142,6 @@ public abstract class AbstractRepository
     @Requirement
     private AttributesHandler attributesHandler;
 
-    @Requirement
-    private RepositoryTypeRegistry repositoryTypeRegistry;
-
-    @Requirement
-    private GlobalRestApiSettings globalRestApiSettings;
-
     /** Local storage context to store storage-wide configs. */
     private LocalStorageContext localStorageContext;
 
@@ -403,35 +397,6 @@ public abstract class AbstractRepository
     public AccessManager getAccessManager()
     {
         return accessManager;
-    }
-
-    @Override
-    public String getContentURL()
-    {
-
-        String baseURL = globalRestApiSettings.getBaseUrl();
-        if ( baseURL == null )
-        {
-            baseURL = "http:/base-url-not-set/"; // TODO: what should we do here ?
-        }
-
-        StringBuffer url = new StringBuffer( baseURL );
-        if ( !baseURL.endsWith( "/" ) )
-        {
-            url.append( "/" );
-        }
-        String prefix = "repositories";
-
-        for ( RepositoryTypeDescriptor desc : repositoryTypeRegistry.getRegisteredRepositoryTypeDescriptors() )
-        {
-            if ( this.getProviderRole().equals( desc.getRole().getName() ) )
-            {
-                prefix = desc.getPrefix();
-            }
-        }
-        url.append( "content/" ).append( prefix ).append( "/" ).append( this.getId() );
-        
-        return url.toString();
     }
 
     public void setAccessManager( AccessManager accessManager )

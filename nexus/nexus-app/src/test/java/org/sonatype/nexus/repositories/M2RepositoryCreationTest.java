@@ -39,7 +39,6 @@ public class M2RepositoryCreationTest
         repository.setId( "foo" );
         repository.setLocalUrl( "http://local/url" );
         repository.commitChanges();
-        Assert.assertEquals( "http://localhost:8080/nexus/content/repositories/foo", repository.getContentURL() );
 
         // repo is NOT in the repository registry yet
         RepositoryRegistry repositoryRegistry = this.lookup( RepositoryRegistry.class );
@@ -76,7 +75,6 @@ public class M2RepositoryCreationTest
         repository.setId( "foo" );
         repository.setLocalUrl( "http://local/url" );
         repository.commitChanges();
-        Assert.assertEquals( "http:/base-url-not-set/content/repositories/foo", repository.getContentURL() );
 
     }
 
