@@ -2,7 +2,10 @@ package org.sonatype.nexus.proxy.repository;
 
 import org.sonatype.nexus.proxy.NoSuchRepositoryException;
 
-public interface RepositoryURLFinder
+/**
+ * Builds a URL for a repository.
+ */
+public interface RepositoryURLBuilder
 {
     /**
      * Returns the URL of a repository by Id.

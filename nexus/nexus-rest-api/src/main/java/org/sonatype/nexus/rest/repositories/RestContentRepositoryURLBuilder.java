@@ -8,10 +8,8 @@ import org.slf4j.LoggerFactory;
 import org.sonatype.nexus.configuration.application.GlobalRestApiSettings;
 import org.sonatype.nexus.proxy.NoSuchRepositoryException;
 import org.sonatype.nexus.proxy.registry.RepositoryRegistry;
-import org.sonatype.nexus.proxy.registry.RepositoryTypeDescriptor;
-import org.sonatype.nexus.proxy.registry.RepositoryTypeRegistry;
 import org.sonatype.nexus.proxy.repository.Repository;
-import org.sonatype.nexus.proxy.repository.RepositoryURLFinder;
+import org.sonatype.nexus.proxy.repository.RepositoryURLBuilder;
 
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -22,18 +20,18 @@ import javax.inject.Singleton;
  */
 @Singleton
 @Named( value = "REST" )
-public class RestContentRepositoryURLFinder
-    implements RepositoryURLFinder
+public class RestContentRepositoryURLBuilder
+    implements RepositoryURLBuilder
 {
-    private final Logger log = LoggerFactory.getLogger( RestContentRepositoryURLFinder.class );
+    private final Logger log = LoggerFactory.getLogger( RestContentRepositoryURLBuilder.class );
 
     private RepositoryRegistry repositoryRegistry;
 
     private GlobalRestApiSettings globalRestApiSettings;
 
     @Inject
-    public RestContentRepositoryURLFinder( RepositoryRegistry repositoryRegistry,
-                                           GlobalRestApiSettings globalRestApiSettings )
+    public RestContentRepositoryURLBuilder( RepositoryRegistry repositoryRegistry,
+                                            GlobalRestApiSettings globalRestApiSettings )
     {
         this.repositoryRegistry = repositoryRegistry;
         this.globalRestApiSettings = globalRestApiSettings;

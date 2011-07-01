@@ -13,9 +13,9 @@ import org.sonatype.nexus.proxy.registry.RepositoryRegistry;
 import org.sonatype.nexus.proxy.repository.Repository;
 
 /**
- * Tests for RestContentRepositoryURLFinder.
+ * Tests for RestContentRepositoryURLBuilder.
  */
-public class RestContentRepositoryURLFinderTest
+public class RestContentRepositoryURLBuilderTest
 {
     private static final String MOCK_REPO_ID = "test-id";
 
@@ -56,8 +56,8 @@ public class RestContentRepositoryURLFinderTest
         Mockito.doReturn( true ).when( globalRestApiSettings ).isForceBaseUrl();
         Mockito.doReturn( GLOBAL_BASE_URL ).when( globalRestApiSettings ).getBaseUrl();
 
-        RestContentRepositoryURLFinder urlFinder =
-            new RestContentRepositoryURLFinder( repositoryRegistry, globalRestApiSettings );
+        RestContentRepositoryURLBuilder urlFinder =
+            new RestContentRepositoryURLBuilder( repositoryRegistry, globalRestApiSettings );
 
         Assert.assertEquals( GLOBAL_BASE_URL + "/content/" + MOCK_PATH_PREFIX + "/" + MOCK_REPO_ID,
                              urlFinder.getRepositoryUrl( MOCK_REPO_ID ) );
@@ -72,8 +72,8 @@ public class RestContentRepositoryURLFinderTest
         Mockito.doReturn( true ).when( globalRestApiSettings ).isForceBaseUrl();
         Mockito.doReturn( GLOBAL_BASE_URL ).when( globalRestApiSettings ).getBaseUrl();
 
-        RestContentRepositoryURLFinder urlFinder =
-            new RestContentRepositoryURLFinder( repositoryRegistry, globalRestApiSettings );
+        RestContentRepositoryURLBuilder urlFinder =
+            new RestContentRepositoryURLBuilder( repositoryRegistry, globalRestApiSettings );
 
         Assert.assertEquals( GLOBAL_BASE_URL + "/content/" + MOCK_PATH_PREFIX + "/" + MOCK_REPO_ID,
                              urlFinder.getRepositoryUrl( MOCK_REPO_ID ) );
@@ -88,8 +88,8 @@ public class RestContentRepositoryURLFinderTest
         Mockito.doReturn( false ).when( globalRestApiSettings ).isForceBaseUrl();
         Mockito.doReturn( null ).when( globalRestApiSettings ).getBaseUrl();
 
-        RestContentRepositoryURLFinder urlFinder =
-            new RestContentRepositoryURLFinder( repositoryRegistry, globalRestApiSettings );
+        RestContentRepositoryURLBuilder urlFinder =
+            new RestContentRepositoryURLBuilder( repositoryRegistry, globalRestApiSettings );
 
         Assert.assertEquals( "http://base-url-not-set" + "/content/" + MOCK_PATH_PREFIX + "/" + MOCK_REPO_ID,
                              urlFinder.getRepositoryUrl( MOCK_REPO_ID ) );
@@ -104,8 +104,8 @@ public class RestContentRepositoryURLFinderTest
         Mockito.doReturn( false ).when( globalRestApiSettings ).isForceBaseUrl();
         Mockito.doReturn( GLOBAL_BASE_URL ).when( globalRestApiSettings ).getBaseUrl();
 
-        RestContentRepositoryURLFinder urlFinder =
-            new RestContentRepositoryURLFinder( repositoryRegistry, globalRestApiSettings );
+        RestContentRepositoryURLBuilder urlFinder =
+            new RestContentRepositoryURLBuilder( repositoryRegistry, globalRestApiSettings );
 
         Assert.assertEquals( GLOBAL_BASE_URL + "/content/" + MOCK_PATH_PREFIX + "/" + MOCK_REPO_ID,
                              urlFinder.getRepositoryUrl( MOCK_REPO_ID ) );
@@ -127,8 +127,8 @@ public class RestContentRepositoryURLFinderTest
         Response response = new Response( request );
         Response.setCurrent( response );
 
-        RestContentRepositoryURLFinder urlFinder =
-            new RestContentRepositoryURLFinder( repositoryRegistry, globalRestApiSettings );
+        RestContentRepositoryURLBuilder urlFinder =
+            new RestContentRepositoryURLBuilder( repositoryRegistry, globalRestApiSettings );
 
         Assert.assertEquals( restletBaseURL + "content/" + MOCK_PATH_PREFIX + "/" + MOCK_REPO_ID,
                              urlFinder.getRepositoryUrl( MOCK_REPO_ID ) );
@@ -137,8 +137,8 @@ public class RestContentRepositoryURLFinderTest
     @Test( expected = NoSuchRepositoryException.class )
     public void testNotFound() throws NoSuchRepositoryException
     {
-        RestContentRepositoryURLFinder urlFinder =
-            new RestContentRepositoryURLFinder( repositoryRegistry, globalRestApiSettings );
+        RestContentRepositoryURLBuilder urlFinder =
+            new RestContentRepositoryURLBuilder( repositoryRegistry, globalRestApiSettings );
 
         urlFinder.getRepositoryUrl( NOT_FOUND_REPO_ID );
     }
