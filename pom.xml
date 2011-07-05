@@ -25,7 +25,7 @@
 
   <groupId>org.sonatype.nexus</groupId>
   <artifactId>nexus-aggregator</artifactId>
-  <version>1.9.2.1SNAPSHOT</version>
+  <version>1.9.2-SNAPSHOT</version>
 
   <packaging>pom</packaging>
   <name>Nexus : Aggregator</name>
