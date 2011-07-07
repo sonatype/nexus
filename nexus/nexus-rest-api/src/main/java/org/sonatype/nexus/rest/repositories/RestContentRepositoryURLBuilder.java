@@ -8,6 +8,8 @@ import org.slf4j.LoggerFactory;
 import org.sonatype.nexus.configuration.application.GlobalRestApiSettings;
 import org.sonatype.nexus.proxy.NoSuchRepositoryException;
 import org.sonatype.nexus.proxy.registry.RepositoryRegistry;
+import org.sonatype.nexus.proxy.registry.RepositoryTypeDescriptor;
+import org.sonatype.nexus.proxy.registry.RepositoryTypeRegistry;
 import org.sonatype.nexus.proxy.repository.Repository;
 import org.sonatype.nexus.proxy.repository.RepositoryURLBuilder;
 
@@ -27,14 +29,18 @@ public class RestContentRepositoryURLBuilder
 
     private RepositoryRegistry repositoryRegistry;
 
+    private RepositoryTypeRegistry repositoryTypeRegistry;
+
     private GlobalRestApiSettings globalRestApiSettings;
 
     @Inject
     public RestContentRepositoryURLBuilder( RepositoryRegistry repositoryRegistry,
+                                            RepositoryTypeRegistry repositoryTypeRegistry,
                                             GlobalRestApiSettings globalRestApiSettings )
     {
         this.repositoryRegistry = repositoryRegistry;
         this.globalRestApiSettings = globalRestApiSettings;
+        this.repositoryTypeRegistry = repositoryTypeRegistry;
     }
 
     @Override
@@ -57,7 +63,7 @@ public class RestContentRepositoryURLBuilder
         {
             baseURL = globalRestApiSettings.getBaseUrl();
         }
-        // next check if this thead has a request
+        // next check if this thread has a request
         else if ( Request.getCurrent() != null )
         {
             baseURL = Request.getCurrent().getRootRef().toString();
@@ -79,9 +85,18 @@ public class RestContentRepositoryURLBuilder
         {
             url.append( "/" );
         }
-        String prefix = repository.getPathPrefix();
 
-        url.append( "content/" ).append( prefix ).append( "/" ).append( repository.getId() );
+        String descriptiveURLPart = "repositories";
+        for ( RepositoryTypeDescriptor desc : repositoryTypeRegistry.getRegisteredRepositoryTypeDescriptors() )
+        {
+            if ( repository.getProviderRole().equals( desc.getRole().getName() ) )
+            {
+                descriptiveURLPart = desc.getPrefix();
+                break;
+            }
+        }
+
+        url.append( "content/" ).append( descriptiveURLPart ).append( "/" ).append( repository.getId() );
 
         return url.toString();
     }
