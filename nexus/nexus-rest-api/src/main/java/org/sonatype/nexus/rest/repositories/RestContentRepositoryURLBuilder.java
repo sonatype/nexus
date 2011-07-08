@@ -16,6 +16,8 @@ import org.sonatype.nexus.proxy.repository.RepositoryURLBuilder;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 
 /**
  * Return the REST mounted URLS for Nexus.
@@ -72,6 +74,31 @@ public class RestContentRepositoryURLBuilder
         else
         {
             baseURL = globalRestApiSettings.getBaseUrl();
+        }
+
+        // if still null try to figure out the URL from the system properties (only works for the bundle)
+        //TODO: this could be problematic, consider removing this
+        if ( StringUtils.isEmpty( baseURL ) )
+        {
+            this.log.info( "Base URL not set, this can be set in Administration -> Server -> Application Server Settings" );
+            try
+            {
+                InetAddress local = InetAddress.getLocalHost();
+                String hostname = local.getHostName();
+
+                Integer port = Integer.getInteger( "plexus.application-port" );
+                String contextPath = System.getProperty( "plexus.webapp-context-path" );
+
+                // assume http?
+                if( port != null && contextPath != null )
+                {
+                   baseURL = new StringBuffer( "http://" ).append( hostname ).append( ":" ).append( port ).append( contextPath ).toString();
+                }
+            }
+            catch ( UnknownHostException e )
+            {
+                this.log.debug( "Failed to find name" ,e);
+            }
         }
 
         // if all else fails?

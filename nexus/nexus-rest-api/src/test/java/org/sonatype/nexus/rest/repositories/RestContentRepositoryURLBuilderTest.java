@@ -18,6 +18,7 @@ import org.sonatype.nexus.proxy.registry.RepositoryTypeRegistry;
 import org.sonatype.nexus.proxy.repository.GroupRepository;
 import org.sonatype.nexus.proxy.repository.Repository;
 
+import java.net.InetAddress;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -112,7 +113,6 @@ public class RestContentRepositoryURLBuilderTest
     public void testNoRequestBaseURLNotSet()
         throws Exception
     {
-
         Mockito.doReturn( true ).when( globalRestApiSettings ).isEnabled();
         Mockito.doReturn( false ).when( globalRestApiSettings ).isForceBaseUrl();
         Mockito.doReturn( null ).when( globalRestApiSettings ).getBaseUrl();
@@ -152,16 +152,17 @@ public class RestContentRepositoryURLBuilderTest
 
         try
         {
-        Request request = new Request();
-        request.setRootRef( new Reference( restletBaseURL ) );
-        Response response = new Response( request );
-        Response.setCurrent( response );
+            Request request = new Request();
+            request.setRootRef( new Reference( restletBaseURL ) );
+            Response response = new Response( request );
+            Response.setCurrent( response );
 
-        RestContentRepositoryURLBuilder urlFinder =
-            new RestContentRepositoryURLBuilder( repositoryRegistry, repositoryTypeRegistry, globalRestApiSettings );
+            RestContentRepositoryURLBuilder urlFinder =
+                new RestContentRepositoryURLBuilder( repositoryRegistry, repositoryTypeRegistry,
+                                                     globalRestApiSettings );
 
-        Assert.assertEquals( restletBaseURL + "content/" + MOCK_PATH_PREFIX + "/" + MOCK_REPO_ID,
-                             urlFinder.getRepositoryUrl( MOCK_REPO_ID ) );
+            Assert.assertEquals( restletBaseURL + "content/" + MOCK_PATH_PREFIX + "/" + MOCK_REPO_ID,
+                                 urlFinder.getRepositoryUrl( MOCK_REPO_ID ) );
         }
         finally
         {
@@ -180,7 +181,8 @@ public class RestContentRepositoryURLBuilderTest
     }
 
     @Test
-    public void testUnknownRepositoryType() throws NoSuchRepositoryException
+    public void testUnknownRepositoryType()
+        throws NoSuchRepositoryException
     {
 
         Mockito.doReturn( true ).when( globalRestApiSettings ).isEnabled();
@@ -194,5 +196,38 @@ public class RestContentRepositoryURLBuilderTest
                              urlFinder.getRepositoryUrl( MOCK_GROUP_ID ) );
 
     }
+
+    @Test
+    public void testUsingSystemProperties()
+        throws Exception
+    {
+        Mockito.doReturn( true ).when( globalRestApiSettings ).isEnabled();
+        Mockito.doReturn( false ).when( globalRestApiSettings ).isForceBaseUrl();
+        Mockito.doReturn( null ).when( globalRestApiSettings ).getBaseUrl();
+
+        String hostname = InetAddress.getLocalHost().getHostName();
+        Integer port = 1234;
+        String contextPath = "/context-path";
+
+        try
+        {
+            System.setProperty( "plexus.application-port", port.toString() );
+            System.setProperty( "plexus.webapp-context-path", contextPath );
+
+            RestContentRepositoryURLBuilder urlFinder =
+                new RestContentRepositoryURLBuilder( repositoryRegistry, repositoryTypeRegistry,
+                                                     globalRestApiSettings );
+
+            Assert.assertEquals(
+                "http://" + hostname + ":" + port + contextPath + "/content/" + MOCK_PATH_PREFIX + "/" + MOCK_REPO_ID,
+                urlFinder.getRepositoryUrl( MOCK_REPO_ID ) );
+        }
+        finally
+        {
+            System.clearProperty( "plexus.application-port" );
+            System.clearProperty( "plexus.webapp-context-path" );
+        }
+    }
+
 
 }
