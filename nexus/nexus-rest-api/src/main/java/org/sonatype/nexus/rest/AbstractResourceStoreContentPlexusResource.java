@@ -83,7 +83,7 @@ import com.noelios.restlet.http.HttpRequest;
 
 /**
  * This is an abstract resource handler that uses ResourceStore implementor and publishes those over REST.
- * 
+ *
  * @author cstamas
  */
 public abstract class AbstractResourceStoreContentPlexusResource
@@ -210,9 +210,9 @@ public abstract class AbstractResourceStoreContentPlexusResource
 
             store.deleteItem( req );
 
-            getLogger().info(
-                "Artifact(s) of path '" + req.getRequestPath() + "' was delete from repository ["
-                    + request.getAttributes().get( AbstractRepositoryPlexusResource.REPOSITORY_ID_KEY ) + "]" );
+            getLogger().info( "Artifact(s) of path '" + req.getRequestPath() + "' was delete from repository ["
+                                  + request.getAttributes().get( AbstractRepositoryPlexusResource.REPOSITORY_ID_KEY )
+                                  + "]" );
         }
         catch ( Exception e )
         {
@@ -245,11 +245,12 @@ public abstract class AbstractResourceStoreContentPlexusResource
 
     /**
      * A strategy to get ResourceStore implementor. To be implemented by subclass.
-     * 
+     *
      * @return
      * @throws NoSuchRepositoryException
      * @throws NoSuchRepositoryGroupException
      * @throws NoSuchRepositoryRouterException
+     *
      */
     protected abstract ResourceStore getResourceStore( Request request )
         throws NoSuchResourceStoreException, ResourceException;
@@ -257,7 +258,7 @@ public abstract class AbstractResourceStoreContentPlexusResource
     /**
      * Centralized way to create ResourceStoreRequests, since we have to fill in various things in Request context, like
      * authenticated username, etc.
-     * 
+     *
      * @return
      */
     protected ResourceStoreRequest getResourceStoreRequest( Request request )
@@ -268,7 +269,7 @@ public abstract class AbstractResourceStoreContentPlexusResource
     /**
      * Centralized way to create ResourceStoreRequests, since we have to fill in various things in Request context, like
      * authenticated username, etc.
-     * 
+     *
      * @return
      */
     protected ResourceStoreRequest getResourceStoreRequest( Request request, String resourceStorePath )
@@ -349,9 +350,8 @@ public abstract class AbstractResourceStoreContentPlexusResource
         {
             if ( !item.getRepositoryItemUid().getBooleanAttributeValue( IsRemotelyAccessibleAttribute.class ) )
             {
-                getLogger().debug(
-                    String.format( "Request for remotely non-accessible UID %s is made and refused",
-                        item.getRepositoryItemUid().toString() ) );
+                getLogger().debug( String.format( "Request for remotely non-accessible UID %s is made and refused",
+                                                  item.getRepositoryItemUid().toString() ) );
 
                 throw new ResourceException( Status.CLIENT_ERROR_NOT_FOUND, "Resource is not found." );
             }
@@ -403,7 +403,7 @@ public abstract class AbstractResourceStoreContentPlexusResource
             try
             {
                 return renderItem( context, req, res, variant, store,
-                    getNexus().dereferenceLinkItem( (StorageLinkItem) item ) );
+                                   getNexus().dereferenceLinkItem( (StorageLinkItem) item ) );
             }
             catch ( Exception e )
             {
@@ -425,6 +425,11 @@ public abstract class AbstractResourceStoreContentPlexusResource
 
             // we have a collection
             StorageCollectionItem coll = (StorageCollectionItem) item;
+            if ( Method.HEAD.equals( req.getMethod() ) )
+            {
+                return renderHeadResponseItem( context, req, res, variant, store, item.getResourceStoreRequest(),
+                                               coll );
+            }
 
             Collection<StorageItem> children = coll.list();
 
@@ -436,8 +441,8 @@ public abstract class AbstractResourceStoreContentPlexusResource
 
             for ( StorageItem child : children )
             {
-                if ( child.isVirtual()
-                    || !child.getRepositoryItemUid().getBooleanAttributeValue( IsHiddenAttribute.class ) )
+                if ( child.isVirtual() || !child.getRepositoryItemUid().getBooleanAttributeValue(
+                    IsHiddenAttribute.class ) )
                 {
                     if ( !uniqueNames.contains( child.getName() ) )
                     {
@@ -454,8 +459,9 @@ public abstract class AbstractResourceStoreContentPlexusResource
 
                         resource.setLastModified( new Date( child.getModified() ) );
 
-                        resource.setSizeOnDisk( StorageFileItem.class.isAssignableFrom( child.getClass() ) ? ( (StorageFileItem) child ).getLength()
-                            : -1 );
+                        resource.setSizeOnDisk( StorageFileItem.class.isAssignableFrom( child.getClass() )
+                                                    ? ( (StorageFileItem) child ).getLength()
+                                                    : -1 );
 
                         response.addData( resource );
 
@@ -531,7 +537,8 @@ public abstract class AbstractResourceStoreContentPlexusResource
         {
             HashMap<String, Object> dataModel = new HashMap<String, Object>();
 
-            dataModel.put( "listItems", sortContentListResource( ( (ContentListResourceResponse) payload ).getData() ) );
+            dataModel.put( "listItems",
+                           sortContentListResource( ( (ContentListResourceResponse) payload ).getData() ) );
 
             dataModel.put( "request", req );
 
@@ -542,12 +549,22 @@ public abstract class AbstractResourceStoreContentPlexusResource
             // Load up the template, and pass in the data
             VelocityRepresentation representation =
                 new VelocityRepresentation( context, "/templates/repositoryContentHtml.vm", dataModel,
-                    variant.getMediaType() );
+                                            variant.getMediaType() );
 
             return representation;
         }
 
         return null;
+    }
+
+    protected Object renderHeadResponseItem( Context context, Request req, Response res, Variant variant,
+                                             ResourceStore store, ResourceStoreRequest request,
+                                             StorageCollectionItem coll )
+        throws IOException, AccessDeniedException, NoSuchResourceStoreException, IllegalOperationException,
+        ItemNotFoundException, StorageException, ResourceException
+    {
+        // we are just returning anything, the connector will strip off content anyway.
+        return new StorageItemRepresentation( variant.getMediaType(), coll );
     }
 
     protected Object renderDescribeItem( Context context, Request req, Response res, Variant variant,
@@ -676,7 +693,8 @@ public abstract class AbstractResourceStoreContentPlexusResource
 
             result.setOriginatingRepositoryName( item.getRepositoryItemUid().getRepository().getName() );
 
-            result.setOriginatingRepositoryMainFacet( item.getRepositoryItemUid().getRepository().getRepositoryKind().getMainFacet().getName() );
+            result.setOriginatingRepositoryMainFacet(
+                item.getRepositoryItemUid().getRepository().getRepositoryKind().getMainFacet().getName() );
         }
         else
         {
@@ -761,7 +779,7 @@ public abstract class AbstractResourceStoreContentPlexusResource
     /**
      * ResourceStore iface is pretty "chatty" with Exceptions. This is a centralized place to handle them and convert
      * them to proper HTTP status codes and response.
-     * 
+     *
      * @param t
      */
     protected void handleException( final Request req, final Response res, final Exception t )
@@ -842,12 +860,12 @@ public abstract class AbstractResourceStoreContentPlexusResource
                 // exception to be handled is ResourceException
                 if ( re.getStatus() == null || re.getStatus().isError() )
                 {
-                    handleErrorConstructLogMessage(req, res, t, shouldLogInfoStackTrace);
+                    handleErrorConstructLogMessage( req, res, t, shouldLogInfoStackTrace );
                 }
             }
             else
             {
-                handleErrorConstructLogMessage(req, res, t, shouldLogInfoStackTrace);
+                handleErrorConstructLogMessage( req, res, t, shouldLogInfoStackTrace );
             }
         }
     }
@@ -901,7 +919,7 @@ public abstract class AbstractResourceStoreContentPlexusResource
     /**
      * TODO: this code below should be removed. It is better than the one before (it actually reuses Shiro filter, and
      * will not try to reassemble the Challenge anymore, but stil...
-     * 
+     *
      * @param req
      * @param res
      * @param t
