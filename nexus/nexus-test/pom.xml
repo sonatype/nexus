@@ -41,7 +41,7 @@
   <parent>
     <groupId>org.sonatype.nexus</groupId>
     <artifactId>nexus</artifactId>
-    <version>1.9.2.2-SNAPSHOT</version>
+    <version>1.9.2.2</version>
   </parent>
 
   <artifactId>nexus-test</artifactId>
