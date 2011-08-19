@@ -24,6 +24,7 @@ import java.io.OutputStream;
 import java.net.SocketException;
 
 import org.codehaus.plexus.util.IOUtil;
+import org.mortbay.jetty.EofException;
 import org.restlet.data.MediaType;
 import org.restlet.data.Tag;
 import org.sonatype.nexus.proxy.attributes.inspectors.DigestCalculatingInspector;

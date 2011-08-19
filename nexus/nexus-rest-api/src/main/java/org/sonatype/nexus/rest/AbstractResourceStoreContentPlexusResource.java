@@ -38,6 +38,7 @@ import org.restlet.Context;
 import org.restlet.data.ChallengeRequest;
 import org.restlet.data.ChallengeScheme;
 import org.restlet.data.MediaType;
+import org.restlet.data.Method;
 import org.restlet.data.Parameter;
 import org.restlet.data.Reference;
 import org.restlet.data.Request;
