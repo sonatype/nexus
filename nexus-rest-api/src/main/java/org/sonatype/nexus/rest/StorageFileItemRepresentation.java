@@ -22,32 +22,21 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.SocketException;
-import java.util.Date;
 
 import org.codehaus.plexus.util.IOUtil;
-import org.mortbay.jetty.EofException;
 import org.restlet.data.MediaType;
 import org.restlet.data.Tag;
-import org.restlet.resource.OutputRepresentation;
 import org.sonatype.nexus.proxy.attributes.inspectors.DigestCalculatingInspector;
 import org.sonatype.nexus.proxy.item.StorageFileItem;
 
 public class StorageFileItemRepresentation
-    extends OutputRepresentation
+    extends StorageItemRepresentation
 {
-    private final StorageFileItem file;
-
     public StorageFileItemRepresentation( StorageFileItem file )
     {
-        super( MediaType.valueOf( file.getMimeType() ) );
-
-        this.file = file;
+        super( MediaType.valueOf( file.getMimeType() ), file );
 
         setSize( file.getLength() );
-
-        setModificationDate( new Date( file.getModified() ) );
-
-        setAvailable( true );
 
         if ( file.getAttributes().containsKey( DigestCalculatingInspector.DIGEST_SHA1_KEY ) )
         {
@@ -63,17 +52,16 @@ public class StorageFileItemRepresentation
 
             setDownloadName( filename );
         }
-
     }
 
-    protected StorageFileItem getStorageFileItem()
+    protected StorageFileItem getStorageItem()
     {
-        return file;
+        return (StorageFileItem) super.getStorageItem();
     }
 
     public boolean isTransient()
     {
-        return !getStorageFileItem().isReusableStream();
+        return !getStorageItem().isReusableStream();
     }
 
     @Override
@@ -84,22 +72,29 @@ public class StorageFileItemRepresentation
 
         try
         {
-            is = getStorageFileItem().getInputStream();
+            is = getStorageItem().getInputStream();
 
             IOUtil.copy( is, outputStream );
         }
-        catch ( EofException e )
+        catch ( IOException e )
         {
-            // https://issues.sonatype.org/browse/NEXUS-217
-        }
-        catch ( SocketException e )
-        {
-            // https://issues.sonatype.org/browse/NEXUS-217
+            if ( "EofException".equals( e.getClass().getSimpleName() ) )
+            {
+                // This is for Jetty's org.eclipse.jetty.io.EofException
+                // https://issues.sonatype.org/browse/NEXUS-217
+            }
+            else if ( e instanceof SocketException )
+            {
+                // https://issues.sonatype.org/browse/NEXUS-217
+            }
+            else
+            {
+                throw e;
+            }
         }
         finally
         {
             IOUtil.close( is );
         }
     }
-
 }

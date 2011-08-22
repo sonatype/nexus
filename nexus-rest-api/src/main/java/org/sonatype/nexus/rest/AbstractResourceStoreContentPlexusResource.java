@@ -38,6 +38,7 @@ import org.restlet.Context;
 import org.restlet.data.ChallengeRequest;
 import org.restlet.data.ChallengeScheme;
 import org.restlet.data.MediaType;
+import org.restlet.data.Method;
 import org.restlet.data.Parameter;
 import org.restlet.data.Reference;
 import org.restlet.data.Request;
@@ -412,6 +413,11 @@ public abstract class AbstractResourceStoreContentPlexusResource
             // we have a collection
             StorageCollectionItem coll = (StorageCollectionItem) item;
 
+            if ( Method.HEAD.equals( req.getMethod() ) )
+            {
+                return renderHeadResponseItem( context, req, res, variant, store, item.getResourceStoreRequest(), coll );
+            }
+			
             Collection<StorageItem> children = coll.list();
 
             ContentListResourceResponse response = new ContentListResourceResponse();
@@ -547,6 +553,16 @@ public abstract class AbstractResourceStoreContentPlexusResource
         result.setData( resource );
 
         return result;
+    }
+
+    protected Object renderHeadResponseItem( Context context, Request req, Response res, Variant variant,
+                                             ResourceStore store, ResourceStoreRequest request,
+                                             StorageCollectionItem coll )
+        throws IOException, AccessDeniedException, NoSuchResourceStoreException, IllegalOperationException,
+        ItemNotFoundException, StorageException, ResourceException
+    {
+        // we are just returning anything, the connector will strip off content anyway.
+        return new StorageItemRepresentation( variant.getMediaType(), coll );
     }
 
     protected ContentListDescribeRequestResource describeRequest( Context context, Request req, Response res,
