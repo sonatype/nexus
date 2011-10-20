@@ -130,6 +130,10 @@
       <groupId>com.google.code.google-collections</groupId>
       <artifactId>google-collect</artifactId>
     </dependency>
+     <dependency>
+        <groupId>com.google.guava</groupId>
+        <artifactId>guava</artifactId>
+    </dependency>
     <!-- Maven -->
     <dependency>
       <groupId>org.apache.maven</groupId>

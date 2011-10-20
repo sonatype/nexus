@@ -19,32 +19,37 @@
 
 package org.sonatype.nexus.proxy.storage.local.fs;
 
-import com.google.common.collect.Maps;
-import com.google.common.io.FileBackedOutputStream;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+
 import junit.framework.Assert;
-import org.codehaus.plexus.util.FileUtils;
+
+import org.codehaus.plexus.util.IOUtil;
 import org.junit.Test;
-import org.mockito.Mockito;
-import org.sonatype.nexus.configuration.AbstractNexusTestCase;
 import org.sonatype.nexus.mime.MimeUtil;
 import org.sonatype.nexus.proxy.ResourceStoreRequest;
 import org.sonatype.nexus.proxy.attributes.AttributesHandler;
 import org.sonatype.nexus.proxy.item.LinkPersister;
 import org.sonatype.nexus.proxy.item.StorageItem;
 import org.sonatype.nexus.proxy.repository.Repository;
-import org.sonatype.nexus.proxy.storage.local.LocalRepositoryStorage;
 import org.sonatype.nexus.proxy.wastebasket.Wastebasket;
 import org.sonatype.nexus.test.PlexusTestCaseSupport;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import static  org.mockito.Mockito.*;
+import com.google.common.collect.Maps;
 
 /**
  * Tests {@link DefaultFSLocalRepositoryStorage}
@@ -66,13 +71,13 @@ public class DefaultFSLocalRepositoryStorageTest extends PlexusTestCaseSupport
         // the contents of the "valid" directory, only contains a "valid.txt" file
         File validDir = new File( repoLocation, "valid/" );
         validDir.mkdirs();
-        FileUtils.fileWrite( new File( validDir, "valid.txt" ), "UTF-8", "something valid" );
+        fileWrite( new File( validDir, "valid.txt" ), "UTF-8", "something valid" );
         Collection<File> validFileCollection = Arrays.asList( validDir.listFiles() );
 
         // the contents of the "invalid" directory, this dir contains a missing file
         File invalidDir = new File( repoLocation, "invalid/" );
         invalidDir.mkdirs();
-        FileUtils.fileWrite( new File( invalidDir, "invalid.txt" ), "UTF-8", "something valid" );
+        fileWrite( new File( invalidDir, "invalid.txt" ), "UTF-8", "something valid" );
         List<File> invalidFileCollection = new ArrayList<File>( Arrays.asList( invalidDir.listFiles() ) );
         invalidFileCollection.add( new File( invalidDir, "missing.txt") );
 
@@ -111,4 +116,28 @@ public class DefaultFSLocalRepositoryStorageTest extends PlexusTestCaseSupport
         Assert.assertEquals( "invalid.txt", items.iterator().next().getName() );
 
     }
+    
+    private void fileWrite( File file, String encoding, String data )
+            throws IOException
+        {
+            Writer writer = null;
+            try
+            {
+                OutputStream out = new FileOutputStream( file );
+                if ( encoding != null )
+                {
+                    writer = new OutputStreamWriter( out, encoding );
+                }
+                else
+                {
+                    writer = new OutputStreamWriter( out );
+                }
+                writer.write( data );
+            }
+            finally
+            {
+                IOUtil.close( writer );
+            }
+        }
+
 }

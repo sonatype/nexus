@@ -699,6 +699,14 @@
       </dependency>
 
       <!-- Various deps -->
+     <dependency>
+        <groupId>com.google.guava</groupId>
+        <artifactId>guava</artifactId>
+        <version>r09</version>
+        <scope>compile</scope>
+        <type>jar</type>
+      </dependency>
+
       <dependency>
         <groupId>com.ning</groupId>
         <artifactId>async-http-client</artifactId>
