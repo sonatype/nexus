@@ -1080,6 +1080,15 @@ public abstract class AbstractNexusIntegrationTest
     public File downloadFile( URL url, String targetFile )
         throws IOException
     {
+        try
+        {
+            TaskScheduleUtil.waitForAllTasksToStop();
+            getEventInspectorsUtil().waitForCalmPeriod();
+        }
+        catch ( Exception e )
+        {
+            throw new IOException( e );
+        }
 
         return RequestFacade.downloadFile( url, targetFile );
     }
