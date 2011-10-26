@@ -747,8 +747,10 @@ public class DefaultRepositoryRouter
                 {
                     request.pushRequestPath( route.getOriginalRequestPath() );
 
+                    // NEXUS-4548 paradigm switch for request path: coming from NexusTargetMappingAuthorizationFilter, the path is /repositories/$id/g/a/v/...
+                    // NEXUS-4548 for the pattern matching in repo targets we need the path to be only /g/a/v/...
                     matched.addTargetSet( this.itemAuthorizer.getGroupsTargetSet( route.getTargetedRepository(),
-                        request ) );
+                        new ResourceStoreRequest( route.getRepositoryPath() ) ) );
                 }
                 finally
                 {
