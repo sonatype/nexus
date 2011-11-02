@@ -65,7 +65,14 @@ public class ReleaseStageRepositoryMojo
         List<StageRepository> repos;
         try
         {
-            repos = client.getClosedStageRepositoriesForUser();
+            if ( isPromoteAutoSelectOverride() && isAutomatic() )
+            {
+                repos = client.getClosedStageRepositoriesForUserAndIpAddress();
+            }
+            else
+            {
+                repos = client.getClosedStageRepositoriesForUser();
+            }
         }
         catch ( RESTLightClientException e )
         {

@@ -140,6 +140,37 @@ public class StageClient
     }
 
     /**
+     * Retrieve the list of all closed (finished) staging repositories that may house artifacts with the specified
+     * groupId, artifactId, and version for the current user.
+     *
+     * @param groupId    group id
+     * @param artifactId artifact id
+     * @param version    version
+     * @return details about each closed repository
+     * @throws RESTLightClientException If thrown from rest call
+     * @since 1.10.0
+     */
+    public List<StageRepository> getOpenStageRepositoriesForUserAndIpAddress( final String groupId,
+                                                                              final String artifactId,
+                                                                              final String version )
+        throws RESTLightClientException
+    {
+        final Map<String, String> params = new HashMap<String, String>();
+        mapCoord( groupId, artifactId, version, params );
+        mapFilters(
+            new StageFilter[]{
+                StageFilter.USER_ID,
+                StageFilter.USER_IP_ADDRESS
+            },
+            params
+        );
+
+        Document doc = get( PROFILES_EVALUATE_PATH, params );
+
+        return parseStageRepositories( doc, STAGE_REPO_LIST_XPATH, true, true );
+    }
+
+    /**
      * Retrieve the details for the open staging repository which would be used for an artifact with the specified
      * groupId, artifactId, and version if the current user deployed it. In the event Nexus returns multiple open
      * staging repositories for the given user and GAV, this call will return details for the FIRST repository in that
@@ -175,6 +206,27 @@ public class StageClient
         throws RESTLightClientException
     {
         Document doc = get( PROFILES_PATH );
+
+        return parseStageRepositories( doc, STAGE_REPO_LIST_XPATH, false, true );
+    }
+
+    /**
+     * Retrieve the list of all closed (finished) staging repositories in all available profiles that are opened for the
+     * current user (the one specified in this client's constructor) and ip address.
+     *
+     * @return details about each closed repository
+     */
+    public List<StageRepository> getClosedStageRepositoriesForUserAndIpAddress()
+        throws RESTLightClientException
+    {
+        final Map<String, String> params = new HashMap<String, String>();
+        mapFilters(
+            new StageFilter[]{
+                StageFilter.USER_ID,
+                StageFilter.USER_IP_ADDRESS
+            },
+            params );
+        Document doc = get( PROFILES_PATH, params );
 
         return parseStageRepositories( doc, STAGE_REPO_LIST_XPATH, false, true );
     }
@@ -649,4 +701,24 @@ public class StageClient
         }
         return result;
     }
+
+    /**
+     * Inject the appropriate HTTP request parameters in provided parameters map for supplied filter types.
+     *
+     * @param filters filters
+     * @param params to be injected
+     *
+     * @since 1.10.0
+     */
+    protected void mapFilters( final StageFilter[] filters,
+                                       final Map<String, String> params )
+    {
+        final String[] types = new String[filters.length];
+        for ( int i = 0; i < filters.length; i++ )
+        {
+            types[i] = filters[i].getType();
+        }
+        params.put( "f", StringUtils.join( types, "," ) );
+    }
+
 }

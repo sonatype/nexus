@@ -18,9 +18,12 @@
  */
 package org.sonatype.nexus.plugin;
 
+import static java.lang.String.format;
+
 import java.net.MalformedURLException;
 import java.net.URL;
 
+import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.project.MavenProject;
@@ -39,6 +42,8 @@ import org.slf4j.LoggerFactory;
 import org.sonatype.nexus.plugin.discovery.NexusConnectionInfo;
 import org.sonatype.nexus.plugin.discovery.NexusDiscoveryException;
 import org.sonatype.nexus.plugin.discovery.NexusInstanceDiscoverer;
+import org.sonatype.nexus.plugin.useragent.Maven2UserAgentExtractor;
+import org.sonatype.nexus.plugin.useragent.SettingsUserAgentExtractor;
 import org.sonatype.nexus.restlight.common.AbstractRESTLightClient;
 import org.sonatype.nexus.restlight.common.RESTLightClientException;
 import org.sonatype.plexus.components.sec.dispatcher.SecDispatcher;
@@ -96,6 +101,13 @@ public abstract class AbstractNexusMojo
     private String serverAuthId;
 
     /**
+     * If provided, lookup user agent from this server entry in the current Maven settings.
+     *
+     * @parameter expression="${nexus.serverUserAgent}"
+     */
+    private String serverUserAgent;
+
+    /**
      * The password that should be used to log into Nexus. If missing, the mojo will prompt for this value.
      *
      * @parameter expression="${nexus.password}"
@@ -108,6 +120,12 @@ public abstract class AbstractNexusMojo
      */
     private Settings settings;
 
+    /**
+     * @parameter default-value="${session}"
+     * @readonly
+     */
+    private MavenSession session;
+
     // proxy settings derived only from active Maven settings proxy
     private String proxyHost;
 
@@ -118,6 +136,8 @@ public abstract class AbstractNexusMojo
     private String proxyPassword;
 
     private NexusInstanceDiscoverer discoverer;
+
+    private PlexusContainer container;
 
     // ==
 
@@ -138,7 +158,7 @@ public abstract class AbstractNexusMojo
     public void contextualize( Context context )
         throws ContextException
     {
-        PlexusContainer container = (PlexusContainer) context.get( PlexusConstants.PLEXUS_KEY );
+        container = (PlexusContainer) context.get( PlexusConstants.PLEXUS_KEY );
 
         try
         {
@@ -214,6 +234,16 @@ public abstract class AbstractNexusMojo
     public void setServerAuthId( final String serverAuthId )
     {
         this.serverAuthId = serverAuthId;
+    }
+
+    public String getServerUserAgent()
+    {
+        return serverUserAgent;
+    }
+
+    public void setServerUserAgent( final String serverUserAgent )
+    {
+        this.serverUserAgent = serverUserAgent;
     }
 
     public String getPassword()
@@ -499,6 +529,66 @@ public abstract class AbstractNexusMojo
     public void setDispatcher( final SecDispatcher dispatcher )
     {
         this.discoverer.setSecDispatcher( dispatcher );
+    }
+
+    protected String getUserAgent()
+        throws MojoExecutionException
+    {
+        String userAgent = null;
+
+        try
+        {
+            final SettingsUserAgentExtractor extractor =
+                (SettingsUserAgentExtractor) container.lookup( SettingsUserAgentExtractor.class.getName() );
+
+            String serverForUserAgent = getServerUserAgent();
+            if ( serverForUserAgent == null )
+            {
+                serverForUserAgent = getServerAuthId();
+            }
+            userAgent = extractor.getUserAgent( getSettings(), serverForUserAgent );
+            if ( userAgent != null )
+            {
+                getLog().info( format( "Using user agent for server '%s': '%s'", serverForUserAgent, userAgent ) );
+            }
+            else
+            {
+                getLog().debug( format( "Could not determine user agent for server '%s'", serverForUserAgent ) );
+            }
+        }
+        catch ( Exception ignore )
+        {
+            // try the other extractors
+        }
+
+        if ( userAgent == null )
+        {
+            try
+            {
+                final Maven2UserAgentExtractor extractor =
+                    (Maven2UserAgentExtractor) container.lookup( Maven2UserAgentExtractor.class.getName() );
+                userAgent = extractor.getUserAgent();
+                if ( userAgent != null )
+                {
+                    getLog().info( format( "Using user agent from maven2: '%s'", userAgent ) );
+                }
+                else
+                {
+                    getLog().debug( "Could not determine user agent from maven2" );
+                }
+            }
+            catch ( Exception ignore )
+            {
+                // try the other extractors
+            }
+        }
+
+        if ( userAgent == null )
+        {
+            throw new MojoExecutionException( "Could not determine user agent" );
+        }
+
+        return userAgent;
     }
 
 }
