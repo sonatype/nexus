@@ -84,7 +84,14 @@ public class CloseStageRepositoryMojo
         List<StageRepository> repos;
         try
         {
-            repos = client.getOpenStageRepositoriesForUser( groupId, artifactId, version );
+            if ( isAutomatic() )
+            {
+                repos = client.getOpenStageRepositoriesForUserAndIpAddress( groupId, artifactId, version );
+            }
+            else
+            {
+                repos = client.getOpenStageRepositoriesForUser( groupId, artifactId, version );
+            }
         }
         catch ( RESTLightClientException e )
         {

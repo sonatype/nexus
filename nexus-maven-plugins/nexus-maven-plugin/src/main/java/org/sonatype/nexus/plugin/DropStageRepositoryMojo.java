@@ -59,7 +59,14 @@ public class DropStageRepositoryMojo
         List<StageRepository> repos;
         try
         {
-            repos = client.getClosedStageRepositoriesForUser();
+            if ( isDropAutoSelectOverride() && isAutomatic() )
+            {
+                repos = client.getClosedStageRepositoriesForUserAndIpAddress();
+            }
+            else
+            {
+                repos = client.getClosedStageRepositoriesForUser();
+            }
         }
         catch ( RESTLightClientException e )
         {

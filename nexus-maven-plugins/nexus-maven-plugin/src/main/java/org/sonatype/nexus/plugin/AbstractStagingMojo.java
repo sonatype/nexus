@@ -18,6 +18,8 @@
  */
 package org.sonatype.nexus.plugin;
 
+import static java.lang.String.format;
+
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -166,14 +168,28 @@ public abstract class AbstractStagingMojo
                                       final boolean allowAutoSelect )
         throws MojoExecutionException
     {
-        if ( stageRepos == null || stageRepos.isEmpty() )
+        List<StageRepository> stageRepositories = stageRepos;
+
+        if ( stageRepositories == null || stageRepositories.isEmpty() )
         {
             throw new MojoExecutionException( "No repositories available." );
         }
 
+        if ( allowAutoSelect && isAutomatic() )
+        {
+            stageRepositories = filterForAutomaticSelection( stageRepositories );
+            if ( stageRepositories == null || stageRepositories.isEmpty() )
+            {
+                throw new MojoExecutionException( format(
+                    "No repositories available for user id: '%s', user agent: '%s'",
+                    getUsername(), getUserAgent() )
+                );
+            }
+        }
+
         if ( getRepositoryId() != null )
         {
-            for ( StageRepository repo : stageRepos )
+            for ( StageRepository repo : stageRepositories )
             {
                 if ( getRepositoryId().equals( repo.getRepositoryId() ) )
                 {
@@ -182,9 +198,9 @@ public abstract class AbstractStagingMojo
             }
         }
 
-        if ( allowAutoSelect && isAutomatic() && stageRepos.size() == 1 )
+        if ( allowAutoSelect && isAutomatic() && stageRepositories.size() == 1 )
         {
-            StageRepository repo = stageRepos.get( 0 );
+            StageRepository repo = stageRepositories.get( 0 );
             getLog().info( "Using the only staged repository available: " + repo.getRepositoryId() );
 
             return repo;
@@ -197,7 +213,7 @@ public abstract class AbstractStagingMojo
         menu.append( "\n\n\nAvailable Staging Repositories:\n\n" );
 
         int i = 0;
-        for ( StageRepository repo : stageRepos )
+        for ( StageRepository repo : stageRepositories )
         {
             ++i;
             repoMap.put( Integer.toString( i ), repo );
@@ -232,6 +248,36 @@ public abstract class AbstractStagingMojo
 
             return repoMap.get( choice );
         }
+    }
+
+    /**
+     * Filters out all repositories that does not match the current user id / user agent.
+     *
+     * @param repositories to be filtered
+     * @return filtered
+     * @throws MojoExecutionException in case current user agent could not be determined
+     */
+    private List<StageRepository> filterForAutomaticSelection( final List<StageRepository> repositories )
+        throws MojoExecutionException
+    {
+        final List<StageRepository> filtered = new ArrayList<StageRepository>();
+
+        final String userId = getUsername();
+        final String userAgent = getUserAgent();
+
+        if ( userId != null && userAgent != null )
+        {
+            for ( final StageRepository repository : repositories )
+            {
+                if ( userId.equals( repository.getUser() )
+                    && userAgent.equals( repository.getUserAgent() ) )
+                {
+                    filtered.add( repository );
+                }
+            }
+        }
+
+        return filtered;
     }
 
     public String getRepositoryId()
