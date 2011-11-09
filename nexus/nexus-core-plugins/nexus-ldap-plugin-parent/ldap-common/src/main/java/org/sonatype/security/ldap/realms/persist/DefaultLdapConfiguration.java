@@ -217,7 +217,7 @@ public class DefaultLdapConfiguration
 
             lock.unlock();
         }
-        
+
         return configuration;
     }
 
@@ -380,6 +380,7 @@ public class DefaultLdapConfiguration
         authConfig.setGroupSubtree( userAndGroupsConf.isGroupSubtree() );
         authConfig.setUserMemberOfAttribute( userAndGroupsConf.getUserMemberOfAttribute() );
         authConfig.setLdapGroupsAsRoles( userAndGroupsConf.isLdapGroupsAsRoles() );
+        authConfig.setLdapFilter(userAndGroupsConf.getLdapFilter());
         return authConfig;
     }
 }
