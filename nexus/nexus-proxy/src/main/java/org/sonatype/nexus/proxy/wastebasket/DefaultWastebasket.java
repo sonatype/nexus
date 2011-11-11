@@ -199,9 +199,15 @@ public class DefaultWastebasket
     public void delete( LocalRepositoryStorage ls, Repository repository, ResourceStoreRequest request )
         throws LocalStorageException
     {
+        delete( ls, repository, request, getDeleteOperation() );
+    }
+
+    public void delete( LocalRepositoryStorage ls, Repository repository, ResourceStoreRequest request, DeleteOperation type)
+        throws LocalStorageException
+    {
         try
         {
-            if ( DeleteOperation.MOVE_TO_TRASH.equals( getDeleteOperation() ) )
+            if ( DeleteOperation.MOVE_TO_TRASH.equals( type ) )
             {
                 ResourceStoreRequest trashed =
                     new ResourceStoreRequest( getTrashPath( repository, request.getRequestPath() ) );

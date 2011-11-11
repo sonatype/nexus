@@ -79,6 +79,7 @@ import org.sonatype.nexus.proxy.target.TargetSet;
 import org.sonatype.nexus.proxy.walker.DefaultWalkerContext;
 import org.sonatype.nexus.proxy.walker.Walker;
 import org.sonatype.nexus.proxy.walker.WalkerException;
+import org.sonatype.nexus.proxy.wastebasket.DeleteOperation;
 import org.sonatype.nexus.scheduling.DefaultRepositoryTaskActivityDescriptor;
 import org.sonatype.nexus.scheduling.DefaultRepositoryTaskFilter;
 import org.sonatype.nexus.scheduling.RepositoryTaskFilter;
@@ -104,6 +105,7 @@ public abstract class AbstractRepository
     extends ConfigurableRepository
     implements Repository
 {
+
     private Logger logger = Slf4jPlexusLogger.getPlexusLogger( getClass() );
 
     @Requirement
@@ -919,6 +921,14 @@ public abstract class AbstractRepository
     public void deleteItem( boolean fromTask, ResourceStoreRequest request )
         throws UnsupportedStorageOperationException, IllegalOperationException, ItemNotFoundException, StorageException
     {
+        deleteItem( fromTask, request, DeleteOperation.MOVE_TO_TRASH );
+    }
+
+    @Override
+    public void deleteItem( final boolean fromTask, final ResourceStoreRequest request,
+                            final DeleteOperation operation )
+    throws UnsupportedStorageOperationException, IllegalOperationException, ItemNotFoundException, StorageException
+    {
         if ( getLogger().isDebugEnabled() )
         {
             getLogger().debug( getId() + ".deleteItem() :: " + request.toString() );
@@ -975,7 +985,7 @@ public abstract class AbstractRepository
                 }
             }
 
-            doDeleteItem( request );
+            doDeleteItem( request, operation );
         }
         finally
         {
@@ -1279,7 +1289,13 @@ public abstract class AbstractRepository
     protected void doDeleteItem( ResourceStoreRequest request )
         throws UnsupportedStorageOperationException, ItemNotFoundException, StorageException
     {
-        getLocalStorage().deleteItem( this, request );
+        doDeleteItem( request, DeleteOperation.MOVE_TO_TRASH );
+    }
+
+    protected void doDeleteItem( ResourceStoreRequest request, DeleteOperation operation )
+        throws UnsupportedStorageOperationException, ItemNotFoundException, StorageException
+    {
+        getLocalStorage().deleteItem( this, request, operation );
     }
 
     protected Collection<StorageItem> doListItems( ResourceStoreRequest request )

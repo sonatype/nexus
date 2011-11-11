@@ -32,6 +32,7 @@ import org.sonatype.nexus.proxy.item.AbstractStorageItem;
 import org.sonatype.nexus.proxy.item.StorageItem;
 import org.sonatype.nexus.proxy.repository.Repository;
 import org.sonatype.nexus.proxy.storage.UnsupportedStorageOperationException;
+import org.sonatype.nexus.proxy.wastebasket.DeleteOperation;
 import org.sonatype.plugin.ExtensionPoint;
 
 /**
@@ -112,19 +113,19 @@ public interface LocalRepositoryStorage
 
     /**
      * Delete item, using wastebasket.
-     * 
-     * @param uid the uid
-     * @throws ItemNotFoundException the item not found exception
-     * @throws UnsupportedStorageOperationException the unsupported storage operation exception
-     * @throws LocalStorageException the storage exception
      */
     void deleteItem( Repository repository, ResourceStoreRequest request )
         throws ItemNotFoundException, UnsupportedStorageOperationException, LocalStorageException;
 
     /**
+     * Delete item, using the specified DeleteOperation.
+     */
+    void deleteItem( Repository repository, ResourceStoreRequest request, DeleteOperation op)
+        throws ItemNotFoundException, UnsupportedStorageOperationException, LocalStorageException;
+
+    /**
      * Shred item, avoid wastebasket.
      * 
-     * @param uid the uid
      * @throws ItemNotFoundException the item not found exception
      * @throws UnsupportedStorageOperationException the unsupported storage operation exception
      * @throws LocalStorageException the storage exception

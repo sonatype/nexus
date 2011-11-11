@@ -18,15 +18,12 @@
  */
 package org.sonatype.nexus.maven.tasks;
 
-import java.lang.reflect.Method;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.sonatype.nexus.AbstractMavenRepoContentTests;
 import org.sonatype.nexus.proxy.events.EventInspector;
 import org.sonatype.scheduling.CancellableProgressListenerWrapper;
-import org.sonatype.scheduling.ProgressListener;
 import org.sonatype.scheduling.TaskInterruptedException;
 import org.sonatype.scheduling.TaskUtil;
 
@@ -72,7 +69,7 @@ public class Nexus4588CancellationTest
         fillInRepo();
 
         SnapshotRemovalRequest snapshotRemovalRequest =
-            new SnapshotRemovalRequest( snapshots.getId(), 1, 10, true );
+            new SnapshotRemovalRequest( snapshots.getId(), 1, 10, true, true );
 
         TaskUtil.getCurrentProgressListener().cancel();
 
@@ -86,7 +83,7 @@ public class Nexus4588CancellationTest
         fillInRepo();
 
         SnapshotRemovalRequest snapshotRemovalRequest =
-            new SnapshotRemovalRequest( snapshots.getId(), 1, 10, true );
+            new SnapshotRemovalRequest( snapshots.getId(), 1, 10, true, true );
 
         // activate the molester
         // the molester will cancel the task once it receives cache expired event, which is sent

@@ -88,6 +88,7 @@ import org.sonatype.nexus.proxy.storage.remote.DefaultRemoteStorageContext;
 import org.sonatype.nexus.proxy.storage.remote.RemoteRepositoryStorage;
 import org.sonatype.nexus.proxy.storage.remote.RemoteStorageContext;
 import org.sonatype.nexus.proxy.target.TargetSet;
+import org.sonatype.nexus.proxy.wastebasket.DeleteOperation;
 import org.sonatype.nexus.scheduling.RepositoryTaskFilter;
 
 import com.ning.http.client.AsyncHttpClient;
@@ -788,6 +789,14 @@ public class MavenRepositoryReaderTest
             StorageException
         {
 
+        }
+
+        @Override
+        public void deleteItem( final boolean fromTask, final ResourceStoreRequest request,
+                                final DeleteOperation operation )
+            throws UnsupportedStorageOperationException, IllegalOperationException, ItemNotFoundException,
+            StorageException
+        {
         }
 
         public Collection<StorageItem> list( boolean fromTask, ResourceStoreRequest request )

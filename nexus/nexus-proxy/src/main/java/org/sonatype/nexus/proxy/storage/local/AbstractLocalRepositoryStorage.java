@@ -41,9 +41,8 @@ import org.sonatype.nexus.proxy.item.StorageFileItem;
 import org.sonatype.nexus.proxy.item.StorageItem;
 import org.sonatype.nexus.proxy.repository.Repository;
 import org.sonatype.nexus.proxy.storage.UnsupportedStorageOperationException;
+import org.sonatype.nexus.proxy.wastebasket.DeleteOperation;
 import org.sonatype.nexus.proxy.wastebasket.Wastebasket;
-
-import javax.inject.Inject;
 
 /**
  * Abstract Storage class. It have ID and defines logger. Predefines all write methods to be able to "decorate"
@@ -181,7 +180,15 @@ public abstract class AbstractLocalRepositoryStorage
     public final void deleteItem( Repository repository, ResourceStoreRequest request )
         throws ItemNotFoundException, UnsupportedStorageOperationException, LocalStorageException
     {
-        getWastebasket().delete( this, repository, request );
+        deleteItem( repository, request, DeleteOperation.MOVE_TO_TRASH );
+    }
+
+    public final void deleteItem( Repository repository,
+                                  ResourceStoreRequest request,
+                                  final DeleteOperation type)
+        throws ItemNotFoundException, UnsupportedStorageOperationException, LocalStorageException
+    {
+        getWastebasket().delete( this, repository, request, type );
     }
 
     // ==
