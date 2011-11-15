@@ -60,6 +60,7 @@ import org.sonatype.nexus.proxy.walker.DottedStoreWalkerFilter;
 import org.sonatype.nexus.proxy.walker.Walker;
 import org.sonatype.nexus.proxy.walker.WalkerContext;
 import org.sonatype.nexus.proxy.walker.WalkerException;
+import org.sonatype.nexus.proxy.wastebasket.DeleteOperation;
 import org.sonatype.nexus.util.ItemPathUtils;
 import org.sonatype.scheduling.TaskUtil;
 
@@ -76,6 +77,8 @@ public class DefaultSnapshotRemover
     extends AbstractLoggingComponent
     implements SnapshotRemover
 {
+
+    public static final String DELETE_OPERATION = "snapshot-remover.delete-operation";
 
     @Requirement
     private RepositoryRegistry repositoryRegistry;
@@ -205,6 +208,8 @@ public class DefaultSnapshotRemover
         DefaultWalkerContext ctxMain =
             new DefaultWalkerContext( repository, new ResourceStoreRequest( "/" ), new DottedStoreWalkerFilter() );
 
+        ctxMain.getContext().put( DELETE_OPERATION, getDeleteOperation( request ) );
+
         ctxMain.getProcessors().add( snapshotRemoveProcessor );
 
         walker.walk( ctxMain );
@@ -229,7 +234,7 @@ public class DefaultSnapshotRemover
         repository.expireCaches( new ResourceStoreRequest( RepositoryItemUid.PATH_ROOT ) );
 
         RecreateMavenMetadataWalkerProcessor metadataRebuildProcessor =
-            new RecreateMavenMetadataWalkerProcessor( Slf4jPlexusLogger.getPlexusLogger( getLogger() ) );
+            new RecreateMavenMetadataWalkerProcessor( Slf4jPlexusLogger.getPlexusLogger( getLogger() ), getDeleteOperation( request ) );
 
         for ( String path : request.getMetadataRebuildPaths() )
         {
@@ -255,6 +260,11 @@ public class DefaultSnapshotRemover
         }
 
         return result;
+    }
+
+    private DeleteOperation getDeleteOperation( final SnapshotRemovalRequest request )
+    {
+        return request.isDeleteImmediately() ? DeleteOperation.DELETE_PERMANENTLY : DeleteOperation.MOVE_TO_TRASH;
     }
 
     private void logDetails( SnapshotRemovalRequest request )
@@ -479,7 +489,8 @@ public class DefaultSnapshotRemover
                             // preserve possible subdirs
                             if ( !( item instanceof StorageCollectionItem ) )
                             {
-                                repository.deleteItem( false, new ResourceStoreRequest( item ) );
+                                repository.deleteItem( false, new ResourceStoreRequest( item ),
+                                                       (DeleteOperation) context.getContext().get( DELETE_OPERATION ) );
                             }
                         }
                         catch ( ItemNotFoundException e )
@@ -559,7 +570,8 @@ public class DefaultSnapshotRemover
 
                             gav = (Gav) file.getItemContext().get( Gav.class.getName() );
 
-                            repository.deleteItem( false, new ResourceStoreRequest( file ) );
+                            repository.deleteItem( false, new ResourceStoreRequest( file ),
+                                                   (DeleteOperation) context.getContext().get( DELETE_OPERATION ) );
 
                             deletedFiles++;
                         }
@@ -617,7 +629,8 @@ public class DefaultSnapshotRemover
                         "Removing the empty directory leftover: UID=" + coll.getRepositoryItemUid().toString() );
                 }
 
-                repository.deleteItem( false, new ResourceStoreRequest( coll ) );
+                // directory is empty, never move to trash
+                repository.deleteItem( false, new ResourceStoreRequest( coll ), DeleteOperation.DELETE_PERMANENTLY );
             }
             catch ( ItemNotFoundException e )
             {

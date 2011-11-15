@@ -45,6 +45,7 @@ import org.sonatype.nexus.proxy.storage.UnsupportedStorageOperationException;
 import org.sonatype.nexus.proxy.storage.local.LocalRepositoryStorage;
 import org.sonatype.nexus.proxy.storage.local.LocalStorageContext;
 import org.sonatype.nexus.proxy.target.TargetSet;
+import org.sonatype.nexus.proxy.wastebasket.DeleteOperation;
 import org.sonatype.nexus.scheduling.RepositoryTaskFilter;
 
 public class DummyRepository
@@ -494,6 +495,13 @@ public class DummyRepository
     {
         // TODO Auto-generated method stub
 
+    }
+
+    @Override
+    public void deleteItem( final boolean fromTask, final ResourceStoreRequest request,
+                            final DeleteOperation operation )
+        throws UnsupportedStorageOperationException, IllegalOperationException, ItemNotFoundException, StorageException
+    {
     }
 
     public Collection<StorageItem> list( boolean fromTask, ResourceStoreRequest request )

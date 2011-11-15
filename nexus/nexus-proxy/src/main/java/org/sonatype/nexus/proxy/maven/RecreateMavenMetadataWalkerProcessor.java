@@ -28,6 +28,7 @@ import org.sonatype.nexus.proxy.maven.metadata.DefaultMetadataHelper;
 import org.sonatype.nexus.proxy.repository.HostedRepository;
 import org.sonatype.nexus.proxy.walker.AbstractWalkerProcessor;
 import org.sonatype.nexus.proxy.walker.WalkerContext;
+import org.sonatype.nexus.proxy.wastebasket.DeleteOperation;
 
 /**
  * @author Juven Xu
@@ -41,11 +42,19 @@ public class RecreateMavenMetadataWalkerProcessor
 
     private AbstractMetadataHelper mdHelper;
 
-    private Logger logger;
+    private final Logger logger;
+
+    private final DeleteOperation deleteOperation;
 
     public RecreateMavenMetadataWalkerProcessor( Logger logger )
     {
+        this( logger, DeleteOperation.MOVE_TO_TRASH );
+    }
+
+    public RecreateMavenMetadataWalkerProcessor( Logger logger, DeleteOperation operation )
+    {
         this.logger = logger;
+        this.deleteOperation = operation;
     }
 
     @Override
@@ -105,7 +114,7 @@ public class RecreateMavenMetadataWalkerProcessor
 
             if ( coll.list().size() == 0 )
             {
-                repository.deleteItem( false, new ResourceStoreRequest( coll ) );
+                repository.deleteItem( false, new ResourceStoreRequest( coll ), this.deleteOperation );
             }
         }
         catch ( Exception e )

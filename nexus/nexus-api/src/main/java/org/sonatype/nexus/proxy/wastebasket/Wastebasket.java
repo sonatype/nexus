@@ -95,10 +95,16 @@ public interface Wastebasket
      * Performs a delete operation. It deletes at once if item is file or link. If it is a collection, it will delete it
      * and all it's sub-items (recursively).
      * 
-     * @param path
-     * @throws IOException
+     * @see #getDeleteOperation()
      */
     void delete( LocalRepositoryStorage ls, Repository repository, ResourceStoreRequest request )
+        throws LocalStorageException;
+
+    /**
+     * Performs the given delete operation. It deletes at once if item is file or link. If it is a collection, it will delete it
+     * and all it's sub-items (recursively).
+     */
+    void delete( LocalRepositoryStorage ls, Repository repository, ResourceStoreRequest request, DeleteOperation type )
         throws LocalStorageException;
 
     /**
