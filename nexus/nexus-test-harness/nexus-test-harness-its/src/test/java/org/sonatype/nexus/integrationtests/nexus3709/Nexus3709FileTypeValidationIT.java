@@ -53,7 +53,10 @@ public class Nexus3709FileTypeValidationIT
         RepositoryProxyResource resource =
             (RepositoryProxyResource) repoUtil.getRepository( this.getTestRepositoryId() );
         // this should be false to start with
-        Assert.assertFalse( resource.isFileTypeValidation(), "Expected fileTypeValidation to be false after startup." );
+        if ( !resource.isFileTypeValidation() )
+        {
+            throw new IllegalStateException( "Expected fileTypeValidation to be true after startup." );
+        }
         resource.setFileTypeValidation( true );
 
         // update it
