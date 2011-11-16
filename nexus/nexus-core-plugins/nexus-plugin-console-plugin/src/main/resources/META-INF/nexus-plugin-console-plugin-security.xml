@@ -32,6 +32,9 @@
       <privileges>
         <privilege>plugin-infos-read</privilege>
       </privileges>
+      <roles>
+        <role>ui-basic</role>
+      </roles>
     </role>
   </roles>
   

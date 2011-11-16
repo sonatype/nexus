@@ -134,6 +134,9 @@
                 <privilege>14</privilege>
                 <privilege>55</privilege>
             </privileges>
+            <roles>
+                <role>ui-basic</role>
+            </roles>
         </role>
         <role>
             <id>ui-system-feeds</id>
@@ -143,6 +146,9 @@
             <privileges>
                 <privilege>44</privilege>
             </privileges>
+            <roles>
+                <role>ui-basic</role>
+            </roles>
         </role>
         <role>
             <id>ui-logs-config-files</id>
@@ -153,6 +159,9 @@
                 <privilege>42</privilege>
                 <privilege>43</privilege>
             </privileges>
+            <roles>
+                <role>ui-basic</role>
+            </roles>
         </role>
         <role>
             <id>ui-server-admin</id>
@@ -164,6 +173,9 @@
                 <privilege>4</privilege>
                 <privilege>73</privilege>
             </privileges>
+            <roles>
+                <role>ui-basic</role>
+            </roles>
         </role>
         <role>
             <id>ui-repository-admin</id>
@@ -217,6 +229,9 @@
                 <privilege>24</privilege>
                 <privilege>25</privilege>
             </privileges>
+            <roles>
+                <role>ui-basic</role>
+            </roles>
         </role>
         <role>
             <id>ui-scheduled-tasks-admin</id>
@@ -234,6 +249,9 @@
                 <privilege>69</privilege>
                 <privilege>71</privilege>
             </privileges>
+            <roles>
+                <role>ui-basic</role>
+            </roles>
         </role>
         <role>
             <id>ui-repository-targets-admin</id>
@@ -248,6 +266,9 @@
                 <privilege>70</privilege>
                 <privilege>74</privilege>
             </privileges>
+            <roles>
+                <role>ui-basic</role>
+            </roles>
         </role>
         <role>
             <id>ui-users-admin</id>
@@ -263,6 +284,9 @@
                 <privilege>72</privilege>
                 <privilege>75</privilege>
             </privileges>
+            <roles>
+                <role>ui-basic</role>
+            </roles>
         </role>
         <role>
             <id>ui-roles-admin</id>
@@ -276,6 +300,9 @@
                 <privilege>36</privilege>
                 <privilege>37</privilege>
             </privileges>
+            <roles>
+                <role>ui-basic</role>
+            </roles>
         </role>
         <role>
             <id>ui-privileges-admin</id>
@@ -292,6 +319,9 @@
                 <privilege>46</privilege>
                 <privilege>80</privilege>
             </privileges>
+            <roles>
+                <role>ui-basic</role>
+            </roles>
         </role>
         <role>
             <id>ui-basic</id>

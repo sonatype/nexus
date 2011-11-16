@@ -38,6 +38,9 @@
 				<privilege>capabilities-delete-read</privilege>
 				<privilege>capability-types-read</privilege>
 			</privileges>
+            <roles>
+                <role>ui-basic</role>
+            </roles>
 		</role>
 	</roles>
 	<privileges>
