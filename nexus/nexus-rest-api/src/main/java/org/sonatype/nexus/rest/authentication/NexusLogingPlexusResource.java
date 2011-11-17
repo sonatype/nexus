@@ -48,9 +48,10 @@ public class NexusLogingPlexusResource
     @Override
     public PathProtectionDescriptor getResourceProtection()
     {
-        // this is the ONLY resource using authcNxBasic, as the UI can't receive 401 errors from teh server
-        // as the browser login pops up, which is no good in this case
-        return new PathProtectionDescriptor( getResourceUri(), "authcNxBasic,perms[nexus:authentication]" );
+        // on NXCM-3427 discussions we agreed that makes no sense deny user access to login resource (specially since is
+        // possible do login by other means). So let user login and deal with UI later if it doesn't have
+        // 'nexus:authentication'
+        return new PathProtectionDescriptor( getResourceUri(), "anon" );
     }
     
     /**

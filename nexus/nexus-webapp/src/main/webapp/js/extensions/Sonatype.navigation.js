@@ -70,6 +70,7 @@ Ext.extend(Sonatype.navigation.NavigationPanel, Ext.Panel, {
         return panel;
       },
       add : function(c) {
+    	  
         var arr = null;
         var a = arguments;
         if (a.length > 1)
@@ -236,6 +237,11 @@ Ext.extend(Sonatype.navigation.Section, Ext.Panel, {
       },
 
       add : function(c) {
+    	var sp = Sonatype.lib.Permissions;
+    	if(!sp.checkPermission('nexus:authentication', sp.READ)){
+    		return;
+    	}
+
         var arr = null;
         var a = arguments;
         if (a.length > 1)

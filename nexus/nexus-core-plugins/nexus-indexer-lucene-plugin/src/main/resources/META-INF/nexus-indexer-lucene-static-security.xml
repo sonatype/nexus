@@ -34,6 +34,9 @@
                 <privilege>19</privilege>
                 <privilege>54</privilege>
             </privileges>
+            <roles>
+                <role>ui-basic</role>
+            </roles>
         </role>   
         <role>
             <id>anonymous</id>

@@ -43,7 +43,8 @@
             </privileges>
             <roles>
             	<role>ui-server-admin</role>
-            </roles>	
+                <role>ui-basic</role>
+            </roles>
         </role>
     </roles>
    
