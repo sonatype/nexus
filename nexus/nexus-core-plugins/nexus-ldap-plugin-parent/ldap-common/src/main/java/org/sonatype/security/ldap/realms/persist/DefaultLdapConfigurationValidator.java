@@ -36,7 +36,7 @@ public class DefaultLdapConfigurationValidator
     {
         ValidationResponse response = new ValidationResponse();
 
-        Configuration configuration = (Configuration) request.getConfiguration();
+        Configuration configuration = request.getConfiguration();
 
         if ( configuration == null )
         {

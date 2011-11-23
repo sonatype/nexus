@@ -31,7 +31,7 @@ public class PasswordHelperTest
     public PasswordHelper getPasswordHelper()
         throws Exception
     {
-        return (PasswordHelper) this.lookup( PasswordHelper.class );
+        return this.lookup( PasswordHelper.class );
     }
 
     @Test

@@ -24,6 +24,8 @@ import java.security.MessageDigest;
 
 import org.codehaus.plexus.component.annotations.Component;
 import org.codehaus.plexus.digest.Hex;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.sonatype.plexus.components.cipher.Base64;
 
 /**
@@ -33,6 +35,8 @@ import org.sonatype.plexus.components.cipher.Base64;
 public class SHA1PasswordEncoder
     implements PasswordEncoder
 {
+
+    final private static Logger log = LoggerFactory.getLogger( SHA1PasswordEncoder.class );
 
     public String getMethod()
     {
@@ -79,6 +83,9 @@ public class SHA1PasswordEncoder
         }
         catch ( Exception e )
         {
+            // Exception is NOT logged because it may contain users password.
+            log.warn( "Exception thrown while encoding password." );
+
         }
         return result;
     }

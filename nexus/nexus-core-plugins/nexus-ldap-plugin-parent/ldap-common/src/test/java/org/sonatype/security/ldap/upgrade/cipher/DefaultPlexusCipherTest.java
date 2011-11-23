@@ -68,8 +68,11 @@ public class DefaultPlexusCipherTest
         throw new Exception( "Cannot find default algorithm " + pc.algorithm + " in the current environment." );
     }
 
-    // intentionally not a test?
-    public void stestFindDefaultAlgorithm()
+    /**
+     * Helpful debug method, used to track down Algorithms.
+     * @throws Exception
+     */
+    public void findDefaultAlgorithm()
         throws Exception
     {
         String[] res = CryptoUtils.getServiceTypes();

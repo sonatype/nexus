@@ -24,6 +24,8 @@ import java.security.MessageDigest;
 
 import org.codehaus.plexus.component.annotations.Component;
 import org.codehaus.plexus.digest.Hex;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author cstamas
@@ -32,6 +34,8 @@ import org.codehaus.plexus.digest.Hex;
 public class MD5PasswordEncoder
     implements PasswordEncoder
 {
+
+    final private static Logger log = LoggerFactory.getLogger( MD5PasswordEncoder.class );
 
     public String getMethod()
     {
@@ -80,10 +84,12 @@ public class MD5PasswordEncoder
                 }
             }
             while ( numRead != -1 );
-            result = new String( Hex.encode( md5.digest() ) );
+            result = Hex.encode( md5.digest() );
         }
         catch ( Exception e )
         {
+            // Exception is NOT logged because it may contain users password.
+            log.warn( "Exception thrown while encoding password." );
         }
         return result;
     }

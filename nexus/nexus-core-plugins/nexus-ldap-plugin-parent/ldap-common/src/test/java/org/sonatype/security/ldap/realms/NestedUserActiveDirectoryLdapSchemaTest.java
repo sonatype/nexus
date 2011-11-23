@@ -93,8 +93,7 @@ public class NestedUserActiveDirectoryLdapSchemaTest
 
         try
         {
-            user =
-                this.ldapUserManager.getUser( "intruder", this.ldapContextFactory.getSystemLdapContext(), configuration );
+            this.ldapUserManager.getUser( "intruder", this.ldapContextFactory.getSystemLdapContext(), configuration );
             Assert.fail( "Expected NoSuchUserException" );
         }
         catch ( NoSuchLdapUserException e )

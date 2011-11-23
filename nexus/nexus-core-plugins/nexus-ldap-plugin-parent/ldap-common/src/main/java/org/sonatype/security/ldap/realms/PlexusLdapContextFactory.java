@@ -54,8 +54,6 @@ public class PlexusLdapContextFactory
 
     protected String contextFactoryClassName = "com.sun.jndi.ldap.LdapCtxFactory";
 
-    private boolean pooling = true;
-
     public LdapContext getSystemLdapContext()
         throws NamingException
     {   
@@ -155,7 +153,7 @@ public class PlexusLdapContextFactory
         // env.put(Context.REFERRAL, referral);
 
         // Only pool connections for system contexts
-        if ( pooling && systemLogin )
+        if ( systemLogin )
         {
             // Enable connection pooling
             env.put( SUN_CONNECTION_POOLING_PROPERTY, "true" );
@@ -168,7 +166,7 @@ public class PlexusLdapContextFactory
         if ( logger.isDebugEnabled() )
         {
             logger.debug( "Initializing LDAP context using URL [" + url + "] and username [" + username + "] "
-                + "with pooling [" + ( pooling ? "enabled" : "disabled" ) + "]" );
+                + "with pooling [" + ( systemLogin ? "enabled" : "disabled" ) + "]" );
         }
 
         return new InitialLdapContext( env, null );

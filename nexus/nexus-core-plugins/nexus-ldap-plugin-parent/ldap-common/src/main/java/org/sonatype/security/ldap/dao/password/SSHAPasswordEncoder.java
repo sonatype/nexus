@@ -47,7 +47,7 @@ public class SSHAPasswordEncoder
     {
         try
         {
-            byte[] saltBytes = null;
+            byte[] saltBytes;
 
             // needs to be null, byteArray, or a String
             if ( salt == null )
