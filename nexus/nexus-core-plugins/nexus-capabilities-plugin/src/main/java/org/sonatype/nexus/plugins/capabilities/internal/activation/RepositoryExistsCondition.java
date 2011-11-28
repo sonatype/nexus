@@ -23,33 +23,28 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import org.sonatype.nexus.plugins.capabilities.api.activation.ActivationContext;
 import org.sonatype.nexus.plugins.capabilities.support.activation.AbstractCondition;
 import org.sonatype.nexus.plugins.capabilities.support.activation.RepositoryConditions;
-import org.sonatype.nexus.proxy.repository.LocalStatus;
 import org.sonatype.nexus.proxy.repository.Repository;
 
 /**
- * A condition that is satisfied when a repository has a specified local status.
+ * A condition that is satisfied when a repository exists.
  *
  * @since 1.10.0
  */
-public class RepositoryLocalStatusCondition
+public class RepositoryExistsCondition
     extends AbstractCondition
     implements RepositoryEventsNotifier.Listener
 {
 
     private final RepositoryEventsNotifier repositoryEventsNotifier;
 
-    private final LocalStatus localStatus;
-
     private final RepositoryConditions.RepositoryId repositoryId;
 
-    public RepositoryLocalStatusCondition( final ActivationContext activationContext,
-                                           final RepositoryEventsNotifier repositoryEventsNotifier,
-                                           final LocalStatus localStatus,
-                                           final RepositoryConditions.RepositoryId repositoryId )
+    public RepositoryExistsCondition( final ActivationContext activationContext,
+                                      final RepositoryEventsNotifier repositoryEventsNotifier,
+                                      final RepositoryConditions.RepositoryId repositoryId )
     {
         super( activationContext, false );
         this.repositoryEventsNotifier = checkNotNull( repositoryEventsNotifier );
-        this.localStatus = checkNotNull( localStatus );
         this.repositoryId = checkNotNull( repositoryId );
     }
 
@@ -68,16 +63,16 @@ public class RepositoryLocalStatusCondition
     @Override
     public void onAdded( final Repository repository )
     {
-        onUpdated( repository );
+        if ( repository != null && repository.getId().equals( repositoryId.get() ) )
+        {
+            setSatisfied( true );
+        }
     }
 
     @Override
     public void onUpdated( final Repository repository )
     {
-        if ( repository != null && repository.getId().equals( repositoryId.get() ) )
-        {
-            setSatisfied( localStatus.equals( repository.getLocalStatus() ) );
-        }
+        // do nothing
     }
 
     @Override
@@ -95,11 +90,11 @@ public class RepositoryLocalStatusCondition
         try
         {
             final String id = repositoryId.get();
-            return String.format( "Repository '%s' is %s", id, localStatus.toString() );
+            return String.format( "Repository '%s' exists", id );
         }
         catch ( Exception ignore )
         {
-            return String.format( "Repository '(could not be evaluated)' is %s", localStatus.toString() );
+            return "Repository '(could not be evaluated)' exists";
         }
     }
 

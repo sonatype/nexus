@@ -18,64 +18,65 @@
  */
 package org.sonatype.nexus.plugins.capabilities.internal.activation;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
-
-import java.util.Collections;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.sonatype.nexus.proxy.registry.RepositoryRegistry;
-import org.sonatype.nexus.proxy.repository.Repository;
+import org.sonatype.nexus.plugins.capabilities.api.activation.ActivationContext;
 
 /**
- * {@link RepositoryEventsNotifier} UTs.
+ * {@link NexusIsActiveCondition} UTs.
  *
  * @since 1.10.0
  */
-public class RepositoryEventsNotifierTest
+public class NexusIsActiveConditionTest
 {
 
-    private RepositoryEventsNotifier underTest;
+    private ActivationContext activationContext;
 
-    private RepositoryEventsNotifier.Listener listener;
-
-    private Repository repository;
-
-    private RepositoryEventsNotifier.Notifier notifier;
+    private NexusIsActiveCondition underTest;
 
     @Before
     public void setUp()
     {
-        final RepositoryRegistry repositoryRegistry = mock( RepositoryRegistry.class );
-        when( repositoryRegistry.getRepositories() ).thenReturn( Collections.<Repository>emptyList() );
-        repository = mock( Repository.class );
-        notifier = mock( RepositoryEventsNotifier.Notifier.class );
-        listener = mock( RepositoryEventsNotifier.Listener.class );
-        underTest = new RepositoryEventsNotifier( repositoryRegistry );
-        underTest.addListener( listener );
+        activationContext = mock( ActivationContext.class );
+        underTest = new NexusIsActiveCondition( activationContext);
     }
 
     /**
-     * run() called on notifier when requested.
+     * Condition is not satisfied initially.
      */
     @Test
-    public void runCalledOnNotifier()
+    public void notSatisfiedInitially()
     {
-        underTest.notify( repository, notifier );
-        verify( notifier ).run( listener, repository );
+        assertThat( underTest.isSatisfied(), is( false ) );
     }
 
     /**
-     * When there are no listeners run() is not called.
+     * Condition is satisfied when Nexus is started.
      */
     @Test
-    public void runNotCalledWhenNoListeners()
+    public void satisfiedWhenNexusStarted()
     {
-        underTest.removeListener( listener );
-        verifyNoMoreInteractions( notifier );
+        underTest.acknowledgeNexusStarted();
+        assertThat( underTest.isSatisfied(), is( true ) );
+        verify( activationContext ).notifySatisfied( underTest );
+    }
+
+    /**
+     * Condition is satisfied when negated is not satisfied.
+     */
+    @Test
+    public void unsatisfiedWhenNexusStopped()
+    {
+        underTest.acknowledgeNexusStarted();
+        underTest.acknowledgeNexusStopped();
+        assertThat( underTest.isSatisfied(), is( false ) );
+        verify( activationContext ).notifyUnsatisfied( underTest );
     }
 
 }

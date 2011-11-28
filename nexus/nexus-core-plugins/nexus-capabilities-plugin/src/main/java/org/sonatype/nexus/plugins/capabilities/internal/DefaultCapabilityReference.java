@@ -28,6 +28,8 @@ import org.sonatype.nexus.plugins.capabilities.api.CapabilityReference;
 import org.sonatype.nexus.plugins.capabilities.api.CapabilityRegistry;
 import org.sonatype.nexus.plugins.capabilities.api.activation.ActivationContext;
 import org.sonatype.nexus.plugins.capabilities.api.activation.Condition;
+import org.sonatype.nexus.plugins.capabilities.internal.config.CapabilityConfiguration;
+import org.sonatype.nexus.plugins.capabilities.support.activation.Conditions;
 
 /**
  * Default {@link CapabilityReference} implementation.
@@ -45,20 +47,34 @@ class DefaultCapabilityReference
 
     private final ActivationContext activationContext;
 
-    private Condition activateCondition;
+    private final CapabilityConfiguration configuration;
+
+    private final Conditions conditions;
 
     private boolean active;
 
     private boolean enabled;
 
-    private ActivationContextListener activationListener;
+    private Condition activateCondition;
+
+    private ActivationListener activationListener;
+
+    private Condition validityCondition;
+
+    private ValidityListener validityListener;
+
+    private NexusActiveListener nexusActiveListener;
 
     DefaultCapabilityReference( final DefaultCapabilityRegistry registry,
                                 final ActivationContext activationContext,
+                                final CapabilityConfiguration configuration,
+                                final Conditions conditions,
                                 final Capability capability )
     {
         this.registry = checkNotNull( registry );
         this.activationContext = checkNotNull( activationContext );
+        this.configuration = checkNotNull( configuration );
+        this.conditions = checkNotNull( conditions );
         this.capability = checkNotNull( capability );
 
         active = false;
@@ -89,7 +105,7 @@ class DefaultCapabilityReference
             if ( activateCondition != null )
             {
                 activateCondition.bind();
-                activationListener = new ActivationContextListener();
+                activationListener = new ActivationListener();
                 activationContext.addListener( activationListener, activateCondition );
             }
         }
@@ -183,12 +199,20 @@ class DefaultCapabilityReference
     public void create( final Map<String, String> properties )
     {
         capability().create( properties );
+        if ( nexusActiveListener == null )
+        {
+            nexusActiveListener = new NexusActiveListener().bind();
+        }
     }
 
     @Override
     public void load( final Map<String, String> properties )
     {
         capability().load( properties );
+        if ( nexusActiveListener == null )
+        {
+            nexusActiveListener = new NexusActiveListener().bind();
+        }
     }
 
     @Override
@@ -224,6 +248,10 @@ class DefaultCapabilityReference
             activateCondition.release();
         }
         disable();
+        if ( nexusActiveListener!=null )
+        {
+            nexusActiveListener.release();
+        }
         capability().remove();
     }
 
@@ -251,7 +279,7 @@ class DefaultCapabilityReference
         return p1.equals( p2 );
     }
 
-    private class ActivationContextListener
+    private class ActivationListener
         implements ActivationContext.Listener
     {
 
@@ -277,11 +305,121 @@ class DefaultCapabilityReference
         public String toString()
         {
             return String.format(
-                "Capability '%s (id=%s)' watching for '%s' condition",
+                "Capability '%s (id=%s)' watching for '%s' condition to activate itself",
                 capability(), capability().id(), activateCondition
             );
         }
 
+    }
+
+    private class ValidityListener
+        implements ActivationContext.Listener
+    {
+
+        @Override
+        public void onSatisfied( final Condition condition )
+        {
+            // do nothing
+        }
+
+        @Override
+        public void onUnsatisfied( final Condition condition )
+        {
+            if ( condition == validityCondition )
+            {
+                try
+                {
+                    configuration.remove( capability().id() );
+                }
+                catch ( Exception e )
+                {
+                    getLogger().error( "Failed to remove capability with id '{}'", capability().id(), e );
+                }
+            }
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format(
+                "Capability '%s (id=%s)' watching for '%s' condition to validate itself",
+                capability(), capability().id(), validityCondition
+            );
+        }
+
+    }
+
+    private class NexusActiveListener
+        implements ActivationContext.Listener
+    {
+
+        private Condition nexusActiveCondition;
+
+        @Override
+        public void onSatisfied( final Condition condition )
+        {
+            if ( condition == nexusActiveCondition )
+            {
+                validityCondition = capability().validityCondition();
+                if ( validityCondition != null )
+                {
+                    validityCondition.bind();
+                    validityListener = new ValidityListener();
+                    activationContext.addListener( validityListener, validityCondition );
+                }
+            }
+        }
+
+        @Override
+        public void onUnsatisfied( final Condition condition )
+        {
+            if ( condition == nexusActiveCondition )
+            {
+                if ( validityListener != null )
+                {
+                    activationContext.removeListener( validityListener, validityCondition );
+                    validityListener = null;
+                }
+                if ( validityCondition != null )
+                {
+                    validityCondition.release();
+                    validityCondition = null;
+                }
+            }
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format(
+                "Capability '%s (id=%s)' watching for '%s' condition to activate validation check",
+                capability(), capability().id(), nexusActiveCondition
+            );
+        }
+
+        public NexusActiveListener bind()
+        {
+            if ( nexusActiveCondition == null )
+            {
+                nexusActiveCondition = conditions.nexus().active();
+                activationContext.addListener( this, nexusActiveCondition );
+                if ( nexusActiveCondition.isSatisfied() )
+                {
+                    onSatisfied( nexusActiveCondition );
+                }
+            }
+            return this;
+        }
+
+        public NexusActiveListener release()
+        {
+            if ( nexusActiveCondition != null )
+            {
+                onUnsatisfied( nexusActiveCondition );
+                activationContext.removeListener( this, nexusActiveCondition );
+            }
+            return this;
+        }
     }
 
 }

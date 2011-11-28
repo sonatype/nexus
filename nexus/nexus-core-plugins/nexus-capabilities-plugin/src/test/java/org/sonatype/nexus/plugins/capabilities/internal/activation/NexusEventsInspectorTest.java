@@ -18,64 +18,64 @@
  */
 package org.sonatype.nexus.plugins.capabilities.internal.activation;
 
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
-
-import java.util.Collections;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.sonatype.nexus.proxy.registry.RepositoryRegistry;
-import org.sonatype.nexus.proxy.repository.Repository;
+import org.sonatype.nexus.proxy.events.NexusInitializedEvent;
+import org.sonatype.nexus.proxy.events.NexusStartedEvent;
+import org.sonatype.nexus.proxy.events.NexusStoppedEvent;
 
 /**
- * {@link RepositoryEventsNotifier} UTs.
+ * {@link NexusEventsEventInspector} UTs.
  *
  * @since 1.10.0
  */
-public class RepositoryEventsNotifierTest
+public class NexusEventsInspectorTest
 {
 
-    private RepositoryEventsNotifier underTest;
+    private NexusEventsEventInspector underTest;
 
-    private RepositoryEventsNotifier.Listener listener;
-
-    private Repository repository;
-
-    private RepositoryEventsNotifier.Notifier notifier;
+    private NexusIsActiveCondition nexusIsActiveCondition;
 
     @Before
     public void setUp()
     {
-        final RepositoryRegistry repositoryRegistry = mock( RepositoryRegistry.class );
-        when( repositoryRegistry.getRepositories() ).thenReturn( Collections.<Repository>emptyList() );
-        repository = mock( Repository.class );
-        notifier = mock( RepositoryEventsNotifier.Notifier.class );
-        listener = mock( RepositoryEventsNotifier.Listener.class );
-        underTest = new RepositoryEventsNotifier( repositoryRegistry );
-        underTest.addListener( listener );
+        nexusIsActiveCondition = mock( NexusIsActiveCondition.class );
+        underTest = new NexusEventsEventInspector( nexusIsActiveCondition );
     }
 
     /**
-     * run() called on notifier when requested.
+     * Condition is marked as Nexus has been started.
      */
     @Test
-    public void runCalledOnNotifier()
+    public void whenNexusStarted()
     {
-        underTest.notify( repository, notifier );
-        verify( notifier ).run( listener, repository );
+        underTest.inspect( new NexusStartedEvent( this ) );
+        verify( nexusIsActiveCondition ).acknowledgeNexusStarted();
     }
 
     /**
-     * When there are no listeners run() is not called.
+     * Condition is marked as Nexus has been stopped.
      */
     @Test
-    public void runNotCalledWhenNoListeners()
+    public void whenNexusStopped()
     {
-        underTest.removeListener( listener );
-        verifyNoMoreInteractions( notifier );
+        underTest.inspect( new NexusStoppedEvent( this ) );
+        verify( nexusIsActiveCondition ).acknowledgeNexusStopped();
+    }
+
+    /**
+     * No notifications for unsupported events.
+     */
+    @Test
+    public void notNotifiedOnUnneededEvents()
+    {
+        underTest.inspect( new NexusInitializedEvent( this ));
+        verifyNoMoreInteractions( nexusIsActiveCondition );
     }
 
 }

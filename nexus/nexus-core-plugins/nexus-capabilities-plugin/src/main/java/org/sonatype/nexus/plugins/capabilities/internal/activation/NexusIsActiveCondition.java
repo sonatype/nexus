@@ -16,88 +16,63 @@
  * Sonatype, Inc. Apache Maven is a trademark of the Apache Foundation. M2Eclipse is a trademark of the Eclipse Foundation.
  * All other trademarks are the property of their respective owners.
  */
-package org.sonatype.nexus.plugins.capabilities.api;
+package org.sonatype.nexus.plugins.capabilities.internal.activation;
 
-import java.util.Map;
+import javax.inject.Inject;
+import javax.inject.Named;
+import javax.inject.Singleton;
 
-import org.sonatype.nexus.logging.AbstractLoggingComponent;
+import org.sonatype.nexus.plugins.capabilities.api.activation.ActivationContext;
 import org.sonatype.nexus.plugins.capabilities.api.activation.Condition;
+import org.sonatype.nexus.plugins.capabilities.support.activation.AbstractCondition;
 
-public abstract class AbstractCapability
-    extends AbstractLoggingComponent
-    implements Capability
+/**
+ * Support class for conditions based on Nexus state.
+ *
+ * @since 1.10.0
+ */
+@Named
+@Singleton
+public class NexusIsActiveCondition
+    extends AbstractCondition
+    implements Condition
 {
 
-    private final String id;
-
-    protected AbstractCapability( final String id )
+    @Inject
+    NexusIsActiveCondition( final ActivationContext activationContext )
     {
-        assert id != null : "Capability id cannot be null";
+        super( activationContext, false );
+        bind();
+    }
 
-        this.id = id;
+    NexusIsActiveCondition acknowledgeNexusStarted()
+    {
+        setSatisfied( true );
+        return this;
+    }
+
+    NexusIsActiveCondition acknowledgeNexusStopped()
+    {
+        setSatisfied( false );
+        return this;
     }
 
     @Override
-    public String id()
-    {
-        return id;
-    }
-
-    @Override
-    public void create( final Map<String, String> properties )
+    protected void doBind()
     {
         // do nothing
     }
 
     @Override
-    public void load( final Map<String, String> properties )
+    protected void doRelease()
     {
         // do nothing
     }
 
     @Override
-    public void update( final Map<String, String> properties )
+    public String toString()
     {
-        // do nothing
+        return "Nexus is active";
     }
 
-    @Override
-    public void remove()
-    {
-        // do nothing
-    }
-
-    @Override
-    public void activate()
-    {
-        // do nothing
-    }
-
-    @Override
-    public void passivate()
-    {
-        // do nothing
-    }
-
-    /**
-     * Returns null, meaning that this capability is always active.
-     *
-     * @return null
-     */
-    @Override
-    public Condition activationCondition()
-    {
-        return null;
-    }
-
-    /**
-     * Returns null, meaning that this capability is always valid.
-     *
-     * @return null
-     */
-    @Override
-    public Condition validityCondition()
-    {
-        return null;
-    }
 }
