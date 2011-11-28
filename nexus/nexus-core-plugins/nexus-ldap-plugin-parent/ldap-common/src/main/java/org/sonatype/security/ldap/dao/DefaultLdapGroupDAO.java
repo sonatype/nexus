@@ -87,7 +87,7 @@ public class DefaultLdapGroupDAO
                 }
             }
     
-            if ( roleIds == null | roleIds.isEmpty() )
+            if ( roleIds == null || roleIds.isEmpty() )
             {
                 throw new NoLdapUserRolesFoundException( username );
             }
@@ -103,7 +103,7 @@ public class DefaultLdapGroupDAO
     public Set<String> getAllGroups( LdapContext context, LdapAuthConfiguration configuration )
         throws LdapDAOException
     {
-        Set<String> groups = new HashSet<String>();;
+        Set<String> groups = new HashSet<String>();
 
         if( isGroupsEnabled( configuration ) )
         {
@@ -263,12 +263,11 @@ public class DefaultLdapGroupDAO
         {
             SearchControls ctls = this.getBaseSearchControls( new String[] { groupIdAttribute }, configuration
                 .isGroupSubtree() );
-            Set<String> roles = this.getGroupIdsFromSearch(
+            
+            return this.getGroupIdsFromSearch(
                 context.search( groupBaseDn, filter, ctls ),
                 groupIdAttribute,
                 configuration );
-
-            return roles;
 
         }
         catch ( NamingException e )

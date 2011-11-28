@@ -21,6 +21,7 @@ package org.sonatype.security.ldap.realms;
 import java.util.HashSet;
 import java.util.Set;
 
+import javax.annotation.Nullable;
 import javax.naming.NamingException;
 
 import org.apache.shiro.authc.AuthenticationException;

@@ -91,7 +91,7 @@ public abstract class AbstractLdapSchemaTest
 
         try
         {
-            user = this.ldapManager.getUser( "intruder" );
+            this.ldapManager.getUser( "intruder" );
             fail( "Expected NoSuchUserException" );
         }
         catch ( NoSuchLdapUserException e )

@@ -90,7 +90,7 @@ public class DynamicGroupsTest
 
         try
         {
-            user = lum.getUser( "intruder", initialContext, configuration );
+            lum.getUser( "intruder", initialContext, configuration );
             fail();
         }
         catch ( NoSuchLdapUserException e )
@@ -141,7 +141,7 @@ public class DynamicGroupsTest
 
         try
         {
-            user = lum.getUser( "intruder", initialContext, configuration );
+            lum.getUser( "intruder", initialContext, configuration );
             fail();
         }
         catch ( NoSuchLdapUserException e )

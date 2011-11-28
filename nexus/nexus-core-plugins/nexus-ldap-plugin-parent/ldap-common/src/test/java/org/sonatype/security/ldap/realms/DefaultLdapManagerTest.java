@@ -34,7 +34,7 @@ public class DefaultLdapManagerTest
     private LdapManager getLdapManager()
         throws Exception
     {
-        return (LdapManager) this.lookup( LdapManager.class );
+        return this.lookup( LdapManager.class );
     }
 
     @Test

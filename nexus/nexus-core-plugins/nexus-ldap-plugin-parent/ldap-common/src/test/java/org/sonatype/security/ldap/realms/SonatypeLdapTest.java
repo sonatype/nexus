@@ -38,8 +38,6 @@ public class SonatypeLdapTest
 
     private Realm realm;
 
-    private PasswordEncoderManager passwordManager;
-
     @Override
     public void setUp()
         throws Exception
@@ -47,7 +45,7 @@ public class SonatypeLdapTest
         super.setUp();
 
         realm = this.lookup( Realm.class, "LdapAuthenticatingRealm" );
-        passwordManager = (PasswordEncoderManager) this.lookup( PasswordEncoderManager.class );
+        PasswordEncoderManager passwordManager = this.lookup( PasswordEncoderManager.class );
         passwordManager.setPreferredEncoding( "crypt" );
     }
 

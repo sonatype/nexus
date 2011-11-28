@@ -78,9 +78,7 @@ public class DefaultLdapConfiguration
 
     public CConnectionInfo readConnectionInfo()
     {
-        CConnectionInfo connInfo = getConfiguration().getConnectionInfo();
-
-        return connInfo;
+        return getConfiguration().getConnectionInfo();
     }
 
     public CUserAndGroupAuthConfiguration readUserAndGroupConfiguration()

@@ -77,7 +77,7 @@ public class LdapUserDAOTest
 
         try
         {
-            user = lum.getUser( "intruder", initialContext, configuration );
+            lum.getUser( "intruder", initialContext, configuration );
             fail();
         }
         catch ( NoSuchLdapUserException e )
@@ -87,10 +87,10 @@ public class LdapUserDAOTest
 
         configuration.setLdapFilter( "description=nexus" );
         // must succeed because cstamas has the attribute description set to nexus
-        user = lum.getUser( "cstamas", initialContext, configuration);
+        lum.getUser( "cstamas", initialContext, configuration);
         try {
             // must fail because of the ldapFilter that jvanzyl user don't have
-            user = lum.getUser( "jvanzyl", initialContext, configuration);
+            lum.getUser( "jvanzyl", initialContext, configuration);
             fail();
         }
         catch ( NoSuchLdapUserException e)
