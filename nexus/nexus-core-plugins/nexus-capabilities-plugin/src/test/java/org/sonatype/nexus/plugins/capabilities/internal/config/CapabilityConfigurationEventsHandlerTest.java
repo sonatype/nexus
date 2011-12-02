@@ -30,19 +30,15 @@ import org.mockito.Matchers;
 import org.sonatype.nexus.plugins.capabilities.api.Capability;
 import org.sonatype.nexus.plugins.capabilities.api.CapabilityReference;
 import org.sonatype.nexus.plugins.capabilities.api.CapabilityRegistry;
-import org.sonatype.nexus.plugins.capabilities.internal.config.events.CapabilityConfigurationAddEvent;
-import org.sonatype.nexus.plugins.capabilities.internal.config.events.CapabilityConfigurationLoadEvent;
-import org.sonatype.nexus.plugins.capabilities.internal.config.events.CapabilityConfigurationRemoveEvent;
-import org.sonatype.nexus.plugins.capabilities.internal.config.events.CapabilityConfigurationUpdateEvent;
 import org.sonatype.nexus.plugins.capabilities.internal.config.persistence.CCapability;
 import org.sonatype.nexus.plugins.capabilities.internal.config.persistence.CCapabilityProperty;
 
 /**
- * {@link CapabilityConfigurationEventInspector} UTs.
+ * {@link CapabilityConfigurationEventsHandler} UTs.
  *
  * @since 1.10.0
  */
-public class CapabilityConfigurationEventInspectorTest
+public class CapabilityConfigurationEventsHandlerTest
 {
 
     private static final boolean ENABLED = true;
@@ -163,8 +159,8 @@ public class CapabilityConfigurationEventInspectorTest
         cc.setTypeId( "test" );
         cc.setEnabled( enabled );
 
-        new CapabilityConfigurationEventInspector( capabilityRegistry ).inspect(
-            new CapabilityConfigurationAddEvent( cc )
+        new CapabilityConfigurationEventsHandler( capabilityRegistry ).handle(
+            new CapabilityConfigurationEvent.Added( cc )
         );
 
         return reference;
@@ -197,8 +193,8 @@ public class CapabilityConfigurationEventInspectorTest
         cc.setTypeId( "test" );
         cc.setEnabled( enabled );
 
-        new CapabilityConfigurationEventInspector( capabilityRegistry ).inspect(
-            new CapabilityConfigurationLoadEvent( cc )
+        new CapabilityConfigurationEventsHandler( capabilityRegistry ).handle(
+            new CapabilityConfigurationEvent.Loaded( cc )
         );
 
         return reference;
@@ -237,8 +233,8 @@ public class CapabilityConfigurationEventInspectorTest
             newCapability.getProperties().add( ccp );
         }
 
-        new CapabilityConfigurationEventInspector( capabilityRegistry ).inspect(
-            new CapabilityConfigurationUpdateEvent( newCapability, oldCapability )
+        new CapabilityConfigurationEventsHandler( capabilityRegistry ).handle(
+            new CapabilityConfigurationEvent.Updated( newCapability, oldCapability )
         );
 
         return reference;
@@ -258,8 +254,8 @@ public class CapabilityConfigurationEventInspectorTest
         final CCapability cc = new CCapability();
         cc.setId( "test-cc" );
 
-        new CapabilityConfigurationEventInspector( capabilityRegistry ).inspect(
-            new CapabilityConfigurationRemoveEvent( cc )
+        new CapabilityConfigurationEventsHandler( capabilityRegistry ).handle(
+            new CapabilityConfigurationEvent.Removed( cc )
         );
 
         return reference;

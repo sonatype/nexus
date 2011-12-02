@@ -18,30 +18,52 @@
  */
 package org.sonatype.nexus.plugins.capabilities.internal.config;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
+import static com.google.common.base.Preconditions.checkNotNull;
 
-import org.junit.Test;
-import org.sonatype.nexus.plugins.capabilities.internal.config.CapabilityConfiguration;
-import org.sonatype.nexus.plugins.capabilities.internal.config.NexusInitializedEventInspector;
+import javax.inject.Inject;
+import javax.inject.Named;
+import javax.inject.Singleton;
+
+import org.sonatype.nexus.eventbus.NexusEventBus;
 import org.sonatype.nexus.proxy.events.NexusInitializedEvent;
+import com.google.common.eventbus.Subscribe;
 
 /**
- * {@link NexusInitializedEvent} UTs.
+ * Loads configuration when Nexus is initialized.
  *
  * @since 1.10.0
  */
-public class NexusInitializedEventInspectorTest
+@Named
+@Singleton
+public class CapabilityConfigurationBooter
+    implements NexusEventBus.LoadOnStart
 {
 
-    @Test
-    public void capabilitiesAreLoadedWhenNexusIsInitialized()
-        throws Exception
-    {
-        final CapabilityConfiguration capabilityConfiguration = mock( CapabilityConfiguration.class );
-        new NexusInitializedEventInspector( capabilityConfiguration ).inspect( new NexusInitializedEvent( this ) );
+    private final CapabilityConfiguration capabilitiesConfiguration;
 
-        verify( capabilityConfiguration ).load();
+    @Inject
+    public CapabilityConfigurationBooter( final CapabilityConfiguration capabilitiesConfiguration )
+    {
+        this.capabilitiesConfiguration = checkNotNull( capabilitiesConfiguration );
+    }
+
+    @Subscribe
+    public void handle( final NexusInitializedEvent event )
+    {
+        try
+        {
+            capabilitiesConfiguration.load();
+        }
+        catch ( final Exception e )
+        {
+            throw new RuntimeException( "Could not load configurations", e );
+        }
+    }
+
+    @Override
+    public String toString()
+    {
+        return "Load capabilities from persistence store when Nexus is initialized";
     }
 
 }

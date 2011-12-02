@@ -20,15 +20,12 @@ package org.sonatype.nexus.plugins.capabilities.internal.config;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.junit.Test;
 
+import org.junit.Test;
 import org.sonatype.nexus.AbstractNexusTestCase;
-import org.sonatype.nexus.plugins.capabilities.internal.config.CapabilityConfiguration;
-import org.sonatype.nexus.plugins.capabilities.internal.config.events.CapabilityConfigurationLoadEvent;
+import org.sonatype.nexus.eventbus.NexusEventBus;
 import org.sonatype.nexus.plugins.capabilities.internal.config.persistence.CCapability;
-import org.sonatype.plexus.appevents.ApplicationEventMulticaster;
-import org.sonatype.plexus.appevents.Event;
-import org.sonatype.plexus.appevents.EventListener;
+import com.google.common.eventbus.Subscribe;
 
 public class DefaultCapabilityConfigurationTest
     extends AbstractNexusTestCase
@@ -71,7 +68,6 @@ public class DefaultCapabilityConfigurationTest
         assertEquals( read.getTypeId(), cap.getTypeId() );
         assertEquals( read.getProperties().size(), cap.getProperties().size() );
 
-
         // update
         cap.setNotes( "NewCapDescription" );
         configuration.update( cap );
@@ -81,16 +77,14 @@ public class DefaultCapabilityConfigurationTest
         assertEquals( read.getNotes(), cap.getNotes() );
 
         // load eventing
-        final List<CapabilityConfigurationLoadEvent> events = new ArrayList<CapabilityConfigurationLoadEvent>();
-        ApplicationEventMulticaster applicationEventMulticaster = lookup( ApplicationEventMulticaster.class );
-        applicationEventMulticaster.addEventListener( new EventListener()
+        final List<CapabilityConfigurationEvent.Loaded> events = new ArrayList<CapabilityConfigurationEvent.Loaded>();
+        NexusEventBus eventBus = lookup( NexusEventBus.class );
+        eventBus.register( new Object()
         {
-            public void onEvent( Event<?> evt )
+            @Subscribe
+            public void handle( CapabilityConfigurationEvent.Loaded evt )
             {
-                if ( evt instanceof CapabilityConfigurationLoadEvent )
-                {
-                    events.add( (CapabilityConfigurationLoadEvent) evt );
-                }
+                events.add( evt );
             }
         } );
         configuration.load();
