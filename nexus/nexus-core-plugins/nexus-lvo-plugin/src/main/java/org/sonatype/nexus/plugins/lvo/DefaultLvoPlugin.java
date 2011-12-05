@@ -21,10 +21,13 @@ package org.sonatype.nexus.plugins.lvo;
 import java.io.IOException;
 import java.util.Map;
 
-import org.apache.maven.index.ArtifactInfo;
 import org.codehaus.plexus.component.annotations.Component;
 import org.codehaus.plexus.component.annotations.Requirement;
 import org.codehaus.plexus.util.StringUtils;
+import org.sonatype.aether.util.version.GenericVersionScheme;
+import org.sonatype.aether.version.InvalidVersionSpecificationException;
+import org.sonatype.aether.version.Version;
+import org.sonatype.aether.version.VersionScheme;
 import org.sonatype.nexus.logging.AbstractLoggingComponent;
 import org.sonatype.nexus.plugins.lvo.config.LvoPluginConfiguration;
 import org.sonatype.nexus.plugins.lvo.config.model.CLvoKey;
@@ -35,6 +38,8 @@ public class DefaultLvoPlugin
     extends AbstractLoggingComponent
     implements LvoPlugin
 {
+    private final VersionScheme versionScheme = new GenericVersionScheme();
+    
     @Requirement
     private LvoPluginConfiguration lvoPluginConfiguration;
 
@@ -96,21 +101,21 @@ public class DefaultLvoPlugin
 
             // compare the two versions
 
-            ArtifactInfo ca = new ArtifactInfo();
-            ca.groupId = "dummy";
-            ca.artifactId = "dummy";
-            ca.version = "[" + v + "]";
-
-            ArtifactInfo la = new ArtifactInfo();
-            la.groupId = "dummy";
-            la.artifactId = "dummy";
-            la.version = "[" + lv.getVersion() + "]";
-
-            if ( ArtifactInfo.VERSION_COMPARATOR.compare( la, ca ) >= 0 )
+            try
             {
-                lv.getResponse().clear();
+                Version versionCurrent = versionScheme.parseVersion( v );
+                Version versionReceived = versionScheme.parseVersion( lv.getVersion() );
 
-                lv.setSuccessful( true );
+                if ( versionReceived.compareTo( versionCurrent ) >= 0 )
+                {
+                    lv.getResponse().clear();
+
+                    lv.setSuccessful( true );
+                }
+            }
+            catch ( InvalidVersionSpecificationException e )
+            {
+                // hum?
             }
 
             return lv;
