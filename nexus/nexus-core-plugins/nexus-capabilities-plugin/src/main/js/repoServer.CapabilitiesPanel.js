@@ -96,6 +96,8 @@ Sonatype.repoServer.CapabilitiesPanel = function(config) {
         name : 'typeName'
       }, {
         name : 'typeId'
+      }, {
+        name : 'stateDescription'
       }]);
 
   // Datastore that will hold both repos and repogroups
@@ -336,6 +338,7 @@ Sonatype.repoServer.CapabilitiesPanel = function(config) {
               header : 'Active',
               dataIndex : 'active',
               width : 50,
+              renderer:this.renderActive.createDelegate(this),
               id : 'capabilities-active-col'
             }, {
               header : 'Type',
@@ -655,6 +658,8 @@ Ext.extend(Sonatype.repoServer.CapabilitiesPanel, Ext.Panel, {
           }
 
           store.remove(store.getById(resourceId));
+
+          this.capabilitiesDataStore.reload();
         }
         else
         {
@@ -682,7 +687,8 @@ Ext.extend(Sonatype.repoServer.CapabilitiesPanel, Ext.Panel, {
               active : receivedData.active,
               resourceURI : receivedData.resourceURI,
               typeId : receivedData.typeId,
-              typeName : receivedData.typeName
+              typeName : receivedData.typeName,
+              stateDescription : receivedData.stateDescription
             };
 
             var newRec = new this.capabilityRecordConstructor(dataObj, action.options.fpanel.id);
@@ -726,6 +732,7 @@ Ext.extend(Sonatype.repoServer.CapabilitiesPanel, Ext.Panel, {
             var sortState = this.capabilitiesDataStore.getSortState();
             this.capabilitiesDataStore.sort(sortState.field, sortState.direction);
           }
+          this.capabilitiesDataStore.reload();
         }
       },
 
@@ -737,6 +744,7 @@ Ext.extend(Sonatype.repoServer.CapabilitiesPanel, Ext.Panel, {
         rec.set('enabled', receivedData.enabled);
         rec.set('active', receivedData.active);
         rec.set('typeName', receivedData.typeName);
+        rec.set('stateDescription', receivedData.stateDescription);
         rec.commit();
         rec.endEdit();
       },
@@ -938,5 +946,14 @@ Ext.extend(Sonatype.repoServer.CapabilitiesPanel, Ext.Panel, {
       importCapabilityPropertiesHelper : function(val, srcObj, fpanel) {
         FormFieldImporter(srcObj, fpanel, 'capabilityProperties_');
         return val;
+      },
+
+      renderActive:function(val, cell, record) {
+
+        // get data
+        var data = record.data;
+
+        // return markup
+        return '<div qtip="' + data.stateDescription +'">' + val + '</div>';
       }
     });

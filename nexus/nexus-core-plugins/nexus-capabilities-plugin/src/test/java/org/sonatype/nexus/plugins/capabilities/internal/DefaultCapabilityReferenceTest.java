@@ -22,6 +22,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.isA;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -38,6 +39,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Matchers;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 import org.sonatype.nexus.eventbus.NexusEventBus;
 import org.sonatype.nexus.plugins.capabilities.api.Capability;
 import org.sonatype.nexus.plugins.capabilities.api.CapabilityEvent;
@@ -57,6 +60,8 @@ import org.sonatype.nexus.plugins.capabilities.support.activation.NexusCondition
 public class DefaultCapabilityReferenceTest
 {
 
+    static final Map<String, String> NULL_PROPERTIES = null;
+
     private Capability capability;
 
     private DefaultCapabilityReference underTest;
@@ -65,7 +70,7 @@ public class DefaultCapabilityReferenceTest
 
     private Condition activationCondition;
 
-    private CapabilityConfiguration configuration;
+    private CapabilityConfiguration configurations;
 
     private Condition validityCondition;
 
@@ -73,15 +78,21 @@ public class DefaultCapabilityReferenceTest
 
     private ArgumentCaptor<Object> ebc;
 
+    private ActivationConditionHandlerFactory achf;
+
+    private ValidityConditionHandlerFactory vchf;
+
+    private NexusIsActiveCondition nexusIsActiveCondition;
+
     @Before
     public void setUp()
     {
         eventBus = mock( NexusEventBus.class );
-        configuration = mock( CapabilityConfiguration.class );
+        configurations = mock( CapabilityConfiguration.class );
 
         final Conditions conditions = mock( Conditions.class );
         final NexusConditions nexusConditions = mock( NexusConditions.class );
-        final NexusIsActiveCondition nexusIsActiveCondition = mock( NexusIsActiveCondition.class );
+        nexusIsActiveCondition = mock( NexusIsActiveCondition.class );
 
         when( nexusIsActiveCondition.isSatisfied() ).thenReturn( true );
         when( nexusConditions.active() ).thenReturn( nexusIsActiveCondition );
@@ -98,9 +109,37 @@ public class DefaultCapabilityReferenceTest
         when( validityCondition.isSatisfied() ).thenReturn( true );
         when( capability.validityCondition() ).thenReturn( validityCondition );
 
-        underTest = new DefaultCapabilityReference(
-            eventBus, configuration, conditions, capability
+        achf = mock( ActivationConditionHandlerFactory.class );
+        when( achf.create( any( DefaultCapabilityReference.class ) ) ).thenAnswer(
+            new Answer<ActivationConditionHandler>()
+            {
+                @Override
+                public ActivationConditionHandler answer( final InvocationOnMock invocation )
+                    throws Throwable
+                {
+                    return new ActivationConditionHandler(
+                        eventBus, conditions, (CapabilityReference) invocation.getArguments()[0]
+                    );
+                }
+            }
         );
+
+        vchf = mock( ValidityConditionHandlerFactory.class );
+        when( vchf.create( any( DefaultCapabilityReference.class ) ) ).thenAnswer(
+            new Answer<ValidityConditionHandler>()
+            {
+                @Override
+                public ValidityConditionHandler answer( final InvocationOnMock invocation )
+                    throws Throwable
+                {
+                    return new ValidityConditionHandler(
+                        eventBus, configurations, conditions, (CapabilityReference) invocation.getArguments()[0]
+                    );
+                }
+            }
+        );
+
+        underTest = new DefaultCapabilityReference( eventBus, achf, vchf, capability );
         underTest.create( Collections.<String, String>emptyMap() );
 
         re = ArgumentCaptor.forClass( CapabilityEvent.class );
@@ -117,7 +156,7 @@ public class DefaultCapabilityReferenceTest
         underTest.enable();
         assertThat( underTest.isEnabled(), is( true ) );
         verify( activationCondition ).bind();
-        verify( eventBus ).register( isA( DefaultCapabilityReference.ActivationListener.class ) );
+        verify( eventBus ).register( isA( ActivationConditionHandler.class ) );
     }
 
     /**
@@ -133,16 +172,20 @@ public class DefaultCapabilityReferenceTest
         assertThat( underTest.isEnabled(), is( false ) );
 
         verify( activationCondition ).release();
-        verify( eventBus ).unregister( isA( DefaultCapabilityReference.ActivationListener.class ) );
+        verify( eventBus ).unregister( isA( ActivationConditionHandler.class ) );
     }
 
     /**
      * Capability is activated and active flag is set on activate.
+     *
+     * @throws Exception re-thrown
      */
     @Test
     public void activateWhenNotActive()
+        throws Exception
     {
         underTest.enable();
+        underTest.activate();
         assertThat( underTest.isActive(), is( true ) );
         verify( capability ).activate();
         verify( eventBus ).post( re.capture() );
@@ -152,11 +195,15 @@ public class DefaultCapabilityReferenceTest
 
     /**
      * Capability is not activated activated again once it has been activated.
+     *
+     * @throws Exception re-thrown
      */
     @Test
     public void activateWhenActive()
+        throws Exception
     {
         underTest.enable();
+        underTest.activate();
         assertThat( underTest.isActive(), is( true ) );
         verify( capability ).activate();
 
@@ -167,23 +214,33 @@ public class DefaultCapabilityReferenceTest
 
     /**
      * Capability is not passivated when is not active.
+     *
+     * @throws Exception re-thrown
      */
     @Test
     public void passivateWhenNotActive()
+        throws Exception
     {
         assertThat( underTest.isActive(), is( false ) );
-        doThrow( new AssertionError( "Passivate not expected to be called" ) ).when( capability ).passivate();
+        underTest.enable();
         underTest.passivate();
         assertThat( underTest.isActive(), is( false ) );
+
+        doThrow( new AssertionError( "Passivate not expected to be called" ) ).when( capability ).passivate();
+        underTest.passivate();
     }
 
     /**
      * Capability is passivated when is active.
+     *
+     * @throws Exception re-thrown
      */
     @Test
     public void passivateWhenActive()
+        throws Exception
     {
         underTest.enable();
+        underTest.activate();
         assertThat( underTest.isActive(), is( true ) );
 
         underTest.passivate();
@@ -198,60 +255,141 @@ public class DefaultCapabilityReferenceTest
     }
 
     /**
-     * Capability is not passivated when activation fails.
+     * When activation fails, active state is false and capability remains enabled.
+     * Calling passivate will do nothing.
+     *
+     * @throws Exception re-thrown
      */
     @Test
     public void activateProblem()
+        throws Exception
     {
         doThrow( new UnsupportedOperationException( "Expected" ) ).when( capability ).activate();
 
         underTest.enable();
+        assertThat( underTest.isEnabled(), is( true ) );
+        assertThat( underTest.isActive(), is( false ) );
+
+        underTest.activate();
+        assertThat( underTest.isEnabled(), is( true ) );
         assertThat( underTest.isActive(), is( false ) );
         verify( capability ).activate();
+
         doThrow( new AssertionError( "Passivate not expected to be called" ) ).when( capability ).passivate();
         underTest.passivate();
     }
 
     /**
-     * Active flag is set when passivation problem.
+     * When passivation fails, active state is false and capability remains enabled.
+     *
+     * @throws Exception re-thrown
      */
     @Test
     public void passivateProblem()
+        throws Exception
     {
         doThrow( new UnsupportedOperationException( "Expected" ) ).when( capability ).passivate();
 
         underTest.enable();
+        underTest.activate();
+        assertThat( underTest.isEnabled(), is( true ) );
         assertThat( underTest.isActive(), is( true ) );
+
         underTest.passivate();
         verify( capability ).passivate();
+        assertThat( underTest.isEnabled(), is( true ) );
         assertThat( underTest.isActive(), is( false ) );
     }
 
     /**
+     * When update fails and capability is not active, no exception is propagated and passivate is not called.
+     *
+     * @throws Exception re-thrown
+     */
+    @Test
+    public void updateProblemWhenNotActive()
+        throws Exception
+
+    {
+        final HashMap<String, String> properties = new HashMap<String, String>();
+        properties.put( "p", "p" );
+        final HashMap<String, String> previousProperties = new HashMap<String, String>();
+        doThrow( new UnsupportedOperationException( "Expected" ) ).when( capability ).update( properties );
+        doThrow( new AssertionError( "Passivate not expected to be called" ) ).when( capability ).passivate();
+
+        underTest.enable();
+        assertThat( underTest.isEnabled(), is( true ) );
+        assertThat( underTest.isActive(), is( false ) );
+
+        underTest.update( properties, previousProperties );
+        verify( capability ).update( properties );
+        assertThat( underTest.isEnabled(), is( true ) );
+        assertThat( underTest.isActive(), is( false ) );
+    }
+
+    /**
+     * When update fails and capability is active, no exception is propagated and capability is passivated.
+     *
+     * @throws Exception re-thrown
+     */
+    @Test
+    public void updateProblemWhenActive()
+        throws Exception
+    {
+        final HashMap<String, String> properties = new HashMap<String, String>();
+        properties.put( "p", "p" );
+        final HashMap<String, String> previousProperties = new HashMap<String, String>();
+        doThrow( new UnsupportedOperationException( "Expected" ) ).when( capability ).update( properties );
+
+        underTest.enable();
+        underTest.activate();
+        assertThat( underTest.isEnabled(), is( true ) );
+        assertThat( underTest.isActive(), is( true ) );
+
+        underTest.update( properties, previousProperties );
+        verify( capability ).update( properties );
+        assertThat( underTest.isEnabled(), is( true ) );
+        assertThat( underTest.isActive(), is( false ) );
+        verify( capability ).passivate();
+    }
+
+    /**
      * Calling create forwards to capability (no need to call create as it is done in setup).
+     *
+     * @throws Exception re-thrown
      */
     @Test
     public void createIsForwardedToCapability()
+
+        throws Exception
     {
         verify( capability ).create( Matchers.<Map<String, String>>any() );
     }
 
     /**
      * Calling load forwards to capability.
+     *
+     * @throws Exception re-thrown
      */
     @Test
     public void loadIsForwardedToCapability()
+        throws Exception
     {
+        underTest = new DefaultCapabilityReference( eventBus, achf, vchf, capability );
         final HashMap<String, String> properties = new HashMap<String, String>();
         underTest.load( properties );
+
         verify( capability ).load( properties );
     }
 
     /**
      * Calling update forwards to capability if properties are different.
+     *
+     * @throws Exception re-thrown
      */
     @Test
     public void updateIsForwardedToCapability()
+        throws Exception
     {
         final HashMap<String, String> properties = new HashMap<String, String>();
         properties.put( "p", "p" );
@@ -268,9 +406,12 @@ public class DefaultCapabilityReferenceTest
 
     /**
      * Calling update does not forwards to capability if properties are same.
+     *
+     * @throws Exception re-thrown
      */
     @Test
     public void updateIsNotForwardedToCapabilityIfSameProperties()
+        throws Exception
     {
         final HashMap<String, String> properties = new HashMap<String, String>();
         final HashMap<String, String> previousProperties = new HashMap<String, String>();
@@ -282,20 +423,23 @@ public class DefaultCapabilityReferenceTest
 
     /**
      * Calling remove forwards to capability and handlers are removed.
+     *
+     * @throws Exception re-thrown
      */
     @Test
     public void removeIsForwardedToCapability()
+        throws Exception
     {
         underTest.enable();
         underTest.remove();
         verify( capability ).remove();
-        verify( eventBus, times( 3 ) ).unregister( ebc.capture() );
+        verify( eventBus, times( 2 ) ).unregister( ebc.capture() );
     }
 
     @Test
     public void samePropertiesWhenBothNull()
     {
-        assertThat( sameProperties( null, null ), is( true ) );
+        assertThat( sameProperties( NULL_PROPERTIES, NULL_PROPERTIES ), is( true ) );
     }
 
     @Test
@@ -303,7 +447,7 @@ public class DefaultCapabilityReferenceTest
     {
         final HashMap<String, String> p2 = new HashMap<String, String>();
         p2.put( "p2", "p2" );
-        assertThat( sameProperties( null, p2 ), is( false ) );
+        assertThat( sameProperties( NULL_PROPERTIES, p2 ), is( false ) );
     }
 
     @Test
@@ -311,7 +455,7 @@ public class DefaultCapabilityReferenceTest
     {
         final HashMap<String, String> p1 = new HashMap<String, String>();
         p1.put( "p1", "p1" );
-        assertThat( sameProperties( p1, null ), is( false ) );
+        assertThat( sameProperties( p1, NULL_PROPERTIES ), is( false ) );
     }
 
     @Test
@@ -362,13 +506,8 @@ public class DefaultCapabilityReferenceTest
     @Test
     public void listensToNexusIsActiveAndValidityConditions()
     {
-        verify( eventBus, times( 2 ) ).register( ebc.capture() );
-        assertThat( ebc.getAllValues().get( 0 ), is( instanceOf(
-            DefaultCapabilityReference.NexusActiveListener.class ) )
-        );
-        assertThat( ebc.getAllValues().get( 1 ), is( instanceOf(
-            DefaultCapabilityReference.ValidityListener.class ) )
-        );
+        verify( eventBus ).register( ebc.capture() );
+        assertThat( ebc.getValue(), is( instanceOf( ValidityConditionHandler.class ) ) );
     }
 
     /**
@@ -380,17 +519,34 @@ public class DefaultCapabilityReferenceTest
     public void automaticallyRemoveWhenValidityConditionIsUnsatisfied()
         throws Exception
     {
+        verify( eventBus ).register( ebc.capture() );
+        assertThat( ebc.getValue(), is( instanceOf( ValidityConditionHandler.class ) ) );
+
+        ( (ValidityConditionHandler) ebc.getValue() ).handle( new ConditionEvent.Unsatisfied( validityCondition ) );
+
+        verify( configurations ).remove( capability.id() );
+    }
+
+    /**
+     * When Nexus is shutdown capability is passivated.
+     *
+     * @throws Exception re-thrown
+     */
+    @Test
+    public void passivateWhenNexusIsShutdown()
+        throws Exception
+    {
+        underTest.enable();
+        underTest.activate();
         verify( eventBus, times( 2 ) ).register( ebc.capture() );
-        assertThat( ebc.getAllValues().get( 0 ), is( instanceOf(
-            DefaultCapabilityReference.NexusActiveListener.class ) )
+        assertThat( ebc.getAllValues().get( 0 ), is( instanceOf( ValidityConditionHandler.class ) ) );
+        assertThat( ebc.getAllValues().get( 1 ), is( instanceOf( ActivationConditionHandler.class ) ) );
+
+        ( (ActivationConditionHandler) ebc.getAllValues().get( 1 ) ).handle(
+            new ConditionEvent.Unsatisfied( nexusIsActiveCondition )
         );
-        assertThat( ebc.getAllValues().get( 1 ), is( instanceOf(
-            DefaultCapabilityReference.ValidityListener.class ) )
-        );
-        ( (DefaultCapabilityReference.ValidityListener) ebc.getAllValues().get( 1 ) ).handle(
-            new ConditionEvent.Unsatisfied( validityCondition )
-        );
-        verify( configuration ).remove( capability.id() );
+
+        verify( capability ).passivate();
     }
 
 }

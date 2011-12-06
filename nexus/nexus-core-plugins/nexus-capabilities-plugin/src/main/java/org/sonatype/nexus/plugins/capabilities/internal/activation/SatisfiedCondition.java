@@ -18,75 +18,60 @@
  */
 package org.sonatype.nexus.plugins.capabilities.internal.activation;
 
-import javax.inject.Inject;
-import javax.inject.Named;
-import javax.inject.Singleton;
-
-import org.sonatype.nexus.eventbus.NexusEventBus;
 import org.sonatype.nexus.plugins.capabilities.api.activation.Condition;
-import org.sonatype.nexus.plugins.capabilities.support.activation.AbstractCondition;
-import org.sonatype.nexus.proxy.events.NexusStartedEvent;
-import org.sonatype.nexus.proxy.events.NexusStoppedEvent;
-import com.google.common.eventbus.Subscribe;
 
 /**
- * A condition that is satisfied when nexus is active.
+ * A condition that is always satisfied.
  *
  * @since 1.10.0
  */
-@Named
-@Singleton
-public class NexusIsActiveCondition
-    extends AbstractCondition
-    implements Condition, NexusEventBus.LoadOnStart
+public class SatisfiedCondition
+    implements Condition
 {
 
-    @Inject
-    NexusIsActiveCondition( final NexusEventBus eventBus )
-    {
-        super( eventBus, false );
-        bind();
-    }
+    private final String reason;
 
-    @Subscribe
-    public void handle( final NexusStartedEvent event )
+    public SatisfiedCondition( final String reason )
     {
-        setSatisfied( true );
-    }
-
-    @Subscribe
-    public void handle( final NexusStoppedEvent event )
-    {
-        setSatisfied( false );
+        this.reason = reason;
     }
 
     @Override
-    protected void doBind()
+    public boolean isSatisfied()
     {
-        getEventBus().register( this );
+        return true;
     }
 
     @Override
-    protected void doRelease()
+    public SatisfiedCondition bind()
     {
-        getEventBus().unregister( this );
+        // do nothing
+        return this;
+    }
+
+    @Override
+    public SatisfiedCondition release()
+    {
+        // do nothing
+        return this;
     }
 
     @Override
     public String toString()
     {
-        return "Nexus is active";
+        return reason;
     }
 
     @Override
     public String explainSatisfied()
     {
-        return "Nexus is active";
+        return reason;
     }
 
     @Override
     public String explainUnsatisfied()
     {
-        return "Nexus is not active";
+        return "Not " + reason;
     }
+
 }

@@ -19,7 +19,6 @@
 package org.sonatype.nexus.plugins.capabilities.support.activation;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Preconditions.checkState;
 
 import org.sonatype.nexus.eventbus.NexusEventBus;
 import org.sonatype.nexus.logging.AbstractLoggingComponent;
@@ -62,7 +61,6 @@ public abstract class AbstractCondition
     @Override
     public boolean isSatisfied()
     {
-        checkState( active, "Condition has already been released or was not bounded" );
         return satisfied;
     }
 
@@ -88,6 +86,18 @@ public abstract class AbstractCondition
         return this;
     }
 
+    @Override
+    public String explainSatisfied()
+    {
+        return this + " is satisfied";
+    }
+
+    @Override
+    public String explainUnsatisfied()
+    {
+        return this + " is not satisfied";
+    }
+
     /**
      * Template method to be implemented by subclasses for doing specific binding.
      */
@@ -99,23 +109,25 @@ public abstract class AbstractCondition
     protected abstract void doRelease();
 
     /**
-     * Sets teh satisfied status and notify activation context about thsi condition being satisfied/unsatisfied.
+     * Sets the satisfied status and if active, notify about this condition being satisfied/unsatisfied.
      *
      * @param satisfied true, if condition is satisfied
      */
     protected void setSatisfied( final boolean satisfied )
     {
-        checkState( active, "Condition has already been released or was not bounded" );
         if ( this.satisfied != satisfied )
         {
             this.satisfied = satisfied;
-            if ( this.satisfied )
+            if ( active )
             {
-                eventBus.post( new ConditionEvent.Satisfied( this ) );
-            }
-            else
-            {
-                eventBus.post( new ConditionEvent.Unsatisfied( this ) );
+                if ( this.satisfied )
+                {
+                    eventBus.post( new ConditionEvent.Satisfied( this ) );
+                }
+                else
+                {
+                    eventBus.post( new ConditionEvent.Unsatisfied( this ) );
+                }
             }
         }
     }

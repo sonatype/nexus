@@ -28,12 +28,6 @@ import org.sonatype.nexus.logging.AbstractLoggingComponent;
 import org.sonatype.nexus.plugins.capabilities.api.Capability;
 import org.sonatype.nexus.plugins.capabilities.api.CapabilityEvent;
 import org.sonatype.nexus.plugins.capabilities.api.CapabilityReference;
-import org.sonatype.nexus.plugins.capabilities.api.activation.Condition;
-import org.sonatype.nexus.plugins.capabilities.api.activation.ConditionEvent;
-import org.sonatype.nexus.plugins.capabilities.internal.config.CapabilityConfiguration;
-import org.sonatype.nexus.plugins.capabilities.support.activation.Conditions;
-import org.sonatype.nexus.proxy.IllegalOperationException;
-import com.google.common.eventbus.Subscribe;
 
 /**
  * Default {@link CapabilityReference} implementation.
@@ -49,46 +43,28 @@ class DefaultCapabilityReference
 
     private final NexusEventBus eventBus;
 
-    private final CapabilityConfiguration configuration;
+    private final ActivationConditionHandler activationHandler;
 
-    private final Conditions conditions;
+    private final ValidityConditionHandler validityHandler;
 
     private final ReentrantReadWriteLock stateLock;
 
-    /**
-     * A reference is valid until is removed. Once removed all calls will throw an {@link IllegalOperationException}.
-     */
-    private boolean valid;
-
-    private boolean active;
-
-    private boolean enabled;
-
-    private Condition activateCondition;
-
-    private ActivationListener activationListener;
-
-    private Condition validityCondition;
-
-    private ValidityListener validityListener;
-
-    private NexusActiveListener nexusActiveListener;
+    private State state;
 
     DefaultCapabilityReference( final NexusEventBus eventBus,
-                                final CapabilityConfiguration configuration,
-                                final Conditions conditions,
+                                final ActivationConditionHandlerFactory activationListenerFactory,
+                                final ValidityConditionHandlerFactory validityConditionHandlerFactory,
                                 final Capability capability )
     {
         this.eventBus = checkNotNull( eventBus );
-        this.configuration = checkNotNull( configuration );
-        this.conditions = checkNotNull( conditions );
         this.capability = checkNotNull( capability );
 
-        active = false;
-        enabled = false;
-        valid = true;
-
         stateLock = new ReentrantReadWriteLock();
+
+        activationHandler = checkNotNull( activationListenerFactory ).create( this );
+        validityHandler = checkNotNull( validityConditionHandlerFactory ).create( this );
+
+        state = new NewState();
     }
 
     @Override
@@ -103,9 +79,7 @@ class DefaultCapabilityReference
         try
         {
             stateLock.readLock().lock();
-            checkValid();
-
-            return enabled;
+            return state.isEnabled();
         }
         finally
         {
@@ -119,21 +93,7 @@ class DefaultCapabilityReference
         try
         {
             stateLock.writeLock().lock();
-            checkValid();
-
-            if ( !isEnabled() )
-            {
-                getLogger().debug( "Enabling capability {} ({})", capability, capability.id() );
-                enabled = true;
-                activateCondition = capability().activationCondition();
-                if ( activateCondition != null )
-                {
-                    activateCondition.bind();
-                    activationListener = new ActivationListener();
-                    eventBus.register( activationListener );
-                }
-                activate();
-            }
+            state.enable();
         }
         finally
         {
@@ -147,24 +107,7 @@ class DefaultCapabilityReference
         try
         {
             stateLock.writeLock().lock();
-            checkValid();
-
-            if ( isEnabled() )
-            {
-                getLogger().debug( "Disabling capability {} ({})", capability, capability.id() );
-                if ( activationListener != null )
-                {
-                    eventBus.unregister( activationListener );
-                    activationListener = null;
-                }
-                if ( activateCondition != null )
-                {
-                    activateCondition.release();
-                    activateCondition = null;
-                }
-                passivate();
-                enabled = false;
-            }
+            state.disable();
         }
         finally
         {
@@ -178,9 +121,7 @@ class DefaultCapabilityReference
         try
         {
             stateLock.readLock().lock();
-            checkValid();
-
-            return active;
+            return state.isActive();
         }
         finally
         {
@@ -194,32 +135,7 @@ class DefaultCapabilityReference
         try
         {
             stateLock.writeLock().lock();
-            checkValid();
-
-            if ( isEnabled() && !isActive() )
-            {
-                if ( activateCondition == null || activateCondition.isSatisfied() )
-                {
-                    getLogger().debug( "Activating capability {} ({})", capability, capability.id() );
-                    try
-                    {
-                        capability().activate();
-                        getLogger().debug( "Activated capability {} ({})", capability, capability.id() );
-                        active = true;
-                        eventBus.post( new CapabilityEvent.AfterActivated( this ) );
-                    }
-                    catch ( Exception e )
-                    {
-                        getLogger().error(
-                            "Could not activate capability {} ({})", new Object[]{ capability, capability.id(), e }
-                        );
-                    }
-                }
-                else
-                {
-                    getLogger().debug( "Capability {} ({}) is not yet activatable", capability, capability.id() );
-                }
-            }
+            state.activate();
         }
         finally
         {
@@ -233,25 +149,7 @@ class DefaultCapabilityReference
         try
         {
             stateLock.writeLock().lock();
-            checkValid();
-
-            if ( isEnabled() && isActive() )
-            {
-                getLogger().debug( "Passivating capability {} ({})", capability, capability.id() );
-                try
-                {
-                    active = false;
-                    eventBus.post( new CapabilityEvent.BeforePassivated( this ) );
-                    capability().passivate();
-                    getLogger().debug( "Passivated capability {} ({})", capability, capability.id() );
-                }
-                catch ( Exception e )
-                {
-                    getLogger().error(
-                        "Could not passivate capability {} ({})", new Object[]{ capability, capability.id(), e }
-                    );
-                }
-            }
+            state.passivate();
         }
         finally
         {
@@ -265,13 +163,7 @@ class DefaultCapabilityReference
         try
         {
             stateLock.writeLock().lock();
-            checkValid();
-
-            capability().create( properties );
-            if ( nexusActiveListener == null )
-            {
-                nexusActiveListener = new NexusActiveListener().bind();
-            }
+            state.create( properties );
         }
         finally
         {
@@ -285,13 +177,7 @@ class DefaultCapabilityReference
         try
         {
             stateLock.writeLock().lock();
-            checkValid();
-
-            capability().load( properties );
-            if ( nexusActiveListener == null )
-            {
-                nexusActiveListener = new NexusActiveListener().bind();
-            }
+            state.load( properties );
         }
         finally
         {
@@ -307,11 +193,7 @@ class DefaultCapabilityReference
             try
             {
                 stateLock.writeLock().lock();
-                checkValid();
-
-                eventBus.post( new CapabilityEvent.BeforeUpdate( this ) );
-                capability().update( properties );
-                eventBus.post( new CapabilityEvent.AfterUpdate( this ) );
+                state.update( properties, previousProperties );
             }
             finally
             {
@@ -326,42 +208,32 @@ class DefaultCapabilityReference
         try
         {
             stateLock.writeLock().lock();
-            checkValid();
-
-            if ( activateCondition != null )
-            {
-                activateCondition.release();
-            }
-            disable();
-            if ( nexusActiveListener != null )
-            {
-                nexusActiveListener.release();
-            }
-            capability().remove();
+            state.remove();
         }
         finally
         {
-            valid = false;
             stateLock.writeLock().unlock();
+        }
+    }
+
+    @Override
+    public String stateDescription()
+    {
+        try
+        {
+            stateLock.readLock().lock();
+            return state.stateDescription();
+        }
+        finally
+        {
+            stateLock.readLock().unlock();
         }
     }
 
     @Override
     public String toString()
     {
-        return String.format( "capability %s (enabled=%s, active=%s)", capability, enabled, active );
-    }
-
-    /**
-     * Check if this reference is valid. A reference will be valid until is removed. After that it will throw an
-     * {@link IllegalOperationException} on all operations.
-     */
-    private void checkValid()
-    {
-        if ( !valid )
-        {
-            throw new IllegalStateException( "Capability reference is no longer valid (capability has been removed)" );
-        }
+        return String.format( "capability %s (enabled=%s, active=%s)", capability, isEnabled(), isActive() );
     }
 
     // @TestAccessible //
@@ -382,142 +254,412 @@ class DefaultCapabilityReference
         return p1.equals( p2 );
     }
 
-    public class ActivationListener
+    private class State
+        implements CapabilityReference
     {
 
-        @Subscribe
-        public void handle( final ConditionEvent.Satisfied event )
+        State()
         {
-            if ( event.getCondition() == activateCondition )
-            {
-                activate();
-            }
+            getLogger().debug(
+                "Capability {} ({}) state changed to {}", new Object[]{ capability, capability.id(), this }
+            );
         }
 
-        @Subscribe
-        public void handle( final ConditionEvent.Unsatisfied event )
+        @Override
+        public Capability capability()
         {
-            if ( event.getCondition() == activateCondition )
-            {
-                passivate();
-            }
+            return capability;
+        }
+
+        @Override
+        public boolean isEnabled()
+        {
+            return false;
+        }
+
+        @Override
+        public void enable()
+        {
+            throw new IllegalStateException( "State '" + toString() + "' does not permit 'enable' operation" );
+        }
+
+        @Override
+        public void disable()
+        {
+            throw new IllegalStateException( "State '" + toString() + "' does not permit 'disable' operation" );
+        }
+
+        @Override
+        public boolean isActive()
+        {
+            return false;
+        }
+
+        @Override
+        public void activate()
+        {
+            throw new IllegalStateException( "State '" + toString() + "' does not permit 'activate' operation" );
+        }
+
+        @Override
+        public void passivate()
+        {
+            throw new IllegalStateException( "State '" + toString() + "' does not permit 'passivate' operation" );
+        }
+
+        @Override
+        public void create( final Map<String, String> properties )
+        {
+            throw new IllegalStateException( "State '" + toString() + "' does not permit 'create' operation" );
+        }
+
+        @Override
+        public void load( final Map<String, String> properties )
+        {
+            throw new IllegalStateException( "State '" + toString() + "' does not permit 'load' operation" );
+        }
+
+        @Override
+        public void update( final Map<String, String> properties, final Map<String, String> previousProperties )
+        {
+            throw new IllegalStateException( "State '" + toString() + "' does not permit 'update' operation" );
+        }
+
+        @Override
+        public void remove()
+        {
+            throw new IllegalStateException( "State '" + toString() + "' does not permit 'remove' operation" );
+        }
+
+        @Override
+        public String stateDescription()
+        {
+            return "Undefined";
         }
 
         @Override
         public String toString()
         {
-            return String.format(
-                "Watching '%s' condition to activate/passivate capability '%s (id=%s)'",
-                activateCondition, capability, capability.id()
-            );
+            return getClass().getSimpleName();
+        }
+
+        void setDescription( final String description )
+        {
+            // do nothing
         }
 
     }
 
-    public class ValidityListener
+    public class NewState
+        extends State
     {
 
-        @Subscribe
-        public void handle( final ConditionEvent.Unsatisfied event )
+        @Override
+        public void create( final Map<String, String> properties )
         {
-            if ( event.getCondition() == validityCondition )
+            try
             {
+                capability().create( properties );
+                validityHandler.bind();
+                state = new ValidState();
+            }
+            catch ( Exception e )
+            {
+                state = new InvalidState( "Failed to load: " + e.getMessage() );
+                getLogger().error(
+                    "Could not create capability {} ({})", new Object[]{ capability, capability.id(), e }
+                );
+            }
+        }
+
+        @Override
+        public void load( final Map<String, String> properties )
+        {
+            try
+            {
+                capability().load( properties );
+                validityHandler.bind();
+                state = new ValidState();
+            }
+            catch ( Exception e )
+            {
+                state = new InvalidState( "Failed to load: " + e.getMessage() );
+                getLogger().error(
+                    "Could not load capability {} ({})", new Object[]{ capability, capability.id(), e }
+                );
+            }
+        }
+
+        @Override
+        public String stateDescription()
+        {
+            return "New";
+        }
+
+        @Override
+        public String toString()
+        {
+            return "NEW";
+        }
+
+    }
+
+    public class ValidState
+        extends State
+    {
+
+        @Override
+        public void enable()
+        {
+            getLogger().debug( "Enabling capability {} ({})", capability, capability.id() );
+            state = new EnabledState( "Not yet activated" );
+            activationHandler.bind();
+        }
+
+        @Override
+        public void disable()
+        {
+            // do nothing (not yet enabled)
+        }
+
+        @Override
+        public void passivate()
+        {
+            // do nothing (not yet activated)
+        }
+
+        @Override
+        public void update( final Map<String, String> properties, final Map<String, String> previousProperties )
+        {
+            try
+            {
+                eventBus.post( new CapabilityEvent.BeforeUpdate( DefaultCapabilityReference.this ) );
+                capability().update( properties );
+                eventBus.post( new CapabilityEvent.AfterUpdate( DefaultCapabilityReference.this ) );
+            }
+            catch ( Exception e )
+            {
+                getLogger().error(
+                    "Could not update capability {} ({}).", new Object[]{ capability, capability.id(), e }
+                );
+                DefaultCapabilityReference.this.passivate();
+                state.setDescription( "Update failed: " + e.getMessage() );
+            }
+        }
+
+        @Override
+        public void remove()
+        {
+            try
+            {
+                DefaultCapabilityReference.this.disable();
+                validityHandler.release();
+                capability().remove();
+                state = new RemovedState();
+            }
+            catch ( Exception e )
+            {
+                state = new InvalidState( "Failed to remove: " + e.getMessage() );
+                getLogger().error(
+                    "Could not remove capability {} ({})", new Object[]{ capability, capability.id(), e }
+                );
+            }
+        }
+
+        @Override
+        public String stateDescription()
+        {
+            return "Disabled";
+        }
+
+        @Override
+        public String toString()
+        {
+            return "VALID";
+        }
+
+    }
+
+    public class EnabledState
+        extends ValidState
+    {
+
+        private String description;
+
+        EnabledState()
+        {
+            this( "enabled" );
+        }
+
+        EnabledState( final String description )
+        {
+            this.description = description;
+        }
+
+        @Override
+        public boolean isEnabled()
+        {
+            return true;
+        }
+
+        @Override
+        public void enable()
+        {
+            // do nothing (already enabled)
+        }
+
+        @Override
+        public void disable()
+        {
+            getLogger().debug( "Disabling capability {} ({})", capability, capability.id() );
+            activationHandler.release();
+            DefaultCapabilityReference.this.passivate();
+            state = new ValidState();
+        }
+
+        @Override
+        public void activate()
+        {
+            if ( activationHandler.isConditionSatisfied() )
+            {
+                getLogger().debug( "Activating capability {} ({})", capability, capability.id() );
                 try
                 {
-                    configuration.remove( capability().id() );
+                    capability().activate();
+                    getLogger().debug( "Activated capability {} ({})", capability, capability.id() );
+                    state = new ActiveState();
+                    eventBus.post( new CapabilityEvent.AfterActivated( DefaultCapabilityReference.this ) );
                 }
                 catch ( Exception e )
                 {
-                    getLogger().error( "Failed to remove capability with id '{}'", capability().id(), e );
+                    getLogger().error(
+                        "Could not activate capability {} ({})", new Object[]{ capability, capability.id(), e }
+                    );
+                    state.setDescription( "Activation failed: " + e.getMessage() );
                 }
             }
+            else
+            {
+                getLogger().debug( "Capability {} ({}) is not yet activatable", capability, capability.id() );
+            }
+        }
+
+        @Override
+        public void passivate()
+        {
+            // do nothing (not yet activated)
+        }
+
+        @Override
+        public String stateDescription()
+        {
+            return activationHandler.isConditionSatisfied() ? description : activationHandler.explainWhyNotSatisfied();
         }
 
         @Override
         public String toString()
         {
-            return String.format(
-                "Watching '%s' condition to validate/invalidate capability '%s (id=%s)'",
-                validityCondition, capability, capability.id()
-            );
+            return "ENABLED";
+        }
+
+        @Override
+        void setDescription( final String description )
+        {
+            this.description = description;
+        }
+    }
+
+    public class ActiveState
+        extends EnabledState
+    {
+
+        @Override
+        public boolean isActive()
+        {
+            return true;
+        }
+
+        @Override
+        public void activate()
+        {
+            // do nothing (already active)
+        }
+
+        @Override
+        public void passivate()
+        {
+            getLogger().debug( "Passivating capability {} ({})", capability, capability.id() );
+            try
+            {
+                state = new EnabledState( "Passivated" );
+                eventBus.post( new CapabilityEvent.BeforePassivated( DefaultCapabilityReference.this ) );
+                capability().passivate();
+                getLogger().debug( "Passivated capability {} ({})", capability, capability.id() );
+            }
+            catch ( Exception e )
+            {
+                getLogger().error(
+                    "Could not passivate capability {} ({})", new Object[]{ capability, capability.id(), e }
+                );
+                state.setDescription( "Passivation failed: " + e.getMessage() );
+            }
+        }
+
+        @Override
+        public String stateDescription()
+        {
+            return "Active";
+        }
+
+        @Override
+        public String toString()
+        {
+            return "ACTIVE";
         }
 
     }
 
-    public class NexusActiveListener
+    public class InvalidState
+        extends State
     {
 
-        private Condition nexusActiveCondition;
+        private final String reason;
 
-        @Subscribe
-        public void handle( final ConditionEvent.Satisfied event )
+        InvalidState( final String reason )
         {
-            if ( event.getCondition() == nexusActiveCondition )
-            {
-                validityCondition = capability().validityCondition();
-                if ( validityCondition != null )
-                {
-                    validityCondition.bind();
-                    validityListener = new ValidityListener();
-                    eventBus.register( validityListener );
-                }
-            }
+            this.reason = reason;
         }
 
-        @Subscribe
-        public void handle( final ConditionEvent.Unsatisfied event )
+        @Override
+        public String stateDescription()
         {
-            if ( event.getCondition() == nexusActiveCondition )
-            {
-                if ( validityListener != null )
-                {
-                    eventBus.unregister( validityListener );
-                    validityListener = null;
-                }
-                if ( validityCondition != null )
-                {
-                    validityCondition.release();
-                    validityCondition = null;
-                }
-                if ( isActive() )
-                {
-                    passivate();
-                }
-            }
+            return reason;
         }
 
         @Override
         public String toString()
         {
-            return String.format(
-                "Watching '%s' condition to trigger validation of capability '%s (id=%s)'",
-                nexusActiveCondition, capability, capability.id()
-            );
+            return "INVALID (" + reason + ")";
         }
 
-        public NexusActiveListener bind()
+    }
+
+    public class RemovedState
+        extends State
+    {
+
+        @Override
+        public String stateDescription()
         {
-            if ( nexusActiveCondition == null )
-            {
-                nexusActiveCondition = conditions.nexus().active();
-                eventBus.register( this );
-                if ( nexusActiveCondition.isSatisfied() )
-                {
-                    handle( new ConditionEvent.Satisfied( nexusActiveCondition ) );
-                }
-            }
-            return this;
+            return "Removed";
         }
 
-        public NexusActiveListener release()
+        @Override
+        public String toString()
         {
-            if ( nexusActiveCondition != null )
-            {
-                handle( new ConditionEvent.Unsatisfied( nexusActiveCondition ) );
-                eventBus.unregister( this );
-            }
-            return this;
+            return "REMOVED";
         }
+
     }
 
 }

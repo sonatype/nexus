@@ -86,8 +86,10 @@ public class DefaultCapabilityRegistryTest
 
         final CapabilityConfiguration configuration = mock( CapabilityConfiguration.class );
         final Conditions conditions = mock( Conditions.class );
+        final ActivationConditionHandlerFactory achf = mock( ActivationConditionHandlerFactory.class );
+        final ValidityConditionHandlerFactory vchf = mock( ValidityConditionHandlerFactory.class );
 
-        underTest = new DefaultCapabilityRegistry( factoryMap, eventBus, configuration, conditions )
+        underTest = new DefaultCapabilityRegistry( factoryMap, eventBus, achf, vchf )
         {
             @Override
             CapabilityReference createReference( final Capability capability )

@@ -16,52 +16,30 @@
  * Sonatype, Inc. Apache Maven is a trademark of the Apache Foundation. M2Eclipse is a trademark of the Eclipse Foundation.
  * All other trademarks are the property of their respective owners.
  */
-package org.sonatype.nexus.plugins.capabilities.internal.activation;
+package org.sonatype.nexus.plugins.capabilities.internal.guice;
 
-import org.sonatype.nexus.eventbus.NexusEventBus;
-import org.sonatype.nexus.plugins.capabilities.api.activation.Condition;
-import org.sonatype.nexus.plugins.capabilities.support.activation.AbstractCompositeCondition;
+import javax.inject.Named;
+
+import org.sonatype.nexus.plugins.capabilities.internal.ActivationConditionHandlerFactory;
+import org.sonatype.nexus.plugins.capabilities.internal.ValidityConditionHandlerFactory;
+import com.google.inject.AbstractModule;
+import com.google.inject.assistedinject.FactoryModuleBuilder;
 
 /**
- * A condition that applies a logical NOT on another condition.
+ * Capabilities plugin Guice module.
  *
- * @since 1.10.0
+ * @since 1.0
  */
-public class InversionCondition
-    extends AbstractCompositeCondition
-    implements Condition
+@Named
+public class GuiceModule
+    extends AbstractModule
 {
 
-    private final Condition condition;
-
-    public InversionCondition( final NexusEventBus eventBus,
-                               final Condition condition )
-    {
-        super( eventBus, condition );
-        this.condition = condition;
-    }
-
     @Override
-    protected boolean reevaluate( final Condition... conditions )
+    protected void configure()
     {
-        return !conditions[0].isSatisfied();
+        install( new FactoryModuleBuilder().build( ActivationConditionHandlerFactory.class ) );
+        install( new FactoryModuleBuilder().build( ValidityConditionHandlerFactory.class ) );
     }
 
-    @Override
-    public String toString()
-    {
-        return "NOT " + condition;
-    }
-
-    @Override
-    public String explainSatisfied()
-    {
-        return condition.explainUnsatisfied();
-    }
-
-    @Override
-    public String explainUnsatisfied()
-    {
-        return condition.explainSatisfied();
-    }
 }

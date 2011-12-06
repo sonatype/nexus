@@ -101,7 +101,7 @@ public class CapabilityOfTypeExistsCondition
     {
         for ( final CapabilityReference ref : capabilityRegistry.getAll() )
         {
-            if ( shouldEvaluateFor( ref ) )
+            if ( isSatisfiedBy( ref ) )
             {
                 setSatisfied( true );
                 return;
@@ -110,7 +110,7 @@ public class CapabilityOfTypeExistsCondition
         setSatisfied( false );
     }
 
-    boolean shouldEvaluateFor( final CapabilityReference reference )
+    boolean isSatisfiedBy( final CapabilityReference reference )
     {
         return type.isAssignableFrom( reference.capability().getClass() );
     }
@@ -133,6 +133,18 @@ public class CapabilityOfTypeExistsCondition
     public String toString()
     {
         return type.getSimpleName() + " exists";
+    }
+
+    @Override
+    public String explainSatisfied()
+    {
+        return type.getSimpleName() + " exists";
+    }
+
+    @Override
+    public String explainUnsatisfied()
+    {
+        return type.getSimpleName() + " does not exist";
     }
 
 }

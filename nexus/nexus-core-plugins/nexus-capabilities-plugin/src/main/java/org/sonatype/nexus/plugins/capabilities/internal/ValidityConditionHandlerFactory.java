@@ -16,52 +16,18 @@
  * Sonatype, Inc. Apache Maven is a trademark of the Apache Foundation. M2Eclipse is a trademark of the Eclipse Foundation.
  * All other trademarks are the property of their respective owners.
  */
-package org.sonatype.nexus.plugins.capabilities.internal.activation;
+package org.sonatype.nexus.plugins.capabilities.internal;
 
-import org.sonatype.nexus.eventbus.NexusEventBus;
-import org.sonatype.nexus.plugins.capabilities.api.activation.Condition;
-import org.sonatype.nexus.plugins.capabilities.support.activation.AbstractCompositeCondition;
+import org.sonatype.nexus.plugins.capabilities.api.CapabilityReference;
 
 /**
- * A condition that applies a logical NOT on another condition.
+ * Factory of {@link ValidityConditionHandler}.
  *
  * @since 1.10.0
  */
-public class InversionCondition
-    extends AbstractCompositeCondition
-    implements Condition
+public interface ValidityConditionHandlerFactory
 {
 
-    private final Condition condition;
+    ValidityConditionHandler create( final CapabilityReference reference );
 
-    public InversionCondition( final NexusEventBus eventBus,
-                               final Condition condition )
-    {
-        super( eventBus, condition );
-        this.condition = condition;
-    }
-
-    @Override
-    protected boolean reevaluate( final Condition... conditions )
-    {
-        return !conditions[0].isSatisfied();
-    }
-
-    @Override
-    public String toString()
-    {
-        return "NOT " + condition;
-    }
-
-    @Override
-    public String explainSatisfied()
-    {
-        return condition.explainUnsatisfied();
-    }
-
-    @Override
-    public String explainUnsatisfied()
-    {
-        return condition.explainSatisfied();
-    }
 }
