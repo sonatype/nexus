@@ -21,13 +21,10 @@ package org.sonatype.nexus;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.commons.httpclient.CustomMultiThreadedHttpConnectionManager;
 import org.apache.maven.index.artifact.ArtifactPackagingMapper;
@@ -42,12 +39,6 @@ import org.sonatype.configuration.ConfigurationException;
 import org.sonatype.nexus.configuration.ConfigurationChangeEvent;
 import org.sonatype.nexus.configuration.application.NexusConfiguration;
 import org.sonatype.nexus.events.EventInspectorHost;
-import org.sonatype.nexus.feeds.AuthcAuthzEvent;
-import org.sonatype.nexus.feeds.ErrorWarningEvent;
-import org.sonatype.nexus.feeds.FeedRecorder;
-import org.sonatype.nexus.feeds.NexusArtifactEvent;
-import org.sonatype.nexus.feeds.SystemEvent;
-import org.sonatype.nexus.feeds.SystemProcess;
 import org.sonatype.nexus.index.events.ReindexRepositoriesEvent;
 import org.sonatype.nexus.index.events.ReindexRepositoriesRequest;
 import org.sonatype.nexus.logging.AbstractLoggingComponent;
@@ -80,11 +71,9 @@ import org.sonatype.nexus.templates.NoSuchTemplateIdException;
 import org.sonatype.nexus.templates.TemplateManager;
 import org.sonatype.nexus.templates.TemplateSet;
 import org.sonatype.nexus.templates.repository.RepositoryTemplate;
-import org.sonatype.nexus.timeline.RepositoryIdTimelineFilter;
 import org.sonatype.plexus.appevents.ApplicationEventMulticaster;
 import org.sonatype.plexus.components.ehcache.PlexusEhCacheWrapper;
 import org.sonatype.security.SecuritySystem;
-import org.sonatype.timeline.TimelineFilter;
 
 /**
  * The default Nexus implementation.
@@ -120,12 +109,6 @@ public class DefaultNexus
      */
     @Requirement
     private NexusScheduler nexusScheduler;
-
-    /**
-     * The Feed recorder.
-     */
-    @Requirement
-    private FeedRecorder feedRecorder;
 
     /**
      * The snapshot remover component.
@@ -387,7 +370,7 @@ public class DefaultNexus
     // ----------------------------------------------------------------------------
 
     // creating
-
+/*
     @Deprecated
     public void addNexusArtifactEvent( NexusArtifactEvent nae )
     {
@@ -428,7 +411,7 @@ public class DefaultNexus
 
     public List<NexusArtifactEvent> getRecentlyStorageChanges( Integer from, Integer count, Set<String> repositoryIds )
     {
-        TimelineFilter filter =
+        Predicate<Entry> filter =
             ( repositoryIds == null || repositoryIds.isEmpty() ) ? null
                             : new RepositoryIdTimelineFilter( repositoryIds );
 
@@ -441,7 +424,7 @@ public class DefaultNexus
     public List<NexusArtifactEvent> getRecentlyDeployedOrCachedArtifacts( Integer from, Integer count,
                                                                           Set<String> repositoryIds )
     {
-        TimelineFilter filter =
+        Predicate<Entry> filter =
             ( repositoryIds == null || repositoryIds.isEmpty() ) ? null
                             : new RepositoryIdTimelineFilter( repositoryIds );
 
@@ -452,7 +435,7 @@ public class DefaultNexus
 
     public List<NexusArtifactEvent> getRecentlyCachedArtifacts( Integer from, Integer count, Set<String> repositoryIds )
     {
-        TimelineFilter filter =
+        Predicate<Entry> filter =
             ( repositoryIds == null || repositoryIds.isEmpty() ) ? null
                             : new RepositoryIdTimelineFilter( repositoryIds );
 
@@ -463,7 +446,7 @@ public class DefaultNexus
 
     public List<NexusArtifactEvent> getRecentlyDeployedArtifacts( Integer from, Integer count, Set<String> repositoryIds )
     {
-        TimelineFilter filter =
+        Predicate<Entry> filter =
             ( repositoryIds == null || repositoryIds.isEmpty() ) ? null
                             : new RepositoryIdTimelineFilter( repositoryIds );
 
@@ -474,7 +457,7 @@ public class DefaultNexus
 
     public List<NexusArtifactEvent> getBrokenArtifacts( Integer from, Integer count, Set<String> repositoryIds )
     {
-        TimelineFilter filter =
+        Predicate<Entry> filter =
             ( repositoryIds == null || repositoryIds.isEmpty() ) ? null
                             : new RepositoryIdTimelineFilter( repositoryIds );
 
@@ -508,7 +491,7 @@ public class DefaultNexus
     {
         return feedRecorder.getErrorWarningEvents( null, from, count, null );
     }
-
+*/
     // ===========================
     // Nexus Application lifecycle
 
@@ -610,9 +593,6 @@ public class DefaultNexus
             applicationEventMulticaster.notifyEventListeners( new ConfigurationChangeEvent( nexusConfiguration, null,
                                                                                             null ) );
 
-            addSystemEvent( FeedRecorder.SYSTEM_BOOT_ACTION, "Starting Nexus (version "
-                + getSystemStatus().getVersion() + " " + getSystemStatus().getEditionShort() + ")" );
-
             applicationStatusSource.getSystemStatus().setLastConfigChange( new Date() );
 
             applicationStatusSource.getSystemStatus().setFirstStart( nexusConfiguration.isConfigurationDefaulted() );
@@ -676,9 +656,6 @@ public class DefaultNexus
         throws Exception
     {
         applicationStatusSource.getSystemStatus().setState( SystemState.STOPPING );
-
-        addSystemEvent( FeedRecorder.SYSTEM_BOOT_ACTION, "Stopping Nexus (version " + getSystemStatus().getVersion()
-            + " " + getSystemStatus().getEditionShort() + ")" );
 
         applicationEventMulticaster.notifyEventListeners( new NexusStoppedEvent( this ) );
 
