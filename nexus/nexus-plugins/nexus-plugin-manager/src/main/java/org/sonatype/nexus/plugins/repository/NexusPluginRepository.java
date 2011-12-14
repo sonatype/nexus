@@ -46,6 +46,24 @@ public interface NexusPluginRepository
     Map<GAVCoordinate, PluginMetadata> findAvailablePlugins();
 
     /**
+     * Queries is a given plugin enabled by configuration or not.
+     * 
+     * @param gav
+     * @return true if plugin is enabled (will be activated upon boot), false otherwise.
+     * @since 1.10.0
+     */
+    boolean isEnabledPlugin( GAVCoordinate gav );
+
+    /**
+     * Sets the enabled status of the given plugin.
+     * 
+     * @param gav
+     * @param value {@code true} to enable and {@code false} to disable plugin.
+     * @since 1.10.0
+     */
+    void setEnabledPlugin( GAVCoordinate gav, boolean value );
+
+    /**
      * Resolves the plugin artifact identified by the given {@link GAVCoordinate}.
      * 
      * @param gav The plugin coordinates

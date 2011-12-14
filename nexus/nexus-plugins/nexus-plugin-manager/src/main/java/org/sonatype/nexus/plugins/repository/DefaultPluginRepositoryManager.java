@@ -83,6 +83,42 @@ final class DefaultPluginRepositoryManager
         return installedPlugins;
     }
 
+    public boolean isEnabledPlugin( final GAVCoordinate gav )
+    {
+        for ( final NexusPluginRepository r : getRepositories( false ) )
+        {
+            try
+            {
+                r.resolveArtifact( gav );
+                // if we succeeded this one is active too
+                return r.isEnabledPlugin( gav );
+            }
+            catch ( final NoSuchPluginRepositoryArtifactException e ) // NOPMD
+            {
+                // continue
+            }
+        }
+
+        return false;
+    }
+
+    public void setEnabledPlugin( final GAVCoordinate gav, final boolean value )
+    {
+        for ( final NexusPluginRepository r : getRepositories( false ) )
+        {
+            try
+            {
+                r.resolveArtifact( gav );
+                // if we succeeded this one is active too
+                r.setEnabledPlugin( gav, value );
+            }
+            catch ( final NoSuchPluginRepositoryArtifactException e ) // NOPMD
+            {
+                // continue
+            }
+        }
+    }
+
     public PluginRepositoryArtifact resolveArtifact( final GAVCoordinate gav )
         throws NoSuchPluginRepositoryArtifactException
     {

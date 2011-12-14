@@ -42,6 +42,7 @@ import org.sonatype.guice.nexus.binders.NexusAnnotatedBeanModule;
 import org.sonatype.guice.plexus.binders.PlexusXmlBeanModule;
 import org.sonatype.guice.plexus.config.PlexusBeanModule;
 import org.sonatype.inject.Parameters;
+import org.sonatype.nexus.logging.AbstractLoggingComponent;
 import org.sonatype.nexus.mime.MimeSupport;
 import org.sonatype.nexus.plugins.events.PluginActivatedEvent;
 import org.sonatype.nexus.plugins.events.PluginRejectedEvent;
@@ -74,6 +75,7 @@ import com.google.inject.name.Names;
 @Named
 @Singleton
 public final class DefaultNexusPluginManager
+    extends AbstractLoggingComponent
     implements NexusPluginManager
 {
     // ----------------------------------------------------------------------
@@ -146,6 +148,16 @@ public final class DefaultNexusPluginManager
         return isActivatedPlugin( gav, true );
     }
 
+    public boolean isEnabledPlugin( final GAVCoordinate gav )
+    {
+        return repositoryManager.isEnabledPlugin( gav );
+    }
+
+    public void setEnabledPlugin( final GAVCoordinate gav, final boolean value )
+    {
+        repositoryManager.setEnabledPlugin( gav, value );
+    }
+
     public PluginManagerResponse activatePlugin( final GAVCoordinate gav )
     {
         return activatePlugin( gav, true );
@@ -173,9 +185,9 @@ public final class DefaultNexusPluginManager
     // ----------------------------------------------------------------------
 
     /**
-     * Filters a map of GAVCoordinates by "max" version. Hence, in the result Map, it is guaranteed that only one GA
-     * combination will exists, and if input contained multiple V's for same GA, the one GAV contained in result with
-     * have max V.
+     * Filters a map of GAVCoordinates by "max" version and by it's "enabled" status. Hence, in the result Map, it is
+     * guaranteed that only one GA combination will exists, and if input contained multiple V's for same GA, the one GAV
+     * contained in result with have max V.
      * 
      * @param installedPlugins
      * @return
@@ -187,6 +199,15 @@ public final class DefaultNexusPluginManager
 
         nextInstalledEntry: for ( Map.Entry<GAVCoordinate, PluginMetadata> installedEntry : installedPlugins.entrySet() )
         {
+            // if not enabled, filter it out
+            if ( !isEnabledPlugin( installedEntry.getKey() ) )
+            {
+                getLogger().info( "Plugin [{}] is disabled.", installedEntry.getKey().toString() );
+                result.remove( installedEntry.getKey() );
+                continue nextInstalledEntry;
+            }
+
+            // if enabled, we want the max(V) of same GAs
             for ( Map.Entry<GAVCoordinate, PluginMetadata> resultEntry : result.entrySet() )
             {
                 if ( resultEntry.getKey().matchesByGA( installedEntry.getKey() ) )
@@ -356,6 +377,7 @@ public final class DefaultNexusPluginManager
             scanList.add( pluginURL );
         }
 
+        boolean needDeprecationWarning = false;
         for ( final ClasspathDependency d : descriptor.getPluginMetadata().getClasspathDependencies() )
         {
             final GAVCoordinate gav =
@@ -365,11 +387,24 @@ public final class DefaultNexusPluginManager
             if ( null != url )
             {
                 pluginRealm.addURL( url );
-                if ( d.isHasComponents() || d.isShared() )
+                if ( d.isShared() || d.isHasComponents() )
                 {
                     scanList.add( url );
                 }
+
+                // warning about deprecation goes into log
+                if ( d.isHasComponents() )
+                {
+                    needDeprecationWarning = true;
+                }
             }
+        }
+
+        if ( needDeprecationWarning )
+        {
+            getLogger().warn(
+                "Plugin [{}] was built using deprecated plugin configuration \"componentDependencies\" (or with old plugin). Please update it's build accordingly and rebuild the plugin with latest app-lifecycle plugin!",
+                descriptor.getPluginCoordinates().toString() );
         }
 
         for ( final GAVCoordinate gav : descriptor.getResolvedPlugins() )
