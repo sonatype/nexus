@@ -202,14 +202,28 @@ Sonatype.repoServer.SchedulesEditPanel = function(config) {
       }, {
         name : 'name',
         sortType : Ext.data.SortTypes.asUCString
-      }]);
+      }, {
+         name:'repoType'
+      }, {
+         name:'format'
+      }, {
+         name:'repoPolicy'
+      }
+    ]);
 
   this.repositoryOrGroupRecordConstructor = Ext.data.Record.create([{
         name : 'id'
       }, {
         name : 'name',
         sortType : Ext.data.SortTypes.asUCString
-      }]);
+      }, {
+          name:'repoType'
+      }, {
+          name:'format'
+      }, {
+          name:'repoPolicy'
+      }
+    ]);
 
   // Simply a record to hold details of each service type
   this.serviceTypeRecordConstructor = Ext.data.Record.create([{
@@ -257,7 +271,7 @@ Sonatype.repoServer.SchedulesEditPanel = function(config) {
 
   // Datastore that will hold both repos and repogroups
   this.repoOrGroupDataStore = new Ext.data.SimpleStore({
-        fields : ['id', 'name'],
+        fields : ['id', 'name', 'format'],
         id : 'id'
       });
 
@@ -318,7 +332,8 @@ Sonatype.repoServer.SchedulesEditPanel = function(config) {
               this.repositoryGroupDataStore.each(function(item, i, len) {
                     var newRec = new this.repositoryOrGroupRecordConstructor({
                           id : item.data.id,
-                          name : item.data.name + ' (Group)'
+                          name : item.data.name + ' (Group)',
+                          format : item.data.format
                         }, item.id);
                     this.repoOrGroupDataStore.add([newRec]);
                   }, this);
