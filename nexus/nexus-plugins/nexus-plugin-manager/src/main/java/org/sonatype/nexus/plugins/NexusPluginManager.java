@@ -68,6 +68,25 @@ public interface NexusPluginManager
     boolean isActivatedPlugin( GAVCoordinate gav );
 
     /**
+     * Queries is a given plugin enabled by configuration or not.
+     * 
+     * @param gav
+     * @return true if plugin is enabled (will be activated upon boot), false otherwise.
+     * @since 1.10.0
+     */
+    boolean isEnabledPlugin( GAVCoordinate gav );
+
+    /**
+     * Sets the enabled status of the given plugin. It will not (de)activate it if activated and value was {@code false}
+     * or other way around.
+     * 
+     * @param gav
+     * @param value {@code true} to enable and {@code false} to disable plugin.
+     * @since 1.10.0
+     */
+    void setEnabledPlugin( GAVCoordinate gav, boolean value );
+
+    /**
      * Attempts to activate the given plugin.
      * 
      * @param gav The plugin coordinates

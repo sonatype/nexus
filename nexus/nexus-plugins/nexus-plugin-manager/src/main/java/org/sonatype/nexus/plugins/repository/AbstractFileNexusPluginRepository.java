@@ -19,12 +19,15 @@
 package org.sonatype.nexus.plugins.repository;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.net.URL;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 
 import javax.inject.Inject;
 
@@ -33,6 +36,8 @@ import org.sonatype.nexus.proxy.maven.gav.Gav;
 import org.sonatype.nexus.proxy.maven.packaging.ArtifactPackagingMapper;
 import org.sonatype.plugin.metadata.GAVCoordinate;
 import org.sonatype.plugins.model.PluginMetadata;
+
+import com.google.common.io.Closeables;
 
 /**
  * Abstract {@link NexusPluginRepository} backed by a file-system.
@@ -52,6 +57,11 @@ public abstract class AbstractFileNexusPluginRepository
 
     @Inject
     private ArtifactPackagingMapper packagingMapper;
+
+    /**
+     * To store enabled statuses a la "cache".
+     */
+    private volatile Properties pluginIndex;
 
     // ----------------------------------------------------------------------
     // Public methods
@@ -114,6 +124,24 @@ public abstract class AbstractFileNexusPluginRepository
         throws NoSuchPluginRepositoryArtifactException
     {
         return getPluginMetadata( resolvePluginJar( gav ) );
+    }
+
+    public synchronized boolean isEnabledPlugin( final GAVCoordinate gav )
+    {
+        if ( pluginIndex == null )
+        {
+            pluginIndex = loadPluginIndex();
+        }
+
+        return Boolean.valueOf( pluginIndex.getProperty( gav.toString() ) );
+    }
+
+    public synchronized void setEnabledPlugin( final GAVCoordinate gav, final boolean value )
+    {
+        final Properties index = loadPluginIndex();
+        index.setProperty( gav.toString(), Boolean.toString( value ) );
+        storePluginIndex( index );
+        pluginIndex = null;
     }
 
     // ----------------------------------------------------------------------
@@ -188,6 +216,63 @@ public abstract class AbstractFileNexusPluginRepository
     protected File getPluginFolder( final GAVCoordinate gav )
     {
         return new File( getNexusPluginsDirectory(), gav.getArtifactId() + '-' + gav.getVersion() );
+    }
+
+    protected File getPluginIndexFile()
+    {
+        return new File( getNexusPluginsDirectory(), "repository-index.properties" );
+    }
+
+    protected synchronized Properties loadPluginIndex()
+    {
+        Properties index = new Properties();
+
+        try
+        {
+            FileInputStream fis = new FileInputStream( getPluginIndexFile() );
+            try
+            {
+                index.load( fis );
+            }
+            finally
+            {
+                Closeables.closeQuietly( fis );
+            }
+        }
+        catch ( IOException e )
+        {
+            // nothing, index does not exists, we need to create it from scratch
+            final Map<GAVCoordinate, PluginMetadata> availablePlugins = findAvailablePlugins();
+            for ( GAVCoordinate coord : availablePlugins.keySet() )
+            {
+                index.put( coord.toString(), Boolean.TRUE.toString() );
+            }
+
+            storePluginIndex( index );
+        }
+
+        return index;
+    }
+
+    protected synchronized void storePluginIndex( final Properties index )
+    {
+        try
+        {
+            FileOutputStream fos = new FileOutputStream( getPluginIndexFile() );
+
+            try
+            {
+                index.store( fos, "Nexus Plugin Manager Index" );
+            }
+            finally
+            {
+                Closeables.closeQuietly( fos );
+            }
+        }
+        catch ( IOException e )
+        {
+            // huh?
+        }
     }
 
     // ----------------------------------------------------------------------
