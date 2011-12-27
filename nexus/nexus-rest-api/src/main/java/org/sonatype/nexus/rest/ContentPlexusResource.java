@@ -65,7 +65,7 @@ public class ContentPlexusResource
     }
 
     @Override
-    protected ResourceStore getResourceStore( Request request )
+    protected ResourceStore getResourceStore( final Request request )
         throws NoSuchRepositoryException,
             ResourceException
     {
