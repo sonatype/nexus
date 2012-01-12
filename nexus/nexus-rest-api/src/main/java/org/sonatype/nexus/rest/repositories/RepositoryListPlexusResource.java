@@ -295,7 +295,7 @@ public class RepositoryListPlexusResource
     {
         M2RepositoryConfiguration exConf = new M2RepositoryConfiguration( (Xpp3Dom) target.getExternalConfiguration() );
 
-        if ( model.getProvider().equals( "maven2" ) || model.getProvider().equals( "maven1" ) )
+        if ( StringUtils.isNotEmpty( model.getChecksumPolicy() ) )
         {
             exConf.setChecksumPolicy( EnumUtil.valueOf( model.getChecksumPolicy(), ChecksumPolicy.class ) );
         }
