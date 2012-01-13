@@ -348,7 +348,10 @@ public abstract class AbstractRepositoryPlexusResource
         else
         {
             resource.setRepoPolicy( RepositoryPolicy.MIXED.name() );
-            resource.setChecksumPolicy( ChecksumPolicy.IGNORE.name() );
+            if ( StringUtils.isEmpty( resource.getChecksumPolicy() ) )
+            {
+                resource.setChecksumPolicy( ChecksumPolicy.IGNORE.name() );
+            }
             resource.setDownloadRemoteIndexes( false );
         }
 
@@ -398,6 +401,7 @@ public abstract class AbstractRepositoryPlexusResource
             {
                 Method artifactMethod = repository.getClass().getMethod( "getArtifactMaxAge", new Class<?>[0] );
                 Method metadataMethod = repository.getClass().getMethod( "getMetadataMaxAge", new Class<?>[0] );
+                Method checksumMethod = repository.getClass().getMethod( "getChecksumPolicy", new Class<?>[0] );
 
                 if ( artifactMethod != null )
                 {
@@ -406,6 +410,10 @@ public abstract class AbstractRepositoryPlexusResource
                 if ( metadataMethod != null )
                 {
                     resource.setMetadataMaxAge( (Integer) metadataMethod.invoke( repository, new Object[0] ) );
+                }
+                if ( checksumMethod != null )
+                {
+                    resource.setChecksumPolicy( checksumMethod.invoke( repository, new Object[0] ).toString() );
                 }
             }
             catch ( Exception e )

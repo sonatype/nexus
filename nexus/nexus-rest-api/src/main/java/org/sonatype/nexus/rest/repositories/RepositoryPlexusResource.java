@@ -307,6 +307,8 @@ public class RepositoryPlexusResource
                                     repository.getClass().getMethod( "setArtifactMaxAge", int.class );
                                 Method metadataMethod =
                                     repository.getClass().getMethod( "setMetadataMaxAge", int.class );
+                                Method checksumMethod =
+                                    repository.getClass().getMethod( "setChecksumPolicy", ChecksumPolicy.class );
 
                                 RepositoryProxyResource proxyModel = (RepositoryProxyResource) model;
 
@@ -317,6 +319,10 @@ public class RepositoryPlexusResource
                                 if ( metadataMethod != null )
                                 {
                                     metadataMethod.invoke( repository, proxyModel.getMetadataMaxAge() );
+                                }
+                                if ( checksumMethod != null )
+                                {
+                                    checksumMethod.invoke( repository, ChecksumPolicy.valueOf( proxyModel.getChecksumPolicy() ) );
                                 }
                             }
                             catch ( Exception e )
