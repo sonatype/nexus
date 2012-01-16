@@ -476,13 +476,17 @@ public abstract class AbstractRepository
         getLogger().info(
             "Clearing NFC cache in repository ID='" + getId() + "' from path='" + request.getRequestPath() + "'" );
 
+        boolean cacheAltered = false;
+
         // remove the items from NFC
         if ( RepositoryItemUid.PATH_ROOT.equals( request.getRequestPath() ) )
         {
             // purge all
             if ( getNotFoundCache() != null )
             {
-                getNotFoundCache().purge();
+                // NOTE: Calling what purge() would do so we can see if the cache was altered
+                //getNotFoundCache().purge();
+                cacheAltered = getNotFoundCache().removeWithChildren( RepositoryItemUid.PATH_ROOT );
             }
         }
         else
@@ -490,14 +494,19 @@ public abstract class AbstractRepository
             // purge below and above path only
             if ( getNotFoundCache() != null )
             {
-                getNotFoundCache().removeWithParents( request.getRequestPath() );
+                boolean tmp1 = getNotFoundCache().removeWithParents( request.getRequestPath() );
 
-                getNotFoundCache().removeWithChildren( request.getRequestPath() );
+                boolean tmp2 = getNotFoundCache().removeWithChildren( request.getRequestPath() );
+                
+                cacheAltered = tmp1 || tmp2;
             }
         }
 
-        getApplicationEventMulticaster().notifyEventListeners(
-            new RepositoryEventExpireCaches( this, request.getRequestPath() ) );
+        // Only fire an event if the cache was altered
+        if (cacheAltered) {
+            getApplicationEventMulticaster().notifyEventListeners(
+                new RepositoryEventExpireCaches( this, request.getRequestPath() ) );
+        }
     }
 
     public Collection<String> evictUnusedItems( ResourceStoreRequest request, final long timestamp )
