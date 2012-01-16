@@ -22,26 +22,22 @@ package org.sonatype.nexus.proxy.events;
 import org.sonatype.nexus.proxy.repository.Repository;
 
 /**
- * The event fired when NFC has been requested to expire/clear.
+ * The event fired when NFC has been cleared.
  *
  * @since 2.0
  */
 public class RepositoryEventNfcCleared
-    extends RepositoryEventExpireCaches
+    extends RepositoryMaintenanceEvent
 {
-    private final boolean altered;
+    private final String path;
 
-    public RepositoryEventNfcCleared(final Repository repository, final String path, final boolean altered)
+    public RepositoryEventNfcCleared(final Repository repository, final String path)
     {
-        super( repository, path );
-        this.altered = altered;
+        super( repository );
+        this.path = path;
     }
 
-    /**
-     * Flag to indicate if the NFC was actually altered.
-     * Presence of event only indicates that a request to clear/expire NFC was performed.
-     */
-    public boolean isAltered() {
-        return altered;
+    public String getPath() {
+        return path;
     }
 }

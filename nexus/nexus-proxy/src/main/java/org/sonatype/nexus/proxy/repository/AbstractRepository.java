@@ -460,6 +460,9 @@ public abstract class AbstractRepository
 
         // 2nd, remove the items from NFC
         expireNotFoundCaches( request );
+
+        getApplicationEventMulticaster().notifyEventListeners(
+            new RepositoryEventExpireCaches(this, request.getRequestPath()) );
     }
 
     public void expireNotFoundCaches( ResourceStoreRequest request )
@@ -503,8 +506,10 @@ public abstract class AbstractRepository
             }
         }
 
-        getApplicationEventMulticaster().notifyEventListeners(
-            new RepositoryEventNfcCleared( this, request.getRequestPath(), cacheAltered ) );
+        if (cacheAltered) {
+            getApplicationEventMulticaster().notifyEventListeners(
+                new RepositoryEventNfcCleared( this, request.getRequestPath() ) );
+        }
     }
 
     public Collection<String> evictUnusedItems( ResourceStoreRequest request, final long timestamp )
