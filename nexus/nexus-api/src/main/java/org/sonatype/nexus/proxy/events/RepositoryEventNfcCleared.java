@@ -23,6 +23,8 @@ import org.sonatype.nexus.proxy.repository.Repository;
 
 /**
  * The event fired when NFC has been requested to expire/clear.
+ *
+ * @since 2.0
  */
 public class RepositoryEventNfcCleared
     extends RepositoryEventExpireCaches
