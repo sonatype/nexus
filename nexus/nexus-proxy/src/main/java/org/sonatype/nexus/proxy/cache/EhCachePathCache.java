@@ -109,14 +109,16 @@ public class EhCachePathCache
 
         String keyToRemove = makeKeyFromPath( path );
 
+        boolean removed = false;
         for ( String key : keys )
         {
             if ( key.startsWith( keyToRemove ) )
             {
-                getEHCache().remove( key );
+                boolean tmp = getEHCache().remove( key );
+                removed = removed || tmp;
             }
         }
-        return true;
+        return removed;
     }
 
     public void doPurge()
