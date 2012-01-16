@@ -52,7 +52,6 @@ import org.sonatype.nexus.proxy.cache.PathCache;
 import org.sonatype.nexus.proxy.events.RepositoryConfigurationUpdatedEvent;
 import org.sonatype.nexus.proxy.events.RepositoryEventExpireCaches;
 import org.sonatype.nexus.proxy.events.RepositoryEventLocalStatusChanged;
-import org.sonatype.nexus.proxy.events.RepositoryEventNfcCleared;
 import org.sonatype.nexus.proxy.events.RepositoryEventRecreateAttributes;
 import org.sonatype.nexus.proxy.events.RepositoryItemEventDelete;
 import org.sonatype.nexus.proxy.events.RepositoryItemEventRetrieve;
@@ -503,8 +502,11 @@ public abstract class AbstractRepository
             }
         }
 
-        getApplicationEventMulticaster().notifyEventListeners(
-            new RepositoryEventNfcCleared( this, request.getRequestPath(), cacheAltered ) );
+        // Only fire an event if the cache was altered
+        if (cacheAltered) {
+            getApplicationEventMulticaster().notifyEventListeners(
+                new RepositoryEventExpireCaches( this, request.getRequestPath() ) );
+        }
     }
 
     public Collection<String> evictUnusedItems( ResourceStoreRequest request, final long timestamp )
