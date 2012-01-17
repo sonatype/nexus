@@ -52,6 +52,7 @@ import org.sonatype.nexus.proxy.cache.PathCache;
 import org.sonatype.nexus.proxy.events.RepositoryConfigurationUpdatedEvent;
 import org.sonatype.nexus.proxy.events.RepositoryEventExpireCaches;
 import org.sonatype.nexus.proxy.events.RepositoryEventLocalStatusChanged;
+import org.sonatype.nexus.proxy.events.RepositoryEventNfcCleared;
 import org.sonatype.nexus.proxy.events.RepositoryEventRecreateAttributes;
 import org.sonatype.nexus.proxy.events.RepositoryItemEventDelete;
 import org.sonatype.nexus.proxy.events.RepositoryItemEventRetrieve;
@@ -459,6 +460,9 @@ public abstract class AbstractRepository
 
         // 2nd, remove the items from NFC
         expireNotFoundCaches( request );
+
+        getApplicationEventMulticaster().notifyEventListeners(
+            new RepositoryEventExpireCaches(this, request.getRequestPath()) );
     }
 
     public void expireNotFoundCaches( ResourceStoreRequest request )
@@ -476,13 +480,17 @@ public abstract class AbstractRepository
         getLogger().info(
             "Clearing NFC cache in repository ID='" + getId() + "' from path='" + request.getRequestPath() + "'" );
 
+        boolean cacheAltered = false;
+
         // remove the items from NFC
         if ( RepositoryItemUid.PATH_ROOT.equals( request.getRequestPath() ) )
         {
             // purge all
             if ( getNotFoundCache() != null )
             {
-                getNotFoundCache().purge();
+                // NOTE: Calling what purge() would do so we can see if the cache was altered
+                //getNotFoundCache().purge();
+                cacheAltered = getNotFoundCache().removeWithChildren( RepositoryItemUid.PATH_ROOT );
             }
         }
         else
@@ -490,14 +498,18 @@ public abstract class AbstractRepository
             // purge below and above path only
             if ( getNotFoundCache() != null )
             {
-                getNotFoundCache().removeWithParents( request.getRequestPath() );
+                boolean tmp1 = getNotFoundCache().removeWithParents( request.getRequestPath() );
 
-                getNotFoundCache().removeWithChildren( request.getRequestPath() );
+                boolean tmp2 = getNotFoundCache().removeWithChildren( request.getRequestPath() );
+                
+                cacheAltered = tmp1 || tmp2;
             }
         }
 
-        getApplicationEventMulticaster().notifyEventListeners(
-            new RepositoryEventExpireCaches( this, request.getRequestPath() ) );
+        if (cacheAltered) {
+            getApplicationEventMulticaster().notifyEventListeners(
+                new RepositoryEventNfcCleared( this, request.getRequestPath() ) );
+        }
     }
 
     public Collection<String> evictUnusedItems( ResourceStoreRequest request, final long timestamp )
