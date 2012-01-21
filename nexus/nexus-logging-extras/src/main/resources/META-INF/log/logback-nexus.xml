@@ -38,12 +38,13 @@
   </appender>
   
   <logger name="org.jsecurity" level="WARN" />
-  <logger name="httpclient" level="INFO" />
+  <logger name="org.apache.commons" level="WARN" />
   <logger name="org.sonatype.nexus.rest.NexusApplication" level="ERROR" />
   <logger name="org.jsecurity.subject.AbstractRememberMeManager" level="ERROR" />
   <logger name="org.apache.http" level="INFO" />
   <logger name="org.restlet" level="WARN" />
   <logger name="org.apache.commons" level="WARN" />
+  <logger name="org.apache.shiro.web.filter.authc.BasicHttpAuthenticationFilter" level="WARN" />
   
   <root level="${root.level}">
     <appender-ref ref="console" />
