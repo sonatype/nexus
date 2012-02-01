@@ -105,6 +105,11 @@
         <include>org.sonatype.plexus:*</include>
         <include>org.sonatype.appcontext:*</include>
       </includes>
+      <!-- Ultimately should be removed (needs changes in AppContext)
+      <excludes>
+        <exclude>org.codehaus.plexus:plexus-classworlds</exclude>
+      </excludes>
+      -->
       <useProjectArtifact>false</useProjectArtifact>
       <unpack>false</unpack>
       <useTransitiveDependencies>false</useTransitiveDependencies>
