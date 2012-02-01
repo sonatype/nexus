@@ -54,7 +54,7 @@
 
     <New id="ArtifactoryContext" class="org.eclipse.jetty.webapp.WebAppContext">
       <Arg><Ref id="Contexts"/></Arg>
-      <Arg>${bundleBasedir}/artifactory-bridge</Arg>
+      <Arg>${bundle-basedir}/artifactory-bridge</Arg>
       <Arg>/artifactory</Arg>
       <Set name="extractWAR">false</Set>
     </New>
