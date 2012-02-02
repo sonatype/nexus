@@ -29,7 +29,7 @@
   <name>Nexus : Distros : Nexus OSS Bundle</name>
 
   <properties>
-    <jetty.version>7.5.4.v20111024</jetty.version>
+    <jetty.version>8.1.0.v20120127</jetty.version>
   </properties>
 
   <dependencies>
@@ -65,8 +65,8 @@
     <!--  The Jetty itself -->
     <dependency>
       <groupId>javax.servlet</groupId>
-      <artifactId>servlet-api</artifactId>
-      <scope>compile</scope>
+      <artifactId>javax.servlet-api</artifactId>
+      <version>3.0.1</version>
     </dependency>
 
     <dependency>
