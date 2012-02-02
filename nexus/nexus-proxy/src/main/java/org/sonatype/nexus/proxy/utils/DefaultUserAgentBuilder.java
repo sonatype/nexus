@@ -67,7 +67,7 @@ public class DefaultUserAgentBuilder
     }
 
     @Override
-    public String formatRemoteRepositoryStorageUserAgentString( final RemoteStorageContext ctx )
+    public String formatUserAgentString( final RemoteStorageContext ctx )
     {
         final StringBuffer buf = new StringBuffer( getUserAgentPlatformInfo() );
 
