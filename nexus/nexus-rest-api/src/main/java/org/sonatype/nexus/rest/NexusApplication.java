@@ -218,15 +218,34 @@ public class NexusApplication
     @Override
     protected void handlePlexusResourceSecurity( PlexusResource resource )
     {
-        PathProtectionDescriptor descriptor = resource.getResourceProtection();
+        PathProtectionDescriptor[] descriptors;
+        if ( resource instanceof AdvancedPlexusResourceSecurity )
+        {
+            descriptors = ( (AdvancedPlexusResourceSecurity) resource ).getResourceProtections();
+        }
+        else
+        {
+            PathProtectionDescriptor descriptor = resource.getResourceProtection();
+            if ( descriptor == null )
+            {
+                descriptors = null;
+            }
+            else
+            {
+                descriptors = new PathProtectionDescriptor[] { descriptor };
+            }
+        }
 
-        if ( descriptor == null )
+        if ( descriptors == null )
         {
             return;
         }
 
-        this.protectedPathManager.addProtectedResource( "/service/*"
-                                                        + descriptor.getPathPattern(), descriptor.getFilterExpression() );
+        for ( PathProtectionDescriptor descriptor : descriptors )
+        {
+            this.protectedPathManager.addProtectedResource( "/service/*" + descriptor.getPathPattern(),
+                descriptor.getFilterExpression() );
+        }
     }
 
     @Override
