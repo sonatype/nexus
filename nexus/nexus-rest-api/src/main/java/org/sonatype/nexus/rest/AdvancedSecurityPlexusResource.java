@@ -13,8 +13,17 @@
 package org.sonatype.nexus.rest;
 
 import org.sonatype.plexus.rest.resource.PathProtectionDescriptor;
+import org.sonatype.plexus.rest.resource.PlexusResource;
 
-public interface AdvancedPlexusResourceSecurity
+/**
+ * Allow automatically managed Rest Resource to have multiple security constraints.
+ * 
+ * @author Marvin Froeder ( velo at sonatype.com )
+ */
+public interface AdvancedSecurityPlexusResource
+    extends PlexusResource
 {
+
     PathProtectionDescriptor[] getResourceProtections();
+
 }

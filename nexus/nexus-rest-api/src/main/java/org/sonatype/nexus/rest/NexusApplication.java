@@ -34,6 +34,7 @@ import org.sonatype.plexus.rest.resource.PathProtectionDescriptor;
 import org.sonatype.plexus.rest.resource.PlexusResource;
 import org.sonatype.security.web.ProtectedPathManager;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.thoughtworks.xstream.XStream;
 
 /**
@@ -219,9 +220,9 @@ public class NexusApplication
     protected void handlePlexusResourceSecurity( PlexusResource resource )
     {
         PathProtectionDescriptor[] descriptors;
-        if ( resource instanceof AdvancedPlexusResourceSecurity )
+        if ( resource instanceof AdvancedSecurityPlexusResource )
         {
-            descriptors = ( (AdvancedPlexusResourceSecurity) resource ).getResourceProtections();
+            descriptors = ( (AdvancedSecurityPlexusResource) resource ).getResourceProtections();
         }
         else
         {
@@ -255,4 +256,11 @@ public class NexusApplication
 
         handlePlexusResourceSecurity( resource );
     }
+
+    @VisibleForTesting
+    void setProtectedPathManager( ProtectedPathManager pathManager )
+    {
+        this.protectedPathManager = pathManager;
+    }
+
 }
