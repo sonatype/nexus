@@ -4,6 +4,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import org.junit.Before;
@@ -40,6 +41,7 @@ public class NexusApplicationTest
         verify( desc ).getFilterExpression();
         verify( desc ).getPathPattern();
         verify( pathManager ).addProtectedResource( "/service/*null", null );
+        verifyNoMoreInteractions( resource, desc, pathManager );
     }
 
     @Test
@@ -59,6 +61,7 @@ public class NexusApplicationTest
         verify( desc2 ).getFilterExpression();
         verify( desc2 ).getPathPattern();
         verify( pathManager, times( 2 ) ).addProtectedResource( "/service/*null", null );
+        verifyNoMoreInteractions( resource, desc1, desc2, pathManager );
     }
 
 }
