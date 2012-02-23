@@ -207,7 +207,7 @@ public class NexusRestClient
             final String responseText = entity.getText();
             if ( responseMatcher != null )
             {
-                assertThat( response, responseMatcher );
+                assertThat( responseText, response, responseMatcher );
             }
             return responseText;
         }

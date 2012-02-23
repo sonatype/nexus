@@ -34,6 +34,7 @@ import org.sonatype.plexus.rest.resource.PathProtectionDescriptor;
 import org.sonatype.plexus.rest.resource.PlexusResource;
 import org.sonatype.security.web.ProtectedPathManager;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.thoughtworks.xstream.XStream;
 
 /**
@@ -218,15 +219,34 @@ public class NexusApplication
     @Override
     protected void handlePlexusResourceSecurity( PlexusResource resource )
     {
-        PathProtectionDescriptor descriptor = resource.getResourceProtection();
+        PathProtectionDescriptor[] descriptors;
+        if ( resource instanceof AdvancedSecurityPlexusResource )
+        {
+            descriptors = ( (AdvancedSecurityPlexusResource) resource ).getResourceProtections();
+        }
+        else
+        {
+            PathProtectionDescriptor descriptor = resource.getResourceProtection();
+            if ( descriptor == null )
+            {
+                descriptors = null;
+            }
+            else
+            {
+                descriptors = new PathProtectionDescriptor[] { descriptor };
+            }
+        }
 
-        if ( descriptor == null )
+        if ( descriptors == null )
         {
             return;
         }
 
-        this.protectedPathManager.addProtectedResource( "/service/*"
-                                                        + descriptor.getPathPattern(), descriptor.getFilterExpression() );
+        for ( PathProtectionDescriptor descriptor : descriptors )
+        {
+            this.protectedPathManager.addProtectedResource( "/service/*" + descriptor.getPathPattern(),
+                descriptor.getFilterExpression() );
+        }
     }
 
     @Override
@@ -236,4 +256,11 @@ public class NexusApplication
 
         handlePlexusResourceSecurity( resource );
     }
+
+    @VisibleForTesting
+    void setProtectedPathManager( ProtectedPathManager pathManager )
+    {
+        this.protectedPathManager = pathManager;
+    }
+
 }
