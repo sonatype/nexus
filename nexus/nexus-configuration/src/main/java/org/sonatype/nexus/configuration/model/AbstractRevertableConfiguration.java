@@ -13,6 +13,10 @@
 package org.sonatype.nexus.configuration.model;
 
 import java.util.Collection;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock.WriteLock;
 
 import org.sonatype.configuration.ConfigurationException;
 import org.sonatype.configuration.validation.InvalidConfigurationException;
@@ -30,23 +34,70 @@ public abstract class AbstractRevertableConfiguration
 
     private Object changedConfiguration;
 
+    private ReadWriteLock changedConfigurationLock = new ReentrantReadWriteLock();
+
+    public Lock getConfigurationWriteLock()
+    {
+        return changedConfigurationLock.writeLock();
+    }
+
+    public Lock getConfigurationReadLock()
+    {
+        return changedConfigurationLock.readLock();
+    }
+
     public Object getConfiguration( boolean forWrite )
     {
         if ( forWrite )
         {
-            if ( getOriginalConfiguration() != null && getChangedConfiguration() == null )
+            Lock read = getConfigurationReadLock();
+            try
             {
-                // copy it
-                setChangedConfiguration( copyObject( getOriginalConfiguration(), null ) );
+                read.lock();
 
-                copyTransients( getOriginalConfiguration(), getChangedConfiguration() );
+                Lock write = getConfigurationWriteLock();
+                if ( getOriginalConfiguration() != null && getChangedConfiguration() == null )
+                {
+                    read.unlock();
+                    try
+                    {
+                        write.lock();
+
+                        // when lock is released someone else may have executed this
+                        if ( getOriginalConfiguration() != null && getChangedConfiguration() == null )
+                        {
+                            // copy it
+                            setChangedConfiguration( copyObject( getOriginalConfiguration(), null ) );
+
+                            copyTransients( getOriginalConfiguration(), getChangedConfiguration() );
+                        }
+                    }
+                    finally
+                    {
+                        read.lock();
+                        write.unlock();
+                    }
+                }
+
+                return getChangedConfiguration();
             }
-
-            return getChangedConfiguration();
+            finally
+            {
+                read.unlock();
+            }
         }
         else
         {
-            return getOriginalConfiguration();
+            Lock read = getConfigurationReadLock();
+            try
+            {
+                read.lock();
+                return getOriginalConfiguration();
+            }
+            finally
+            {
+                read.unlock();
+            }
         }
     }
 
@@ -123,40 +174,69 @@ public abstract class AbstractRevertableConfiguration
     {
         if ( isThisDirty() )
         {
-            checkValidationResponse( doValidateChanges( getChangedConfiguration() ) );
+            Lock lock = getConfigurationReadLock();
+            try
+            {
+                lock.lock();
+
+                checkValidationResponse( doValidateChanges( getChangedConfiguration() ) );
+            }
+            finally
+            {
+                lock.unlock();
+            }
         }
     }
 
     public void commitChanges()
         throws ConfigurationException
     {
-        if ( isThisDirty() )
+        Lock lock = getConfigurationWriteLock();
+        try
         {
-            try
+            lock.lock();
+
+            if ( isThisDirty() )
             {
-                checkValidationResponse( doValidateChanges( getChangedConfiguration() ) );
+                try
+                {
+                    checkValidationResponse( doValidateChanges( getChangedConfiguration() ) );
+                }
+                catch ( ConfigurationException e )
+                {
+                    rollbackChanges();
+
+                    throw e;
+                }
+
+                // nice, isn't it?
+                setOriginalConfiguration( copyObject( getChangedConfiguration(), getOriginalConfiguration() ) );
+
+                copyTransients( getChangedConfiguration(), getOriginalConfiguration() );
+
+                setChangedConfiguration( null );
             }
-            catch ( ConfigurationException e )
-            {
-                rollbackChanges();
-
-                throw e;
-            }
-
-            // nice, isn't it?
-            setOriginalConfiguration( copyObject( getChangedConfiguration(), getOriginalConfiguration() ) );
-
-            copyTransients( getChangedConfiguration(), getOriginalConfiguration() );
-
-            setChangedConfiguration( null );
+        }
+        finally
+        {
+            lock.unlock();
         }
     }
 
     public void rollbackChanges()
     {
-        if ( isThisDirty() )
+        Lock lock = getConfigurationWriteLock();
+        try
         {
-            setChangedConfiguration( null );
+            lock.lock();
+            if ( isThisDirty() )
+            {
+                setChangedConfiguration( null );
+            }
+        }
+        finally
+        {
+            lock.unlock();
         }
     }
 

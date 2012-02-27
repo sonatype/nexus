@@ -12,11 +12,25 @@
  */
 package org.sonatype.nexus.proxy.target;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.collect.Collections2.transform;
 import static org.easymock.EasyMock.createMock;
 import static org.easymock.EasyMock.expect;
 import static org.easymock.EasyMock.replay;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
 
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+import java.util.concurrent.FutureTask;
 
 import org.junit.Test;
 import org.sonatype.nexus.configuration.application.ApplicationConfiguration;
@@ -25,7 +39,9 @@ import org.sonatype.nexus.proxy.maven.maven1.Maven1ContentClass;
 import org.sonatype.nexus.proxy.maven.maven2.Maven2ContentClass;
 import org.sonatype.nexus.proxy.registry.ContentClass;
 import org.sonatype.nexus.proxy.repository.Repository;
-import org.sonatype.nexus.test.PlexusTestCaseSupport;
+
+import com.google.common.base.Function;
+import com.google.common.collect.Lists;
 
 public class DefaultTargetRegistryTest
     extends AbstractNexusTestCase
@@ -134,6 +150,96 @@ public class DefaultTargetRegistryTest
         assertNotNull( ts );
 
         assertEquals( 0, ts.getMatches().size() );
+    }
+
+    private Function<Target, String> toIds = new Function<Target, String>()
+    {
+        @Override
+        public String apply( Target input )
+        {
+            checkNotNull( input );
+            return input.getId();
+        }
+    };
+
+    private static final int OPERATIONS = 2000;
+
+    private static final int THREADS = OPERATIONS / 10;
+
+    public void single( final int ref )
+        throws Exception
+    {
+        List<String> ids = Lists.newArrayList();
+        for ( int j = 0; j < 5; j++ )
+        {
+
+            String id = Long.toHexString( System.nanoTime() + ref + j + ref * j );
+            Target target = new Target( id, "name" + id, j % 3 == 0 ? maven1 : maven2, Arrays.asList( ".*/" + id ) );
+            targetRegistry.addRepositoryTarget( target );
+            ids.add( id );
+        }
+
+        applicationConfiguration.saveConfiguration();
+
+        for ( String id : ids )
+        {
+            Target t = targetRegistry.getRepositoryTarget( id );
+            assertThat( t, notNullValue() );
+            assertThat( t.getId(), equalTo( id ) );
+            assertThat( t.getName(), equalTo( "name" + id ) );
+        }
+
+        Collection<String> targets = transform( targetRegistry.getRepositoryTargets(), toIds );
+        targets.containsAll( ids );
+
+        for ( String id : ids )
+        {
+            targetRegistry.removeRepositoryTarget( id );
+            // I really wanna try to break this
+            applicationConfiguration.saveConfiguration();
+        }
+
+        targets = transform( targetRegistry.getRepositoryTargets(), toIds );
+        for ( String id : ids )
+        {
+            Target t = targetRegistry.getRepositoryTarget( id );
+            assertThat( "ref: " + ref + " ids: " + ids, t, nullValue() );
+            assertThat( "ref: " + ref + " ids: " + ids, targets, not( containsInAnyOrder( id ) ) );
+        }
+    }
+
+    @Test
+    public void testConcurrency()
+        throws Exception
+    {
+        List<FutureTask<String>> calls = Lists.newArrayList();
+        for ( int i = 0; i < OPERATIONS; i++ )
+        {
+            final int j = i;
+            Callable<String> c = new Callable<String>()
+            {
+                @Override
+                public String call()
+                    throws Exception
+                {
+                    single( j );
+
+                    return "ok";
+                }
+            };
+            calls.add( new FutureTask<String>( c ) );
+        }
+
+        Executor executor = Executors.newFixedThreadPool (THREADS);
+        for ( FutureTask<String> futureTask : calls )
+        {
+            executor.execute( futureTask );
+        }
+
+        for ( FutureTask<String> futureTask : calls )
+        {
+            assertThat( futureTask.get(), equalTo( "ok" ) );
+        }
     }
 
 }

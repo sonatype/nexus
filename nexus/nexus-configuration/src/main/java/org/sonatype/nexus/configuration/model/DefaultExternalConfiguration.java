@@ -12,6 +12,10 @@
  */
 package org.sonatype.nexus.configuration.model;
 
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 import org.sonatype.configuration.ConfigurationException;
 import org.sonatype.configuration.validation.ValidationResponse;
@@ -35,6 +39,18 @@ public class DefaultExternalConfiguration<T extends AbstractXpp3DomExternalConfi
 
     private T changedConfiguration;
 
+    private ReadWriteLock changedConfigurationLock = new ReentrantReadWriteLock();
+
+    public Lock getConfigurationWriteLock()
+    {
+        return changedConfigurationLock.writeLock();
+    }
+
+    public Lock getConfigurationReadLock()
+    {
+        return changedConfigurationLock.readLock();
+    }
+
     public DefaultExternalConfiguration( ApplicationConfiguration applicationConfiguration,
                                          CoreConfiguration coreConfiguration, T configuration )
     {
@@ -55,28 +71,57 @@ public class DefaultExternalConfiguration<T extends AbstractXpp3DomExternalConfi
     public void validateChanges()
         throws ConfigurationException
     {
-        if ( changedConfiguration != null )
+        Lock read = getConfigurationReadLock();
+        try
         {
-            changedConfiguration.validate( getApplicationConfiguration(), coreConfiguration );
+            read.lock();
+
+            if ( changedConfiguration != null )
+            {
+                changedConfiguration.validate( getApplicationConfiguration(), coreConfiguration );
+            }
+        }
+        finally
+        {
+            read.unlock();
         }
     }
 
     public void commitChanges()
         throws ConfigurationException
     {
-        if ( changedConfiguration != null )
+        Lock write = getConfigurationWriteLock();
+        try
         {
-            changedConfiguration.validate( getApplicationConfiguration(), coreConfiguration );
+            write.lock();
+            if ( changedConfiguration != null )
+            {
+                changedConfiguration.validate( getApplicationConfiguration(), coreConfiguration );
 
-            configuration.apply( changedConfiguration );
+                configuration.apply( changedConfiguration );
 
-            changedConfiguration = null;
+                changedConfiguration = null;
+            }
+        }
+        finally
+        {
+            write.unlock();
         }
     }
 
     public void rollbackChanges()
     {
-        changedConfiguration = null;
+        Lock write = getConfigurationWriteLock();
+        try
+        {
+            write.lock();
+
+            changedConfiguration = null;
+        }
+        finally
+        {
+            write.unlock();
+        }
     }
 
     @SuppressWarnings( "unchecked" )
@@ -110,4 +155,5 @@ public class DefaultExternalConfiguration<T extends AbstractXpp3DomExternalConfi
     {
         return applicationConfiguration;
     }
+
 }
