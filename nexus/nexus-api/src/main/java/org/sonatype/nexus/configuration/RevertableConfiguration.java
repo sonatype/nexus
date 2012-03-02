@@ -12,6 +12,8 @@
  */
 package org.sonatype.nexus.configuration;
 
+import java.util.concurrent.locks.Lock;
+
 import org.sonatype.configuration.ConfigurationException;
 
 /**
@@ -49,4 +51,19 @@ public interface RevertableConfiguration
     // ==
     
     Object getConfiguration( boolean forWrite );
+
+    /**
+     * Returns the configuration lock used on write operations (like {@link #commitChanges()} and
+     * {@link #rollbackChanges()})
+     * 
+     * @return
+     */
+    Lock getConfigurationWriteLock();
+
+    /**
+     * Returns the configuration lock used on read operations (like {@link #validateChanges()})
+     * 
+     * @return
+     */
+    Lock getConfigurationReadLock();
 }

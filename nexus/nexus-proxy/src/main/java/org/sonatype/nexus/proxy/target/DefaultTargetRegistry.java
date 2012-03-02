@@ -14,11 +14,11 @@ package org.sonatype.nexus.proxy.target;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.locks.Lock;
 
 import org.codehaus.plexus.component.annotations.Component;
 import org.codehaus.plexus.component.annotations.Requirement;
@@ -41,11 +41,15 @@ import org.sonatype.nexus.proxy.registry.ContentClass;
 import org.sonatype.nexus.proxy.registry.RepositoryTypeRegistry;
 import org.sonatype.nexus.proxy.repository.Repository;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+
 /**
  * The default implementation of target registry.
  * 
  * @author cstamas
  */
+@SuppressWarnings( "deprecation" )
 @Component( role = TargetRegistry.class )
 public class DefaultTargetRegistry
     extends AbstractConfigurable
@@ -121,14 +125,24 @@ public class DefaultTargetRegistry
     public boolean commitChanges()
         throws ConfigurationException
     {
-        boolean wasDirty = super.commitChanges();
-
-        if ( wasDirty )
+        Lock write = getCurrentCoreConfiguration().getConfigurationWriteLock();
+        try
         {
-            targets = null;
-        }
+            write.lock();
 
-        return wasDirty;
+            boolean wasDirty = super.commitChanges();
+
+            if ( wasDirty )
+            {
+                targets = null;
+            }
+
+            return wasDirty;
+        }
+        finally
+        {
+            write.unlock();
+        }
     }
 
     // ==
@@ -179,58 +193,100 @@ public class DefaultTargetRegistry
 
     public Collection<Target> getRepositoryTargets()
     {
-        if ( targets == null )
+        Lock read = getCurrentCoreConfiguration().getConfigurationReadLock();
+        try
         {
-            List<CRepositoryTarget> ctargets = getCurrentConfiguration( false );
+            read.lock();
 
-            targets = new ArrayList<Target>( ctargets.size() );
-
-            for ( CRepositoryTarget ctarget : ctargets )
+            if ( targets == null )
             {
-                Target target = convert( ctarget );
-
-                if ( target != null )
+                read.unlock();
+                Lock write = getCurrentCoreConfiguration().getConfigurationWriteLock();
+                try
                 {
-                    targets.add( target );
+                    write.lock();
+                    if ( targets == null )
+                    {
+                        targets = Lists.newArrayList();
+
+                        List<CRepositoryTarget> ctargets = getCurrentConfiguration( false );
+
+                        for ( CRepositoryTarget ctarget : ctargets )
+                        {
+                            Target target = convert( ctarget );
+
+                            if ( target != null )
+                            {
+                                targets.add( target );
+                            }
+                        }
+                    }
+                }
+                finally
+                {
+                    read.lock();
+                    write.unlock();
                 }
             }
+
+            return ImmutableList.copyOf( targets );
         }
-
-        // copy the list, since processing it may take longer
-        ArrayList<Target> result = new ArrayList<Target>( targets );
-
-        return Collections.unmodifiableCollection( result );
+        finally
+        {
+            read.unlock();
+        }
     }
 
     public Target getRepositoryTarget( String id )
     {
-        List<CRepositoryTarget> targets = getCurrentConfiguration( false );
-
-        for ( CRepositoryTarget target : targets )
+        Lock read = getCurrentCoreConfiguration().getConfigurationReadLock();
+        try
         {
-            if ( StringUtils.equals( id, target.getId() ) )
-            {
-                return convert( target );
-            }
-        }
+            read.lock();
 
-        return null;
+            List<CRepositoryTarget> targets = getCurrentConfiguration( false );
+
+            for ( CRepositoryTarget target : targets )
+            {
+                if ( StringUtils.equals( id, target.getId() ) )
+                {
+                    return convert( target );
+                }
+            }
+
+            return null;
+        }
+        finally
+        {
+            read.unlock();
+        }
     }
 
     public boolean addRepositoryTarget( Target target )
         throws ConfigurationException
     {
-        CRepositoryTarget cnf = convert( target );
+        Lock write = getCurrentCoreConfiguration().getConfigurationWriteLock();
+        try
+        {
+            write.lock();
 
-        this.validate( cnf );
+            CRepositoryTarget cnf = convert( target );
 
-        removeRepositoryTarget( cnf.getId(), true );
+            this.validate( cnf );
 
-        getCurrentConfiguration( true ).add( cnf );
-        
-        getApplicationEventMulticaster().notifyEventListeners( new TargetRegistryEventAdd( this, target ) );
+            removeRepositoryTarget( cnf.getId(), true );
 
-        return true;
+            getCurrentConfiguration( true ).add( cnf );
+
+            getApplicationEventMulticaster().notifyEventListeners( new TargetRegistryEventAdd( this, target ) );
+
+            return true;
+        }
+        finally
+        {
+            write.unlock();
+        }
+
     }
     
     public boolean removeRepositoryTarget( String id )
@@ -240,25 +296,37 @@ public class DefaultTargetRegistry
 
     protected boolean removeRepositoryTarget( String id, boolean forUpdate )
     {
-        List<CRepositoryTarget> targets = getCurrentConfiguration( true );
 
-        for ( Iterator<CRepositoryTarget> ti = targets.iterator(); ti.hasNext(); )
+        Lock write = getCurrentCoreConfiguration().getConfigurationWriteLock();
+        try
         {
-            CRepositoryTarget cTarget = ti.next();
+            write.lock();
 
-            if ( StringUtils.equals( id, cTarget.getId() ) )
+            List<CRepositoryTarget> targets = getCurrentConfiguration( true );
+
+            for ( Iterator<CRepositoryTarget> ti = targets.iterator(); ti.hasNext(); )
             {
-                Target target = getRepositoryTarget( id );
+                CRepositoryTarget cTarget = ti.next();
 
-                ti.remove();
-
-                if ( !forUpdate )
+                if ( StringUtils.equals( id, cTarget.getId() ) )
                 {
-                    getApplicationEventMulticaster().notifyEventListeners( new TargetRegistryEventRemove( this, target ) );
-                }
+                    Target target = getRepositoryTarget( id );
 
-                return true;
+                    ti.remove();
+
+                    if ( !forUpdate )
+                    {
+                        getApplicationEventMulticaster().notifyEventListeners(
+                            new TargetRegistryEventRemove( this, target ) );
+                    }
+
+                    return true;
+                }
             }
+        }
+        finally
+        {
+            write.unlock();
         }
 
         return false;
