@@ -37,7 +37,14 @@ public abstract class AbstractStagingMojo
 
     private StageClient client;
 
-    public AbstractStagingMojo()
+    /**
+     * Filter opened staging repositories using the provided user agent
+     *
+     * @parameter expression="${nexus.userAgent}"
+     */
+    private String userAgent;
+
+		public AbstractStagingMojo()
     {
         super();
     }
@@ -95,12 +102,14 @@ public abstract class AbstractStagingMojo
             if ( groupId != null )
             {
                 repos = getClient().getClosedStageRepositoriesForUser( groupId, artifactId, version );
-                builder.append( String.format( " for: '%s:%s:%s'", groupId, artifactId, version ) );
+                builder.append( String.format( " for: '%s:%s:%s', user-agent: '%s'", groupId, artifactId, version, userAgent ) );
             }
             else
             {
                 repos = getClient().getClosedStageRepositories();
+                builder.append( String.format( " for user-agent: '%s'", userAgent ) );
             }
+            repos = filterUserAgent(repos);
             builder.append( ": " );
         }
         catch ( RESTLightClientException e )
@@ -236,6 +245,12 @@ public abstract class AbstractStagingMojo
         }
     }
 
+
+    public String getUserAgent()
+    {
+        return userAgent;
+    }
+
     public String getRepositoryId()
     {
         return repositoryId;
@@ -246,4 +261,24 @@ public abstract class AbstractStagingMojo
         this.repositoryId = repositoryId;
     }
 
+    protected List<StageRepository> filterUserAgent(List<StageRepository> repos)
+    {
+        List<StageRepository> filteredRepos;
+        if ( userAgent == null )
+        {
+            filteredRepos = repos;
+        }
+        else
+        {
+            filteredRepos = new ArrayList<StageRepository>();
+            for (StageRepository stageRepository : repos)
+            {
+                if (userAgent.equals(stageRepository.getUserAgent()))
+                {
+                    filteredRepos.add(stageRepository);
+                }
+            }
+        }
+        return filteredRepos;
+    }
 }
