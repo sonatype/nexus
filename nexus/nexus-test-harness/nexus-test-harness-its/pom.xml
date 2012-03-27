@@ -295,6 +295,20 @@
       </exclusions>
     </dependency>
 
+    <!-- NEXUS-3082 -->
+    <dependency>
+      <groupId>org.sonatype.sisu.pr</groupId>
+      <artifactId>sisu-pr-testutil</artifactId>
+      <version>1.5</version>
+      <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>junit</groupId>
+          <artifactId>junit</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
 
     <!-- for Cargo ITs -->
     <dependency>
