@@ -26,6 +26,7 @@ import java.util.List;
 import org.apache.commons.fileupload.FileItem;
 import org.apache.maven.index.artifact.Gav;
 import org.apache.maven.index.artifact.VersionUtils;
+import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.apache.shiro.subject.Subject;
@@ -106,7 +107,7 @@ public abstract class AbstractArtifactPlexusResource
         Gav gav = new Gav( g, a, v, c, e, null, null, null, false, null, false, null );
 
         ArtifactStoreRequest result = new ArtifactStoreRequest( mavenRepository, gav, localOnly, remoteOnly );
-        
+
         if ( getLogger().isDebugEnabled() )
         {
             getLogger().debug( "Created ArtifactStoreRequest request for " + result.getRequestPath() );
@@ -244,7 +245,7 @@ public abstract class AbstractArtifactPlexusResource
         ArtifactStoreRequest gavRequest =
             getResourceStoreRequest( request, false, false, repositoryId, groupId, artifactId, version, packaging,
                 classifier, extension );
-        
+
         gavRequest.setRequestLocalOnly( isLocal( request, gavRequest.getRequestPath() ) );
 
         try
@@ -490,11 +491,9 @@ public abstract class AbstractArtifactPlexusResource
             getLogger().debug( "Got error while uploading artifact", t );
 
             StringBuffer resp = new StringBuffer();
-            resp.append( "<html>" );
-            resp.append( "<body>" );
-            resp.append( "<error>" + e.getMessage() + "</error>" );
-            resp.append( "</body>" );
-            resp.append( "</html>" );
+            resp.append( "<html><body><error>");
+            resp.append(  StringEscapeUtils.escapeHtml( e.getMessage() ));
+            resp.append( "</error></body></html>" );
 
             String forceSuccess = request.getResourceRef().getQueryAsForm().getFirstValue( "forceSuccess" );
 
@@ -560,6 +559,10 @@ public abstract class AbstractArtifactPlexusResource
         else if ( t instanceof AccessDeniedException )
         {
             AbstractResourceStoreContentPlexusResource.challengeIfNeeded( request, res, (AccessDeniedException) t );
+            if ( Status.CLIENT_ERROR_FORBIDDEN.equals( res.getStatus() ) )
+            {
+                throw new ResourceException( Status.CLIENT_ERROR_FORBIDDEN, t.getMessage() );
+            }
         }
         else if ( t instanceof XmlPullParserException )
         {
