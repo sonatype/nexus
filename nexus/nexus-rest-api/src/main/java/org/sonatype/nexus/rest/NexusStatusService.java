@@ -12,10 +12,7 @@
  */
 package org.sonatype.nexus.rest;
 
-import java.util.HashMap;
-
 import org.apache.commons.lang.StringEscapeUtils;
-import org.apache.commons.lang.exception.ExceptionUtils;
 import org.codehaus.plexus.component.annotations.Component;
 import org.codehaus.plexus.component.annotations.Requirement;
 import org.restlet.data.MediaType;
@@ -23,14 +20,13 @@ import org.restlet.data.Request;
 import org.restlet.data.Response;
 import org.restlet.data.Status;
 import org.restlet.resource.Representation;
+import org.restlet.resource.StringRepresentation;
 import org.restlet.service.StatusService;
-import org.sonatype.nexus.Nexus;
 import org.sonatype.plexus.rest.ReferenceFactory;
-import org.sonatype.plexus.rest.representation.VelocityRepresentation;
 
 /**
- * Nexus specific status service that simply assembles an "error page" out of a Velocity template but watching to HTML
- * escape any content that might come from external (ie. query param).
+ * Nexus specific status service that simply assembles an "error page", same one as assembled by
+ * {@code com.noelios.restlet.StatusFilter} but with escaped description.
  * 
  * @author cstamas
  */
@@ -41,31 +37,39 @@ public class NexusStatusService
     @Requirement
     private ReferenceFactory referenceFactory;
 
-    @Requirement
-    private Nexus nexus;
-
+    @Override
     public Representation getRepresentation( final Status status, final Request request, final Response response )
     {
-        final HashMap<String, Object> dataModel = new HashMap<String, Object>();
+        final StringBuilder sb = new StringBuilder();
+        sb.append( "<html>\n" );
+        sb.append( "<head>\n" );
+        sb.append( "   <title>Status page</title>\n" );
+        sb.append( "</head>\n" );
+        sb.append( "<body>\n" );
 
-        dataModel.put( "request", request );
-        dataModel.put( "nexusVersion", nexus.getSystemStatus().getVersion() );
-        dataModel.put( "nexusRoot", referenceFactory.getContextRoot( request ).toString() );
-
-        dataModel.put( "statusCode", status.getCode() );
-        dataModel.put( "statusName", status.getName() );
-        dataModel.put( "errorDescription", StringEscapeUtils.escapeHtml( status.getDescription() ) );
-
-        if ( null != status.getThrowable() )
+        sb.append( "<h3>" );
+        if ( status.getDescription() != null )
         {
-            dataModel.put( "errorStackTrace",
-                StringEscapeUtils.escapeHtml( ExceptionUtils.getStackTrace( status.getThrowable() ) ) );
+            sb.append( StringEscapeUtils.escapeHtml( status.getDescription() ) );
         }
+        else
+        {
+            sb.append( "No description available for this result status" );
+        }
+        sb.append( "</h3>" );
+        sb.append( "<p>You can get technical details <a href=\"" );
+        sb.append( status.getUri() );
+        sb.append( "\">here</a>.<br>\n" );
 
-        // Load up the template, and pass in the data
-        VelocityRepresentation representation =
-            new VelocityRepresentation( null, "/templates/errorPageContentHtml.vm", dataModel, MediaType.TEXT_HTML );
+        sb.append( "Please continue your visit at our <a href=\"" );
+        sb.append( referenceFactory.createReference( request.getRootRef(), null ) );
+        sb.append( "\">home page</a>.\n" );
 
-        return representation;
+        sb.append( "</p>\n" );
+        sb.append( "</body>\n" );
+        sb.append( "</html>\n" );
+
+        return new StringRepresentation( sb.toString(), MediaType.TEXT_HTML );
     }
+
 }
