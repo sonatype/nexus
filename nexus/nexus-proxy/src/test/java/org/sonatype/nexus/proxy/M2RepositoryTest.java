@@ -41,6 +41,10 @@ import org.sonatype.nexus.proxy.storage.UnsupportedStorageOperationException;
 import org.sonatype.plexus.appevents.Event;
 import org.sonatype.plexus.appevents.EventListener;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.not;
+
 public class M2RepositoryTest
     extends M2ResourceStoreTest
 {
@@ -289,7 +293,9 @@ public class M2RepositoryTest
     public void testExpiration_NEXUS1675()
         throws Exception
     {
+        getLogger().info("Start testExpiration_NEXUS1675() for '/spoof/maven-metadata.xml' at (" + System.currentTimeMillis() + ")");
         doTestExpiration( "/spoof/maven-metadata.xml", 0, 3, 5, 1 );
+        getLogger().info("End testExpiration_NEXUS1675() for '/spoof/maven-metadata.xml' at (" + System.currentTimeMillis() + ")");
     }
 
     @Test
@@ -299,7 +305,9 @@ public class M2RepositoryTest
         // "defaults"
         // enforce = true, hence even if 1stround age = 0 (always), enforce will prevent redownload, so 1st round will
         // have 1 remote hits
+        getLogger().info("Start testExpiration_NEXUS3065() for '/spoof/spoof/1.0/spoof-1.0.txt' at (" + System.currentTimeMillis() + ")");
         doTestExpiration( "/spoof/spoof/1.0/spoof-1.0.txt", 0, 3, -1, 1 );
+        getLogger().info("End testExpiration_NEXUS3065() for '/spoof/spoof/1.0/spoof-1.0.txt' at (" + System.currentTimeMillis() + ")");
 
         // "overrides"
         // enforce = false, hence since 1stround age = 0 (always), 1st round will
@@ -318,6 +326,7 @@ public class M2RepositoryTest
         getApplicationEventMulticaster().addEventListener( ch );
 
         File mdFile = new File( new File( getBasedir() ), "target/test-classes/repo1" + path );
+        long fileTimestamp = mdFile.lastModified();
 
         assertTrue( mdFile.exists() );
 
@@ -334,8 +343,6 @@ public class M2RepositoryTest
 
         repository.setMetadataMaxAge( age1stround );
         repository.setArtifactMaxAge( age1stround );
-        // not configurable
-        // repository.setEnforceReleaseRedownloadPolicy( enforceReleaseRedownloadPolicy );
         repository.getCurrentCoreConfiguration().commitChanges();
 
         for ( int i = 0; i < 10 && !mdFile.setLastModified( System.currentTimeMillis() - ( 3L * A_DAY ) ); i++ )
@@ -343,6 +350,9 @@ public class M2RepositoryTest
             System.gc(); // helps with FS sync'ing on Windows
             Thread.sleep( 500 ); // wait for FS
         }
+
+        assertThat( "File timestamp did not change, first pass", mdFile.lastModified(), not( equalTo( fileTimestamp ) ) );
+        fileTimestamp = mdFile.lastModified();
 
         repository.retrieveItem( new ResourceStoreRequest( path, false ) );
 
@@ -352,6 +362,9 @@ public class M2RepositoryTest
             Thread.sleep( 500 ); // wait for FS
         }
 
+        assertThat( "File timestamp did not change, second pass", mdFile.lastModified(), not( equalTo( fileTimestamp ) ) );
+        fileTimestamp = mdFile.lastModified();
+
         repository.retrieveItem( new ResourceStoreRequest( path, false ) );
 
         for ( int i = 0; i < 10 && !mdFile.setLastModified( System.currentTimeMillis() - ( 1L * A_DAY ) ); i++ )
@@ -360,9 +373,13 @@ public class M2RepositoryTest
             Thread.sleep( 500 ); // wait for FS
         }
 
-        repository.retrieveItem( new ResourceStoreRequest( path, false ) );
+        assertThat( "File timestamp did not change, third pass", mdFile.lastModified(), not( equalTo( fileTimestamp ) ) );
+        fileTimestamp = mdFile.lastModified();
 
-        assertEquals( "Remote hits cound fail (1st round)!", remoteHitsExpected1stround, ch.getRequestCount() );
+        repository.retrieveItem( new ResourceStoreRequest( path, false ) );
+        getLogger().info(path + " -> BEFORE assert 1 requestCount=" + remoteHitsExpected1stround + " at (" + System.currentTimeMillis() + ")");
+        assertEquals("Remote hits count fail 1st round at (" + System.currentTimeMillis() + ")", remoteHitsExpected1stround, ch.getRequestCount());
+        getLogger().info(path + " -> AFTER assert 1 requestCount=" + remoteHitsExpected1stround + " at (" + System.currentTimeMillis() + ")");
 
         // ==
 
@@ -400,8 +417,13 @@ public class M2RepositoryTest
         Thread.sleep( 200 ); // wait for FS
 
         repository.retrieveItem( new ResourceStoreRequest( path, false ) );
+        getLogger().info(path + " -> BEFORE assert 2 requestCount=" + remoteHitsExpected2ndround + " at (" + System.currentTimeMillis() + ")");
+        assertEquals("Remote hits count fail 2nd round at (" + System.currentTimeMillis() + ")", remoteHitsExpected2ndround, ch.getRequestCount());
+        getLogger().info(path + " -> AFTER assert 2 requestCount=" + remoteHitsExpected2ndround + " at (" + System.currentTimeMillis() + ")");
 
-        assertEquals( "Remote hits cound fail (2nd round)!", remoteHitsExpected2ndround, ch.getRequestCount() );
+        // cleanup counter listener for next test call to avoid added overhead, logging noise
+        getApplicationEventMulticaster().removeEventListener( ch );
+
     }
 
     @Test
