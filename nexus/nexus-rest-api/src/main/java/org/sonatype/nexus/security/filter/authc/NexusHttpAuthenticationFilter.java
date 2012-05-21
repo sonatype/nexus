@@ -145,9 +145,9 @@ public class NexusHttpAuthenticationFilter
             // NEXUS-5049: Check is this an attempt with "anonymous" user?
             // We do not allow logins with anonymous user if anon access is disabled
             final AuthenticationToken token = createToken( request, response );
-            final String anonymousUsername = getSecuritySystem().getAnonymousUsername();
+            final String anonymousUsername = getNexusConfiguration().getAnonymousUsername();
             final String loginUsername = token.getPrincipal().toString();
-            if ( !getSecuritySystem().isAnonymousAccessEnabled()
+            if ( !getNexusConfiguration().isAnonymousAccessEnabled()
                 && StringUtils.equals( anonymousUsername, loginUsername ) )
             {
                 getLogger().info(
@@ -235,12 +235,9 @@ public class NexusHttpAuthenticationFilter
 
         Subject subject = getSubject( request, response );
 
-        // disable the session creation for the anon user.
-        request.setAttribute( DefaultSubjectContext.SESSION_CREATION_ENABLED, Boolean.FALSE );
-
         UsernamePasswordToken usernamePasswordToken =
-            new UsernamePasswordToken( getSecuritySystem().getAnonymousUsername(),
-                getSecuritySystem().getAnonymousPassword() );
+            new UsernamePasswordToken( getNexusConfiguration().getAnonymousUsername(),
+                getNexusConfiguration().getAnonymousPassword() );
 
         try
         {
