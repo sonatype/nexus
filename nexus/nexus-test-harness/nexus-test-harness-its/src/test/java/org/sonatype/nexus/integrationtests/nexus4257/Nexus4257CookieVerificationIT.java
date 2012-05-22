@@ -13,6 +13,8 @@
 package org.sonatype.nexus.integrationtests.nexus4257;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.commons.httpclient.Cookie;
 import org.apache.commons.httpclient.Header;
@@ -32,10 +34,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.*;
 
 
 public class Nexus4257CookieVerificationIT
@@ -71,7 +70,7 @@ public class Nexus4257CookieVerificationIT
 
         // do not set the cookie, expect failure
         GetMethod failedGetMethod = new GetMethod( url );
-        assertThat( executeAndRelease( httpClient, failedGetMethod ), equalTo( 401 ) );
+        assertThat( executeAndRelease( httpClient, getMethod ), equalTo( 401 ) );
 
         // set the cookie expect a 200, If a cookie is set, and cannot be found on the server, the response will fail with a 401
         httpClient.getState().addCookie( sessionCookie );
