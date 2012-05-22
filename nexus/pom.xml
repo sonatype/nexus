@@ -175,7 +175,7 @@
     <plexus-jetty6.version>1.7</plexus-jetty6.version>
     <plexus-jetty7.version>1.2.1</plexus-jetty7.version>
     <plexus-jetty-testsuite.version>2.0</plexus-jetty-testsuite.version>
-    <plexus.restlet.bridge.version>1.20-SNAPSHOT</plexus.restlet.bridge.version>
+    <plexus.restlet.bridge.version>1.20</plexus.restlet.bridge.version>
     <plexus-security.version>2.4</plexus-security.version>
     <plexus-swizzle.version>1.2</plexus-swizzle.version>
     <plexus-task-scheduler.version>1.6.0</plexus-task-scheduler.version>
