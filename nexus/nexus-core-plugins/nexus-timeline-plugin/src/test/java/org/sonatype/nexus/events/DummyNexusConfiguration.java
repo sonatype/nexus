@@ -340,12 +340,4 @@ public class DummyNexusConfiguration
         return null;
     }
 
-    @Override
-    public void setAnonymousAccess( boolean enabled, String username, String password )
-        throws InvalidConfigurationException
-    {
-        // TODO Auto-generated method stub
-        
-    }
-
 }
