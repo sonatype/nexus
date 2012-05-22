@@ -12,7 +12,6 @@
  */
 package org.sonatype.nexus.configuration.security.upgrade;
 
-import java.io.File;
 import java.io.IOException;
 
 import org.codehaus.plexus.component.annotations.Component;
@@ -27,7 +26,6 @@ import org.sonatype.nexus.proxy.events.NexusStartedEvent;
 import org.sonatype.plexus.appevents.ApplicationEventMulticaster;
 import org.sonatype.plexus.appevents.Event;
 import org.sonatype.security.configuration.model.SecurityConfiguration;
-import org.sonatype.security.configuration.source.FileSecurityConfigurationSource;
 import org.sonatype.security.configuration.source.SecurityConfigurationSource;
 import org.sonatype.security.events.SecurityConfigurationChangedEvent;
 import org.sonatype.security.model.CUser;
@@ -86,29 +84,22 @@ public class SecurityUpgradeEventInspector
                 changed = true;
             }
 
-            // if security-configuration.xml file is missing then we don't want to create it before NexusJSecurityFilter
-            // kicks in, otherwise we end up with the default SecurityManager instead of the 'nexus' stateful/stateless
-            // version (note this is not an issue with Nexus 2.1+ as it has changed over to Shiro's 'noSession' filter)
-            File systemConfigFile = ( (FileSecurityConfigurationSource) systemConfigSource ).getConfigurationFile();
-            if ( systemConfigFile != null && systemConfigFile.exists() )
+            // NEXUS-5049: but this time, we need to perform this _not_ against SecuritySystem API (is still not up)
+            // but by directly "tampering" with it's configuration(s).
+            final SecurityConfiguration securitySystemConfiguration = systemConfigSource.loadConfiguration();
+            if ( !securitySystemConfiguration.isAnonymousAccessEnabled()
+                && !StringUtils.isBlank( securitySystemConfiguration.getAnonymousUsername() ) )
             {
-                // NEXUS-5049: but this time, we need to perform this _not_ against SecuritySystem API (is still not up)
-                // but by directly "tampering" with it's configuration(s).
-                final SecurityConfiguration securitySystemConfiguration = systemConfigSource.loadConfiguration();
-                if ( !securitySystemConfiguration.isAnonymousAccessEnabled()
-                    && !StringUtils.isBlank( securitySystemConfiguration.getAnonymousUsername() ) )
+                // get the probably _changed_ one again
+                securityRealmConfig = realmConfigSource.getConfiguration();
+                
+                for ( CUser user : securityRealmConfig.getUsers() )
                 {
-                    // get the probably _changed_ one again
-                    securityRealmConfig = realmConfigSource.getConfiguration();
-
-                    for ( CUser user : securityRealmConfig.getUsers() )
+                    if ( StringUtils.equals( securitySystemConfiguration.getAnonymousUsername(), user.getId() ) )
                     {
-                        if ( StringUtils.equals( securitySystemConfiguration.getAnonymousUsername(), user.getId() ) )
-                        {
-                            user.setStatus( CUser.STATUS_DISABLED );
-                            changed = true;
-                            break;
-                        }
+                        user.setStatus( CUser.STATUS_DISABLED );
+                        changed = true;
+                        break;
                     }
                 }
             }
