@@ -1179,7 +1179,7 @@
         <scope>test</scope>
       </dependency>
       <dependency>
-        <groupId>org.sonatype.nexus.plugins</groupId>
+        <groupId>org.sonatype.nexus.indexer-lucene</groupId>
         <artifactId>nexus-indexer-lucene-plugin-model</artifactId>
         <version>${project.version}</version>
         <scope>provided</scope>

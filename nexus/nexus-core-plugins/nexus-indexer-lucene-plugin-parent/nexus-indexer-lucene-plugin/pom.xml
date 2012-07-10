@@ -35,9 +35,8 @@
   <dependencies>
 
     <dependency>
-      <groupId>org.sonatype.nexus.plugins</groupId>
+      <groupId>org.sonatype.nexus.indexer-lucene</groupId>
       <artifactId>nexus-indexer-lucene-plugin-model</artifactId>
-      <version>${project.version}</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
@@ -163,7 +162,7 @@
             <id>default-generate-metadata</id>
             <configuration>
               <sharedDependencies>
-                <sharedDependencies>org.sonatype.nexus.plugins:nexus-indexer-lucene-plugin-model</sharedDependencies>
+                <sharedDependencies>org.sonatype.nexus.indexer-lucene:nexus-indexer-lucene-plugin-model</sharedDependencies>
                 <sharedDependencies>org.apache.maven.indexer:indexer-artifact</sharedDependencies>
                 <sharedDependencies>org.apache.maven.indexer:indexer-core</sharedDependencies>
                 <sharedDependencies>org.apache.lucene:lucene-core</sharedDependencies>
