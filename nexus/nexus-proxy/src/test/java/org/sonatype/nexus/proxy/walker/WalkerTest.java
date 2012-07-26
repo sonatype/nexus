@@ -74,9 +74,9 @@ public class WalkerTest
         wp = new TestWalkerProcessor();
 
         // this is a group
-        wc = new DefaultWalkerContext( getRepositoryRegistry().getRepository( "test" ), new ResourceStoreRequest(
-            RepositoryItemUid.PATH_ROOT,
-            true ) );
+        wc =
+            new DefaultWalkerContext( getRepositoryRegistry().getRepository( "test" ), new ResourceStoreRequest(
+                RepositoryItemUid.PATH_ROOT, true ) );
 
         wc.getProcessors().add( wp );
 
@@ -99,12 +99,49 @@ public class WalkerTest
     }
 
     /**
-     * Tests walking an out of service repo.  The walker should NOT not fail, but also NOT find any items.</BR>
-     * Verifies fix for: NEXUS-4554 (which is more general then just fixing the Trash task)
+     * See NXCM-4516. We are invoking "walker" using a path that points to a non-collection item (a file).
+     * 
      * @throws Exception
      */
     @Test
-    public void testWalkOutOfServiceRepo() throws Exception
+    public void testWalkerRunningAgainstFileItem()
+        throws Exception
+    {
+        // fetch some content to have on walk on something
+        getRootRouter().retrieveItem(
+            new ResourceStoreRequest( "/groups/test/activemq/activemq-core/1.2/activemq-core-1.2.jar", false ) );
+        TestWalkerProcessor wp = null;
+        WalkerContext wc = null;
+        wp = new TestWalkerProcessor();
+        // this is a group
+        wc =
+            new DefaultWalkerContext( getRepositoryRegistry().getRepository( "test" ), new ResourceStoreRequest(
+                "/activemq/activemq-core/1.2/activemq-core-1.2.jar", true ) );
+        wc.getProcessors().add( wp );
+        walker.walk( wc );
+        Assert.assertFalse( "Should not be stopped!", wc.isStopped() );
+        if ( wc.getStopCause() != null )
+        {
+            wc.getStopCause().printStackTrace();
+            fail( "Should be no exception!" );
+        }
+
+        Assert.assertEquals( 0, wp.collEnters );
+        Assert.assertEquals( 0, wp.collExits );
+        Assert.assertEquals( 0, wp.colls );
+        Assert.assertEquals( 1, wp.files );
+        Assert.assertEquals( 0, wp.links );
+    }
+
+    /**
+     * Tests walking an out of service repo. The walker should NOT not fail, but also NOT find any items.</BR> Verifies
+     * fix for: NEXUS-4554 (which is more general then just fixing the Trash task)
+     * 
+     * @throws Exception
+     */
+    @Test
+    public void testWalkOutOfServiceRepo()
+        throws Exception
     {
         // put repo2 out of service
         String repoId = "repo2";
@@ -118,9 +155,9 @@ public class WalkerTest
         wp = new TestWalkerProcessor();
 
         // this is a group
-        wc = new DefaultWalkerContext( getRepositoryRegistry().getRepository( repoId ), new ResourceStoreRequest(
-            RepositoryItemUid.PATH_ROOT,
-            true ) );
+        wc =
+            new DefaultWalkerContext( getRepositoryRegistry().getRepository( repoId ), new ResourceStoreRequest(
+                RepositoryItemUid.PATH_ROOT, true ) );
 
         wc.getProcessors().add( wp );
 
