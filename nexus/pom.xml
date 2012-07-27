@@ -1260,6 +1260,12 @@
       </dependency>
       <dependency>
         <groupId>org.sonatype.nexus</groupId>
+        <artifactId>nexus-plugin-test-api</artifactId>
+        <version>${project.version}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.sonatype.nexus</groupId>
         <artifactId>nexus-plugin-host-api</artifactId>
         <version>${project.version}</version>
       </dependency>
@@ -1760,6 +1766,11 @@
             </execution>
           </executions>
         </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-invoker-plugin</artifactId>
+          <version>1.6-SONATYPE-r940877</version>
+        </plugin>
       </plugins>
     </pluginManagement>
   </build>
@@ -1945,16 +1956,6 @@
       </build>
     </profile>
 
-    <!-- grid quick deploy 20 to 25 mins avoiding ITs -->
-    <profile>
-      <id>grid-deploy</id>
-      <properties>
-        <it.test>void</it.test>
-        <invoker.skip>true</invoker.skip>
-        <test-env.skip>true</test-env.skip>
-      </properties>
-    </profile>
-
     <!-- pre code push profile to be run by a developer before push to scm, eventually the default profile without a profile -->
     <profile>
       <id>prepush</id>
@@ -1985,86 +1986,6 @@
         </pluginManagement>
       </build>
 
-    </profile>
-
-    <!-- dummy profile for activating integration tests -->
-    <profile>
-      <id>it</id>
-      <activation>
-        <property>
-          <name>it</name>
-          <value>true</value>
-        </property>
-      </activation>
-      <!-- FIXME, make running cargo ITs part of this profile? -->
-    </profile>
-
-    <!-- Nexus quick build profiles: effects of -Pquick: tests will be compiled but not run, n-t-e-p will assemble the test environments effects of -Dquick: tests will not be compiled,
-      n-t-e-p and other test-related plugins will be skipped entirely -->
-    <profile>
-      <id>quick</id>
-      <activation>
-        <property>
-          <name>quick</name>
-        </property>
-      </activation>
-      <properties>
-        <test>void</test>
-        <it.test>void</it.test>
-        <failIfNoTests>false</failIfNoTests>
-        <invoker.skip>true</invoker.skip>
-        <source.skip>true</source.skip>
-        <enunciate.skip>true</enunciate.skip>
-        <tattletale.skip>true</tattletale.skip>
-        <test-env.skip>true</test-env.skip>
-        <license.skip>true</license.skip>
-        <!-- FIXME there are still some dependency unpacking going on that could be removed somehow -->
-      </properties>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.sonatype.nexus.plugins</groupId>
-            <artifactId>nexus-test-environment-maven-plugin</artifactId>
-            <configuration>
-              <testSkip>true</testSkip>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-
-    <profile>
-      <id>skipTests</id>
-      <activation>
-        <property>
-          <name>quick</name>
-        </property>
-      </activation>
-      <properties>
-        <maven.test.skip>true</maven.test.skip>
-      </properties>
-      <build>
-        <pluginManagement>
-          <plugins>
-            <plugin>
-              <artifactId>maven-surefire-plugin</artifactId>
-              <configuration>
-                <skipTests>true</skipTests>
-              </configuration>
-            </plugin>
-            <plugin>
-              <groupId>org.apache.maven.plugins</groupId>
-              <artifactId>maven-jar-plugin</artifactId>
-              <executions>
-                <execution>
-                  <id>attach-test-jar</id>
-                  <phase>none</phase>
-                </execution>
-              </executions>
-            </plugin>
-          </plugins>
-        </pluginManagement>
-      </build>
     </profile>
 
     <profile>
@@ -2309,6 +2230,48 @@
                 </goals>
               </execution>
             </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>nout</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <configuration>
+              <skipTests>true</skipTests>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>noit</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration>
+              <skipITs>true</skipITs>
+            </configuration>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-invoker-plugin</artifactId>
+            <configuration>
+              <skipInstallation>true</skipInstallation>
+            </configuration>
+          </plugin>
+          <plugin>
+            <groupId>org.sonatype.nexus.plugins</groupId>
+            <artifactId>nexus-test-environment-maven-plugin</artifactId>
+            <configuration>
+              <pluginSkip>true</pluginSkip>
+            </configuration>
           </plugin>
         </plugins>
       </build>

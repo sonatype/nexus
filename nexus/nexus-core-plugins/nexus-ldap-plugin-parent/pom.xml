@@ -27,8 +27,9 @@
   <packaging>pom</packaging>
 
   <modules>
-    <module>nexus-ldap-realm-plugin</module>
     <module>ldap-common</module>
+    <module>nexus-ldap-realm-plugin</module>
+    <module>nexus-ldap-plugin-it</module>
   </modules>
 
   <properties>
@@ -39,17 +40,4 @@
     <commons-lang.version>2.3</commons-lang.version>
   </properties>
 
-  <profiles>
-    <profile>
-      <id>with-tests</id>
-      <activation>
-        <property>
-          <name>!quick</name>
-        </property>
-      </activation>
-      <modules>
-        <module>nexus-ldap-plugin-it</module>
-      </modules>
-    </profile>
-  </profiles>
 </project>
