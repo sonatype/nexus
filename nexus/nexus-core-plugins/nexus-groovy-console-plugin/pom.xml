@@ -139,11 +139,16 @@
       <artifactId>testng</artifactId>
       <scope>test</scope>
     </dependency>
-
     <dependency>
         <groupId>org.hamcrest</groupId>
         <artifactId>hamcrest-library</artifactId>
         <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.sonatype.nexus</groupId>
+      <artifactId>nexus-test-harness-launcher</artifactId>
+      <scope>test</scope>
+      <version>${project.version}</version>
     </dependency>
 
 
@@ -153,24 +158,5 @@
     </dependency>
 
   </dependencies>
-
-  <profiles>
-    <profile>
-      <id>with-tests</id>
-      <activation>
-        <property>
-          <name>!quick</name>
-        </property>
-      </activation>
-      <dependencies>
-        <dependency>
-          <groupId>org.sonatype.nexus</groupId>
-          <artifactId>nexus-test-harness-launcher</artifactId>
-          <scope>test</scope>
-          <version>${project.version}</version>
-        </dependency>
-      </dependencies>
-    </profile>
-  </profiles>
 
 </project>

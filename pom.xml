@@ -35,6 +35,8 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <nexus-site-base-url>https://repository.sonatype.org/content/sites/maven-sites/nexus-oss</nexus-site-base-url>
+    <!-- Here only to satisfy the configuration of maven-release-plugin, see plugin management section -->
+    <arguments></arguments>
   </properties>
 
   <modules>
@@ -133,15 +135,14 @@
           <artifactId>maven-release-plugin</artifactId>
           <version>2.2.1</version>
           <configuration>
+            <!-- here to prevent hang see MGPG-9 -->
+            <mavenExecutorId>forked-path</mavenExecutorId>
             <autoVersionSubmodules>true</autoVersionSubmodules>
             <!-- forge-parent settings -->
             <useReleaseProfile>false</useReleaseProfile>
             <goals>deploy</goals>
-            <!--<arguments>-Prelease</arguments>-->
-            <!-- Use a quick build to verify the tag, and a full build with ITs for the deploy -->
-            <arguments />
+            <arguments>-Prelease,noit,nout ${arguments}</arguments>
             <preparationGoals /> 
-            <releaseProfiles>release</releaseProfiles>
             <tagNameFormat>nexus-@{version}</tagNameFormat>
           </configuration>
         </plugin>

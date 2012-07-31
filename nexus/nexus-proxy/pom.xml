@@ -149,6 +149,19 @@
     <dependency>
       <groupId>org.sonatype.nexus</groupId>
       <artifactId>nexus-test-common</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.sonatype.nexus</groupId>
+      <artifactId>nexus-configuration</artifactId>
+      <classifier>tests</classifier>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.sonatype.nexus</groupId>
+      <artifactId>nexus-api</artifactId>
+      <classifier>tests</classifier>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>com.carrotsearch</groupId>
@@ -220,28 +233,6 @@
   </build>
 
   <profiles>
-    <profile>
-      <id>with-tests</id>
-      <activation>
-        <property>
-          <name>!quick</name>
-        </property>
-      </activation>
-      <dependencies>
-        <dependency>
-          <groupId>org.sonatype.nexus</groupId>
-          <artifactId>nexus-configuration</artifactId>
-          <classifier>tests</classifier>
-          <scope>test</scope>
-        </dependency>
-        <dependency>
-          <groupId>org.sonatype.nexus</groupId>
-          <artifactId>nexus-api</artifactId>
-          <classifier>tests</classifier>
-          <scope>test</scope>
-        </dependency>
-      </dependencies>
-    </profile>
     <profile>
       <id>ahc-provider</id>
       <build>

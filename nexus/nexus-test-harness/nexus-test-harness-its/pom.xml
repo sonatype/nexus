@@ -515,20 +515,6 @@
     </profile>
 
     <profile>
-      <id>skip-test-harness-tests</id>
-      <build>
-        <plugins>
-          <plugin>
-            <artifactId>maven-failsafe-plugin</artifactId>
-            <configuration>
-              <skip>true</skip>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-
-    <profile>
       <id>yourkit-profile</id>
       <activation>
         <property>
