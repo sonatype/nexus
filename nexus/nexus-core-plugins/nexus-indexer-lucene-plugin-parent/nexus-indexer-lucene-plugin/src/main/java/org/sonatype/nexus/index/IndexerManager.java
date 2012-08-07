@@ -45,7 +45,8 @@ public interface IndexerManager
     /**
      * Shutdown of Indexer, with cleanup. It remove index files if needed.
      * 
-     * @param deleteFile set to true if you want to completely remove index files.
+     * @param deleteFiles set to true if you want to completely remove index files.
+     * @throws IOException
      */
     void shutdown( boolean deleteFiles )
         throws IOException;

@@ -20,12 +20,15 @@ import java.io.StringWriter;
 import org.apache.maven.archetype.catalog.ArchetypeCatalog;
 import org.apache.maven.archetype.catalog.io.xpp3.ArchetypeCatalogXpp3Writer;
 import org.apache.maven.index.ArtifactInfoFilter;
-import org.apache.maven.index.context.IndexingContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.sonatype.nexus.index.DefaultIndexerManager;
+import org.sonatype.nexus.index.NexusIndexingContext;
 import org.sonatype.nexus.proxy.item.ContentLocator;
 import org.sonatype.nexus.proxy.repository.Repository;
 import org.sonatype.nexus.proxy.utils.RepositoryStringUtils;
+
+import com.google.common.base.Preconditions;
 
 /**
  * A content locator to generate archetype catalog. This way, the actual work (search, archetype catalog model fillup
@@ -43,7 +46,7 @@ public class ArchetypeContentLocator
 
     private final String repositoryContentUrl;
 
-    private final IndexingContext indexingContext;
+    private final DefaultIndexerManager indexerManager;
 
     private final MacPlugin macPlugin;
 
@@ -51,16 +54,25 @@ public class ArchetypeContentLocator
 
     private volatile String payload;
 
+    /**
+     * Constructor.
+     * 
+     * @param repository
+     * @param repositoryContentUrl
+     * @param indexerManager
+     * @param macPlugin
+     * @param artifactInfoFilter
+     */
     public ArchetypeContentLocator( final Repository repository, final String repositoryContentUrl,
-                                    final IndexingContext indexingContext, final MacPlugin macPlugin,
+                                    final DefaultIndexerManager indexerManager, final MacPlugin macPlugin,
                                     final ArtifactInfoFilter artifactInfoFilter )
     {
         this.logger = LoggerFactory.getLogger( getClass() );
-        this.repository = repository;
+        this.repository = Preconditions.checkNotNull( repository );
         this.repositoryContentUrl = repositoryContentUrl;
-        this.indexingContext = indexingContext;
-        this.macPlugin = macPlugin;
-        this.artifactInfoFilter = artifactInfoFilter;
+        this.indexerManager = Preconditions.checkNotNull( indexerManager );
+        this.macPlugin = Preconditions.checkNotNull( macPlugin );
+        this.artifactInfoFilter = Preconditions.checkNotNull( artifactInfoFilter );
     }
 
     protected synchronized String generateCatalogPayload()
@@ -68,20 +80,7 @@ public class ArchetypeContentLocator
     {
         if ( payload == null )
         {
-            final MacRequest req = new MacRequest( repository.getId(), repositoryContentUrl, artifactInfoFilter );
-
-            // NEXUS-5216: Warn if indexing context is null (indexable=false) for given repository but continue
-            // to return the correct empty catalog
-            if ( indexingContext == null )
-            {
-                logger.info(
-                    "Archetype Catalog for repository {} is not buildable as it lacks IndexingContext (indexable=false?).",
-                    RepositoryStringUtils.getHumanizedNameString( repository ) );
-            }
-
-            // get the catalog
-            final ArchetypeCatalog catalog = macPlugin.listArcherypesAsCatalog( req, indexingContext );
-            // serialize it to XML
+            final ArchetypeCatalog catalog = getArchetypeCatalog( repository );
             final StringWriter sw = new StringWriter();
             final ArchetypeCatalogXpp3Writer writer = new ArchetypeCatalogXpp3Writer();
             writer.write( sw, catalog );
@@ -89,6 +88,51 @@ public class ArchetypeContentLocator
         }
 
         return payload;
+    }
+
+    protected ArchetypeCatalog getArchetypeCatalog( final Repository repository )
+        throws IOException
+    {
+        final NexusIndexingContext indexingContext = indexerManager.getRepositoryIndexContext( repository );
+        if ( indexingContext == null )
+        {
+            // NEXUS-5216: Warn if indexing context is null (indexable=false) for given repository but continue
+            // to return the correct empty catalog
+            logger.info(
+                "Archetype Catalog for repository {} is not buildable as it lacks IndexingContext (indexable=false?).",
+                RepositoryStringUtils.getHumanizedNameString( repository ) );
+            return new ArchetypeCatalog();
+        }
+        else
+        {
+            final boolean locked = indexingContext.getLock().readLock().tryLock();
+            if ( !locked )
+            {
+                // we are unable to get the catalog, reindex holds exclusive lock
+                // to avoid requests piling up, just return empty catalog
+                logger.info(
+                    "Archetype Catalog for repository {} is not buildable as its IndexingContext is exclusively held by some other party (being reindexed?).",
+                    RepositoryStringUtils.getHumanizedNameString( repository ) );
+                return new ArchetypeCatalog();
+            }
+            else
+            {
+                // we have all we need, so le'ts do it
+                // there is no chance, that someone grabbed exclusive lock here
+                // as we already have read lock
+                try
+                {
+                    // get the catalog
+                    final MacRequest req =
+                        new MacRequest( repository.getId(), repositoryContentUrl, artifactInfoFilter );
+                    return macPlugin.listArcherypesAsCatalog( req, indexingContext );
+                }
+                finally
+                {
+                    indexingContext.getLock().readLock().unlock();
+                }
+            }
+        }
     }
 
     @Override
