@@ -370,7 +370,6 @@
           method : 'GET',
           url : Sonatype.config.repos.urls.logout,
           callback : function(options, success, response) {
-            Sonatype.utils.authToken = null;
             Sonatype.view.justLoggedOut = true;
             Sonatype.utils.loadNexusStatus();
             window.location = 'index.html#welcome';
