@@ -887,7 +887,15 @@ public class DefaultIndexerManager
             {
                 TaskUtil.checkInterruption();
 
-                downloadRepositoryIndex( repository.adaptToFacet( ProxyRepository.class ), fullReindex );
+                try
+                {
+                    downloadRepositoryIndex( repository.adaptToFacet( ProxyRepository.class ), fullReindex );
+                }
+                catch ( IOException e )
+                {
+                    // NEXUS-5249: Do not propagate an exception occurring during downloading remote indexes
+                    // This restores the functionality as prior of NEXUS-4275
+                }
             }
 
             if ( !repository.getRepositoryKind().isFacetAvailable( GroupRepository.class ) )
