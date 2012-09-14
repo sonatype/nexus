@@ -12,17 +12,25 @@
  */
 package org.sonatype.nexus.client.internal.rest.jersey.subsystem;
 
+import static javax.ws.rs.core.MediaType.APPLICATION_OCTET_STREAM_TYPE;
+import static javax.ws.rs.core.MediaType.MULTIPART_FORM_DATA_TYPE;
+import static org.apache.commons.lang.StringUtils.defaultIfEmpty;
+
 import javax.ws.rs.core.MultivaluedMap;
 
 import org.sonatype.nexus.client.core.spi.SubsystemSupport;
 import org.sonatype.nexus.client.core.subsystem.artifact.ArtifactMaven;
 import org.sonatype.nexus.client.core.subsystem.artifact.ResolveRequest;
 import org.sonatype.nexus.client.core.subsystem.artifact.ResolveResponse;
+import org.sonatype.nexus.client.core.subsystem.artifact.UploadRequest;
 import org.sonatype.nexus.client.rest.jersey.JerseyNexusClient;
+import org.sonatype.nexus.rest.model.ArtifactCoordinate;
 import org.sonatype.nexus.rest.model.ArtifactResolveResource;
 import org.sonatype.nexus.rest.model.ArtifactResolveResourceResponse;
+
 import com.sun.jersey.api.client.UniformInterfaceException;
 import com.sun.jersey.core.util.MultivaluedMapImpl;
+import com.sun.jersey.multipart.FormDataMultiPart;
 
 public class JerseyArtifactMaven
     extends SubsystemSupport<JerseyNexusClient>
@@ -81,4 +89,23 @@ public class JerseyArtifactMaven
             }
         }
     }
+
+  @Override
+  public ArtifactCoordinate upload(UploadRequest req) {
+    final FormDataMultiPart entity = createEntity(req);
+    return getNexusClient().serviceResource("artifact/maven/content").type(MULTIPART_FORM_DATA_TYPE).post(ArtifactCoordinate.class, entity);
+  }
+
+  private FormDataMultiPart createEntity(UploadRequest req) {
+    if (req.isHasPom()) {
+      return new FormDataMultiPart().field("r", req.getRepositoryId()).field("hasPom", "true")
+          .field("c", defaultIfEmpty(req.getClassifier(), ""))
+          .field("e", req.getExtension()).field("file", req.getPomFile(), APPLICATION_OCTET_STREAM_TYPE)
+          .field("file", req.getFile(), APPLICATION_OCTET_STREAM_TYPE);
+    }
+    return new FormDataMultiPart().field("r", req.getRepositoryId()).field("g", req.getGroupId()).field("a", req.getArtifactId())
+        .field("v", req.getVersion()).field("p", req.getPackaging()).field("c", defaultIfEmpty(req.getClassifier(), ""))
+        .field("e", req.getExtension())
+        .field("file", req.getFile(), APPLICATION_OCTET_STREAM_TYPE);
+  }
 }

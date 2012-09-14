@@ -12,6 +12,8 @@
  */
 package org.sonatype.nexus.client.core.subsystem.artifact;
 
+import org.sonatype.nexus.rest.model.ArtifactCoordinate;
+
 /**
  * The core service at URI of {@code /service/local/artifact/maven}.
  *
@@ -28,4 +30,13 @@ public interface ArtifactMaven
      * @return
      */
     ResolveResponse resolve( ResolveRequest req );
+
+  /**
+   * Uploads a file to a Nexus repostory
+   * 
+   * @param req
+   *          contains repository, meta data and file information
+   * @return
+   */
+  ArtifactCoordinate upload(UploadRequest req);
 }
