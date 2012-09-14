@@ -14,7 +14,9 @@ package org.sonatype.nexus.client.internal.rest.jersey.subsystem.repository;
 
 import org.sonatype.nexus.client.core.subsystem.repository.GenericRepository;
 import org.sonatype.nexus.client.rest.jersey.JerseyNexusClient;
+import org.sonatype.nexus.rest.model.NexusResponse;
 import org.sonatype.nexus.rest.model.RepositoryResource;
+import org.sonatype.nexus.rest.model.RepositoryResourceResponse;
 
 public class JerseyGenericRepository
     extends JerseyRepositorySupport<GenericRepository, RepositoryResource>
@@ -31,5 +33,15 @@ public class JerseyGenericRepository
     {
         return new RepositoryResource();
     }
+
+  @Override
+  protected Class<? extends NexusResponse> getResponseClass() {
+    return RepositoryResourceResponse.class;
+  }
+
+  @Override
+  protected RepositoryResource getData(Object response) {
+    return (RepositoryResource) ((RepositoryResourceResponse) response).getData();
+  }
 
 }

@@ -14,8 +14,10 @@ package org.sonatype.nexus.client.internal.rest.jersey.subsystem.repository;
 
 import org.sonatype.nexus.client.core.subsystem.repository.ProxyRepository;
 import org.sonatype.nexus.client.rest.jersey.JerseyNexusClient;
+import org.sonatype.nexus.rest.model.NexusResponse;
 import org.sonatype.nexus.rest.model.RepositoryProxyResource;
 import org.sonatype.nexus.rest.model.RepositoryResourceRemoteStorage;
+import org.sonatype.nexus.rest.model.RepositoryResourceResponse;
 
 public class JerseyProxyRepository
     extends JerseyRepositorySupport<ProxyRepository, RepositoryProxyResource>
@@ -68,5 +70,15 @@ public class JerseyProxyRepository
         remoteStorage.setRemoteStorageUrl( remoteUrl );
         return this;
     }
+
+  @Override
+  protected Class<? extends NexusResponse> getResponseClass() {
+    return RepositoryResourceResponse.class;
+  }
+
+  @Override
+  protected RepositoryProxyResource getData(Object response) {
+    return (RepositoryProxyResource) ((RepositoryResourceResponse) response).getData();
+  }
 
 }

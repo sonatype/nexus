@@ -21,131 +21,108 @@ import org.apache.commons.beanutils.BeanUtils;
 import org.sonatype.nexus.client.core.spi.SubsystemSupport;
 import org.sonatype.nexus.client.core.subsystem.repository.Repository;
 import org.sonatype.nexus.client.rest.jersey.JerseyNexusClient;
+import org.sonatype.nexus.rest.model.NexusResponse;
 import org.sonatype.nexus.rest.model.RepositoryBaseResource;
 import org.sonatype.nexus.rest.model.RepositoryResourceResponse;
+
 import com.google.common.base.Throwables;
 
 @Named
-public abstract class JerseyRepositorySupport<T extends Repository, S extends RepositoryBaseResource>
-    extends SubsystemSupport<JerseyNexusClient>
-    implements Repository<T, S>
-{
+public abstract class JerseyRepositorySupport<T extends Repository<?, ?>, S extends RepositoryBaseResource> extends
+    SubsystemSupport<JerseyNexusClient> implements Repository<T, S> {
 
-    private final S settings;
+  private final S settings;
 
-    private boolean shouldCreate;
+  private boolean shouldCreate;
 
-    @Inject
-    public JerseyRepositorySupport( final JerseyNexusClient nexusClient )
-    {
-        super( nexusClient );
-        settings = checkNotNull( createSettings() );
-        shouldCreate = true;
-        refresh();
+  @Inject
+  public JerseyRepositorySupport(final JerseyNexusClient nexusClient) {
+    super(nexusClient);
+    settings = checkNotNull(createSettings());
+    shouldCreate = true;
+    refresh();
+  }
+
+  @Override
+  public S settings() {
+    return settings;
+  }
+
+  @Override
+  public synchronized T refresh() {
+    overwriteSettingsWith(getSettings());
+    return me();
+  }
+
+  @Override
+  public synchronized T save() {
+    overwriteSettingsWith(saveSettings());
+    shouldCreate = false;
+    saveSettings();
+    return me();
+  }
+
+  @Override
+  public synchronized T remove() {
+    doRemove();
+    shouldCreate = true;
+    return me();
+  }
+
+  protected abstract S createSettings();
+
+  protected abstract Class<? extends NexusResponse> getResponseClass();
+
+  protected abstract S getData(Object response);
+
+  String uri() {
+    return "repositories";
+  }
+
+  void overwriteSettingsWith(final S source) {
+    try {
+      BeanUtils.copyProperties(settings(), source == null ? checkNotNull(createSettings()) : source);
+    } catch (final Exception e) {
+      throw Throwables.propagate(e);
+    }
+  }
+
+  private T me() {
+    return (T) this;
+  }
+
+  private S getSettings() {
+    if (settings().getId() == null) {
+      return null;
     }
 
-    @Override
-    public S settings()
-    {
-        return settings;
+    final Object response = getNexusClient().serviceResource(uri() + "/" + settings().getId()).get(getResponseClass());
+
+    if (response == null) {
+      return null;
     }
 
-    @Override
-    public synchronized T refresh()
-    {
-        overwriteSettingsWith( getSettings() );
-        return me();
+    shouldCreate = false;
+
+    return getData(response);
+  }
+
+  private S saveSettings() {
+    final RepositoryResourceResponse request = new RepositoryResourceResponse();
+    request.setData(settings);
+
+    final Object response;
+    if (shouldCreate) {
+      response = getNexusClient().serviceResource(uri()).post(getResponseClass(), request);
+    } else {
+      response = getNexusClient().serviceResource(uri() + "/" + settings().getId()).put(getResponseClass(), request);
     }
 
-    @Override
-    public synchronized T save()
-    {
-        overwriteSettingsWith( saveSettings() );
-        saveSettings();
-        shouldCreate = false;
-        return me();
-    }
+    return getData(response);
+  }
 
-    @Override
-    public synchronized T remove()
-    {
-        doRemove();
-        shouldCreate = true;
-        return me();
-    }
-
-    protected abstract S createSettings();
-
-    String uri()
-    {
-        return "repositories";
-    }
-
-    void overwriteSettingsWith( final S source )
-    {
-        try
-        {
-            BeanUtils.copyProperties( settings(), source == null ? checkNotNull( createSettings() ) : source );
-        }
-        catch ( final Exception e )
-        {
-            throw Throwables.propagate( e );
-        }
-    }
-
-    private T me()
-    {
-        return (T) this;
-    }
-
-    private S getSettings()
-    {
-        if ( settings().getId() == null )
-        {
-            return null;
-        }
-
-        final RepositoryResourceResponse response = getNexusClient()
-            .serviceResource( uri() + "/" + settings().getId() )
-            .get( RepositoryResourceResponse.class );
-
-        if ( response == null )
-        {
-            return null;
-        }
-
-        shouldCreate = false;
-
-        return (S) response.getData();
-    }
-
-    private S saveSettings()
-    {
-        final RepositoryResourceResponse request = new RepositoryResourceResponse();
-        request.setData( settings );
-
-        final RepositoryResourceResponse response;
-        if ( shouldCreate )
-        {
-            response = getNexusClient()
-                .serviceResource( uri() )
-                .post( RepositoryResourceResponse.class, request );
-        }
-        else
-        {
-            response = getNexusClient()
-                .serviceResource( uri() + "/" + settings().getId() )
-                .put( RepositoryResourceResponse.class, request );
-        }
-
-        return (S) response.getData();
-    }
-
-    private void doRemove()
-    {
-        getNexusClient()
-            .serviceResource( uri() + "/" + settings().getId() )
-            .delete();
-    }
+  private void doRemove() {
+    getNexusClient().serviceResource(uri() + "/" + settings().getId()).delete();
+  }
 
 }
