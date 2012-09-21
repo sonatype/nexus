@@ -12,10 +12,12 @@
  */
 package org.sonatype.nexus.client.internal.rest.jersey.subsystem.security;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.util.List;
 
+import org.sonatype.nexus.client.core.spi.SubsystemSupport;
 import org.sonatype.nexus.client.core.subsystem.security.Roles;
-import org.sonatype.nexus.client.internal.rest.jersey.subsystem.JerseyCRUDSupport;
 import org.sonatype.nexus.client.rest.jersey.JerseyNexusClient;
 import org.sonatype.security.rest.model.RoleListResourceResponse;
 import org.sonatype.security.rest.model.RoleResource;
@@ -23,37 +25,60 @@ import org.sonatype.security.rest.model.RoleResourceRequest;
 import org.sonatype.security.rest.model.RoleResourceResponse;
 
 public class JerseyRoles
-    extends JerseyCRUDSupport<RoleResource, RoleListResourceResponse, RoleResourceResponse, RoleResourceRequest>
+    extends SubsystemSupport<JerseyNexusClient>
     implements Roles
 {
 
     public JerseyRoles( JerseyNexusClient nexusClient )
     {
-        super( nexusClient, "roles" );
+        super( nexusClient );
     }
 
     @Override
-    protected String getId( RoleResource item )
+    public List<RoleResource> list()
     {
-        return item.getId();
+        return getNexusClient().serviceResource( "roles" ).get( RoleListResourceResponse.class ).getData();
     }
 
     @Override
-    protected List<RoleResource> getListData( RoleListResourceResponse response )
+    public RoleResource get( String id )
     {
-        return response.getData();
+        return getNexusClient().serviceResource( itemPath( id ) ).get( RoleResourceResponse.class ).getData();
     }
 
     @Override
-    protected RoleResource getData( RoleResourceResponse response )
+    public RoleResource create( RoleResource item )
     {
-        return response.getData();
-    }
-
-    @Override
-    protected void setData( RoleResourceRequest request, RoleResource item )
-    {
+        final RoleResourceRequest request = new RoleResourceRequest();
         request.setData( item );
+        return getNexusClient().serviceResource( "roles" ).post( RoleResourceResponse.class, request ).getData();
+    }
+
+    @Override
+    public RoleResource update( RoleResource item )
+    {
+        final RoleResourceRequest request = new RoleResourceRequest();
+        request.setData( item );
+        return getNexusClient().serviceResource( itemPath( item.getId() ) ).post( RoleResourceResponse.class, request ).getData();
+    }
+
+    @Override
+    public void delete( String id )
+    {
+        getNexusClient().serviceResource( itemPath( id ) ).delete();
+
+    }
+
+    private String itemPath( String id )
+    {
+        try
+        {
+            return "roles/" + URLEncoder.encode( id, "UTF-8" );
+        }
+        catch ( UnsupportedEncodingException e )
+        {
+            throw new IllegalArgumentException( "Could not url-encode id: " + id, e );
+        }
     }
 
 }

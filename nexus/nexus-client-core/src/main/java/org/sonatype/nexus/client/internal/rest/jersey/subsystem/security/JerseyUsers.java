@@ -12,10 +12,12 @@
  */
 package org.sonatype.nexus.client.internal.rest.jersey.subsystem.security;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.util.List;
 
+import org.sonatype.nexus.client.core.spi.SubsystemSupport;
 import org.sonatype.nexus.client.core.subsystem.security.Users;
-import org.sonatype.nexus.client.internal.rest.jersey.subsystem.JerseyCRUDSupport;
 import org.sonatype.nexus.client.rest.jersey.JerseyNexusClient;
 import org.sonatype.security.rest.model.UserListResourceResponse;
 import org.sonatype.security.rest.model.UserResource;
@@ -23,37 +25,61 @@ import org.sonatype.security.rest.model.UserResourceRequest;
 import org.sonatype.security.rest.model.UserResourceResponse;
 
 public class JerseyUsers
-    extends JerseyCRUDSupport<UserResource, UserListResourceResponse, UserResourceResponse, UserResourceRequest>
+    extends SubsystemSupport<JerseyNexusClient>
     implements Users
 {
 
     public JerseyUsers( JerseyNexusClient nexusClient )
     {
-        super( nexusClient, "users" );
+        super( nexusClient );
     }
 
     @Override
-    protected String getId( UserResource item )
+    public List<UserResource> list()
     {
-        return item.getUserId();
+        return getNexusClient().serviceResource( "users" ).get( UserListResourceResponse.class ).getData();
     }
 
     @Override
-    protected List<UserResource> getListData( UserListResourceResponse response )
+    public UserResource get( String id )
     {
-        return response.getData();
+        return getNexusClient().serviceResource( itemPath( id ) ).get( UserResourceResponse.class ).getData();
     }
 
     @Override
-    protected UserResource getData( UserResourceResponse response )
+    public UserResource create( UserResource item )
     {
-        return response.getData();
-    }
-
-    @Override
-    protected void setData( UserResourceRequest request, UserResource item )
-    {
+        final UserResourceRequest request = new UserResourceRequest();
         request.setData( item );
+        return getNexusClient().serviceResource( "users" ).post( UserResourceResponse.class, request ).getData();
+    }
+
+    @Override
+    public UserResource update( UserResource item )
+    {
+        final UserResourceRequest request = new UserResourceRequest();
+        request.setData( item );
+        return getNexusClient().serviceResource( itemPath( item.getUserId() ) ).post( UserResourceResponse.class,
+            request ).getData();
+    }
+
+    @Override
+    public void delete( String id )
+    {
+        getNexusClient().serviceResource( itemPath( id ) ).delete();
+
+    }
+
+    private String itemPath( String id )
+    {
+        try
+        {
+            return "users/" + URLEncoder.encode( id, "UTF-8" );
+        }
+        catch ( UnsupportedEncodingException e )
+        {
+            throw new IllegalArgumentException( "Could not url-encode id: " + id, e );
+        }
     }
 
 }
