@@ -887,7 +887,15 @@ public class DefaultIndexerManager
             {
                 TaskUtil.checkInterruption();
 
-                downloadRepositoryIndex( repository.adaptToFacet( ProxyRepository.class ), fullReindex );
+                try
+                {
+                    downloadRepositoryIndex( repository.adaptToFacet( ProxyRepository.class ), fullReindex );
+                }
+                catch ( IOException e )
+                {
+                    // NEXUS-5249: Do not propagate an exception occurring during downloading remote indexes
+                    // This restores the functionality as prior of NEXUS-4275
+                }
             }
 
             if ( !repository.getRepositoryKind().isFacetAvailable( GroupRepository.class ) )
@@ -1034,19 +1042,29 @@ public class DefaultIndexerManager
                         RepositoryStringUtils.getFormattedMessage(
                             "Cannot fetch remote index for repository %s, task cancelled.", repository ) );
                 }
-                catch ( IOException e )
-                {
-                    // kept logs since tasks will only log error if debug is enabled
-                    getLogger().warn(
-                        RepositoryStringUtils.getFormattedMessage( "Cannot fetch remote index for repository %s",
-                            repository ), e );
-                    throw e;
-                }
                 catch ( Exception e )
                 {
-                    getLogger().warn(
-                        RepositoryStringUtils.getFormattedMessage( "Cannot fetch remote index for repository %s",
-                            repository ), e );
+                    if ( getLogger().isDebugEnabled() )
+                    {
+                        getLogger().warn(
+                            RepositoryStringUtils.getFormattedMessage(
+                                "Cannot fetch remote index for repository %s (" + e.getMessage() + ")", repository
+                            )
+                        );
+                    }
+                    else
+                    {
+                        getLogger().warn(
+                            RepositoryStringUtils.getFormattedMessage(
+                                "Cannot fetch remote index for repository %s", repository
+                            ),
+                            e
+                        );
+                    }
+                    if ( e instanceof IOException )
+                    {
+                        throw (IOException) e;
+                    }
                 }
             }
 
