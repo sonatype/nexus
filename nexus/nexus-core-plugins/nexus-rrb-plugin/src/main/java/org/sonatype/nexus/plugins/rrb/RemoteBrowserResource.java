@@ -21,7 +21,6 @@ import javax.ws.rs.Produces;
 
 import org.codehaus.enunciate.contract.jaxrs.ResourceMethodSignature;
 import org.codehaus.plexus.component.annotations.Component;
-import org.codehaus.plexus.component.annotations.Requirement;
 import org.restlet.Context;
 import org.restlet.data.Reference;
 import org.restlet.data.Request;
@@ -31,7 +30,6 @@ import org.restlet.resource.ResourceException;
 import org.restlet.resource.Variant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.sonatype.nexus.ahc.AhcProvider;
 import org.sonatype.nexus.proxy.NoSuchRepositoryException;
 import org.sonatype.nexus.proxy.NoSuchResourceStoreException;
 import org.sonatype.nexus.proxy.ResourceStore;
@@ -41,9 +39,6 @@ import org.sonatype.nexus.rest.AbstractResourceStoreContentPlexusResource;
 import org.sonatype.nexus.rest.repositories.AbstractRepositoryPlexusResource;
 import org.sonatype.plexus.rest.resource.PathProtectionDescriptor;
 import org.sonatype.plexus.rest.resource.PlexusResource;
-
-import com.ning.http.client.AsyncHttpClient;
-import com.ning.http.client.AsyncHttpClientConfig;
 import com.thoughtworks.xstream.XStream;
 
 /**
@@ -59,9 +54,6 @@ public class RemoteBrowserResource
 {
     public static final String RESOURCE_URI = "/repositories/{" + AbstractRepositoryPlexusResource.REPOSITORY_ID_KEY
         + "}/remotebrowser";
-
-    @Requirement
-    private AhcProvider ahcProvider;
 
     private final Logger logger = LoggerFactory.getLogger( RemoteBrowserResource.class );
 
@@ -118,18 +110,15 @@ public class RemoteBrowserResource
         }
 
         ProxyRepository proxyRepository = null;
-        AsyncHttpClient client = null;
         try
         {
             proxyRepository = getUnprotectedRepositoryRegistry().getRepositoryWithFacet( id, ProxyRepository.class );
 
-            client = getHttpClient( proxyRepository );
-
-            MavenRepositoryReader mr = new MavenRepositoryReader( client );
+            MavenRepositoryReader mr = new MavenRepositoryReader( proxyRepository );
             MavenRepositoryReaderResponse data = new MavenRepositoryReaderResponse();
             // we really should not do the encoding here, but this is work around until NEXUS-4058 is fixed.
-            data.setData( mr.extract( remotePath,
-                createRemoteResourceReference( request, id, "" ).toString( false, false ), proxyRepository, id ) );
+            String localUrl = createRemoteResourceReference( request, id, "" ).toString( false, false );
+            data.setData( mr.extract( remotePath, localUrl, id ) );
             logger.debug( "return value is {}", data.toString() );
 
             return data;
@@ -139,24 +128,6 @@ public class RemoteBrowserResource
             this.logger.warn( "Could not find repository: " + id, e );
             throw new ResourceException( Status.CLIENT_ERROR_BAD_REQUEST, "Could not find repository: " + id, e );
         }
-        finally
-        {
-            if ( client != null )
-            {
-                client.close();
-            }
-        }
-    }
-
-    protected AsyncHttpClient getHttpClient( final ProxyRepository proxyRepository )
-    {
-        final AsyncHttpClientConfig.Builder clientConfigBuilder =
-            ahcProvider.getAsyncHttpClientConfigBuilder( proxyRepository, proxyRepository.getRemoteStorageContext() );
-        clientConfigBuilder.setFollowRedirects( true );
-        clientConfigBuilder.setMaximumNumberOfRedirects( 3 );
-        clientConfigBuilder.setMaxRequestRetry( 2 );
-        final AsyncHttpClient client = new AsyncHttpClient( clientConfigBuilder.build() );
-        return client;
     }
 
     protected Reference createRemoteResourceReference( Request request, String repoId, String remoteUrl )

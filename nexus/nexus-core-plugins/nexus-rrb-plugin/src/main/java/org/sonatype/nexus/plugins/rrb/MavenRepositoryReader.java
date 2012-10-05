@@ -12,8 +12,10 @@
  */
 package org.sonatype.nexus.plugins.rrb;
 
+import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
@@ -24,12 +26,11 @@ import org.sonatype.nexus.plugins.rrb.parsers.ArtifactoryRemoteRepositoryParser;
 import org.sonatype.nexus.plugins.rrb.parsers.HtmlRemoteRepositoryParser;
 import org.sonatype.nexus.plugins.rrb.parsers.RemoteRepositoryParser;
 import org.sonatype.nexus.plugins.rrb.parsers.S3RemoteRepositoryParser;
+import org.sonatype.nexus.proxy.ResourceStoreRequest;
+import org.sonatype.nexus.proxy.item.StorageFileItem;
 import org.sonatype.nexus.proxy.repository.ProxyRepository;
 
-import com.ning.http.client.AsyncHttpClient;
-import com.ning.http.client.Request;
-import com.ning.http.client.RequestBuilder;
-import com.ning.http.client.Response;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * Class for retrieving directory data from remote repository. This class is not thread-safe!
@@ -39,21 +40,17 @@ public class MavenRepositoryReader
 
     private final Logger logger = LoggerFactory.getLogger( MavenRepositoryReader.class );
 
-    private final AsyncHttpClient client;
+    private final ProxyRepository proxyRepository;
 
     private String remotePath;
 
-    private String remoteUrl;
-
     private String localUrl;
-
-    private ProxyRepository proxyRepository;
 
     private String id;
 
-    public MavenRepositoryReader( final AsyncHttpClient client )
+    public MavenRepositoryReader( final ProxyRepository proxyRepository )
     {
-        this.client = client;
+        this.proxyRepository = checkNotNull(proxyRepository);
     }
 
     /**
@@ -61,26 +58,12 @@ public class MavenRepositoryReader
      * @param localUrl url to the local resource service
      * @return a list containing the remote data
      */
-    public List<RepositoryDirectory> extract( String remotePath, String localUrl, ProxyRepository proxyRepository,
-                                              String id )
+    public List<RepositoryDirectory> extract( String remotePath, String localUrl, String id )
     {
-        logger.debug( "remotePath={}", remotePath );
+        logger.debug( "remotePath: {}", remotePath );
         this.remotePath = remotePath;
         this.localUrl = localUrl;
-        this.proxyRepository = proxyRepository;
-
         this.id = id;
-
-        String baseRemoteUrl = proxyRepository.getRemoteUrl();
-
-        if ( !baseRemoteUrl.endsWith( "/" ) && !remotePath.startsWith( "/" ) )
-        {
-            this.remoteUrl = baseRemoteUrl + "/" + remotePath;
-        }
-        else
-        {
-            this.remoteUrl = baseRemoteUrl + remotePath;
-        }
 
         StringBuilder html = getContent();
         if ( logger.isDebugEnabled() )
@@ -120,7 +103,7 @@ public class MavenRepositoryReader
             if ( responseContainsError( indata ) && !responseContainsAccessDenied( indata ) )
             {
                 logger.debug( "response from S3 repository contains error, need to find rootUrl" );
-                remoteUrl = findcreateNewUrl( indata );
+                remotePath = findcreateNewUrl( indata );
                 indata = getContent();
             }
             else if ( responseContainsError( indata ) && responseContainsAccessDenied( indata ) )
@@ -138,7 +121,7 @@ public class MavenRepositoryReader
 
             parser = new HtmlRemoteRepositoryParser( remotePath, localUrl, id, baseUrl );
         }
-        return parser.extractLinks( indata );
+        return parser.extractLinks(indata);
     }
 
     private String findcreateNewUrl( StringBuilder indata )
@@ -161,17 +144,17 @@ public class MavenRepositoryReader
 
     private String findRootUrl( StringBuilder indata )
     {
-        int end = remoteUrl.indexOf( extracktKey( indata ) );
+        int end = remotePath.indexOf( extracktKey( indata ) );
         if ( end > 0 )
         {
-            String newUrl = remoteUrl.substring( 0, end );
+            String newUrl = remotePath.substring( 0, end );
             if ( newUrl.indexOf( '?' ) != -1 )
             {
                 newUrl = newUrl.substring( 0, newUrl.indexOf( '?' ) );
             }
             return newUrl;
         }
-        return remoteUrl;
+        return remotePath;
     }
 
     private String extracktKey( StringBuilder indata )
@@ -188,7 +171,7 @@ public class MavenRepositoryReader
 
     /**
      * Used to detect error in S3 response.
-     * 
+     *
      * @param indata
      * @return
      */
@@ -203,7 +186,7 @@ public class MavenRepositoryReader
 
     /**
      * Used to detect access denied in S3 response.
-     * 
+     *
      * @param indata
      * @return
      */
@@ -218,74 +201,38 @@ public class MavenRepositoryReader
 
     private StringBuilder getContent()
     {
-        RequestBuilder builder = new RequestBuilder();
+        StringBuilder buff = new StringBuilder();
 
-        if ( remoteUrl.indexOf( "?prefix" ) != -1 )
-        {
-            builder.setUrl( remoteUrl + "&delimiter=/" );
-        }
-        else
-        {
-            builder.setUrl( remoteUrl + "?delimiter=/" );
-        }
+        String sep = remotePath.contains("?prefix") ? "&": "?";
+        String path = remotePath + sep + "delimiter=/";
 
-        Response response = null;
-        StringBuilder result = new StringBuilder();
+        try {
+            ResourceStoreRequest req = new ResourceStoreRequest(path);
+            req.setRequestRemoteOnly(true);
+            StorageFileItem item = (StorageFileItem) proxyRepository.getRemoteStorage()
+                .retrieveItem(proxyRepository, req, proxyRepository.getRemoteUrl());
 
-        try
-        {
-            response = doCall( builder.build(), result );
-        }
-        catch ( IOException e )
-        {
-            if ( logger.isDebugEnabled() )
-            {
-                logger.warn( e.getMessage(), e );
-            }
-            else
-            {
-                logger.warn( e.getMessage() );
+            BufferedReader reader = new BufferedReader(new InputStreamReader(item.getInputStream()));
+            String line;
+            while ((line = reader.readLine()) != null) {
+                buff.append(line).append("\n");
             }
         }
+        catch (Exception e) {
+            logger.warn("Failed to fetch remote directory index", e);
+        }
 
+        // HACK: Deal with S3 edge-case
         // here is the deal, For reasons I do not understand, S3 comes back with an empty response (and a 200),
-        // stripping off the last '/'
-        // returns the error we are looking for (so we can do a query)
+        // stripping off the last '/' returns the error we are looking for (so we can do a query)
+        //Header serverHeader = response.getFirstHeader(HttpHeaders.SERVER);
+        //if (buff.length() == 0 && serverHeader != null &&
+        //    serverHeader.getValue().equalsIgnoreCase("AmazonS3") &&
+        //    remoteUrl.endsWith("/")) {
+        //    remoteUrl = remoteUrl.substring(0, remoteUrl.length() - 1);
+        //    return getContent();
+        //}
 
-        String serverHeader = response != null ? response.getHeader( "Server" ) : null;
-        if ( result.length() == 0 && serverHeader != null && serverHeader.equalsIgnoreCase( "AmazonS3" )
-            && remoteUrl.endsWith( "/" ) )
-        {
-            remoteUrl = remoteUrl.substring( 0, remoteUrl.length() - 1 );
-            // now just call it again
-            return getContent();
-        }
-
-        return result;
-    }
-
-    private Response doCall( Request request, StringBuilder result )
-        throws IOException
-    {
-        try
-        {
-            Response response = client.executeRequest( request ).get();
-            final int responseCode = response.getStatusCode();
-
-            logger.debug( "responseCode={}", responseCode );
-            BufferedReader reader = new BufferedReader( new InputStreamReader( response.getResponseBodyAsStream() ) );
-
-            String line = null;
-            while ( ( line = reader.readLine() ) != null )
-            {
-                result.append( line + "\n" );
-            }
-
-            return response;
-        }
-        catch ( Exception e )
-        {
-            throw new IOException( e );
-        }
+        return buff;
     }
 }
