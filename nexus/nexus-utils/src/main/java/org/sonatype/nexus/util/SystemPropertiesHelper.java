@@ -33,6 +33,19 @@ public class SystemPropertiesHelper
         }
     }
 
+    public static final int getInteger( final String prefix, final String suffix, final String designator,
+                                        final int defaultValue )
+    {
+        if ( designator != null && designator.trim().length() > 0 )
+        {
+            return getInteger( prefix + designator + suffix, getInteger( prefix + suffix, defaultValue ) );
+        }
+        else
+        {
+            return getInteger( prefix + suffix, defaultValue );
+        }
+    }
+
     public final static long getLong( final String key, final long defaultValue )
     {
         final String value = System.getProperty( key );
@@ -52,6 +65,19 @@ public class SystemPropertiesHelper
         }
     }
 
+    public static final long getLong( final String prefix, final String suffix, final String designator,
+                                      final long defaultValue )
+    {
+        if ( designator != null && designator.trim().length() > 0 )
+        {
+            return getLong( prefix + designator + suffix, getLong( prefix + suffix, defaultValue ) );
+        }
+        else
+        {
+            return getLong( prefix + suffix, defaultValue );
+        }
+    }
+
     public final static boolean getBoolean( final String key, final boolean defaultValue )
     {
         final String value = System.getProperty( key );
@@ -62,6 +88,19 @@ public class SystemPropertiesHelper
         }
 
         return Boolean.valueOf( value );
+    }
+
+    public static final boolean getBoolean( final String prefix, final String suffix, final String designator,
+                                            final boolean defaultValue )
+    {
+        if ( designator != null && designator.trim().length() > 0 )
+        {
+            return getBoolean( prefix + designator + suffix, getBoolean( prefix + suffix, defaultValue ) );
+        }
+        else
+        {
+            return getBoolean( prefix + suffix, defaultValue );
+        }
     }
 
     public final static String getString( final String key, final String defaultValue )

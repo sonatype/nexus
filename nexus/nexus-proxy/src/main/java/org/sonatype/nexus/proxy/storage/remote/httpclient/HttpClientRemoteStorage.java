@@ -410,7 +410,7 @@ public class HttpClientRemoteStorage
         try
         {
             // and create a new one
-            HttpClientUtil.configure( CTX_KEY, ctx, getLogger() );
+            HttpClientUtil.configure( repository, CTX_KEY, ctx, getLogger() );
         }
         catch ( IllegalStateException e )
         {
