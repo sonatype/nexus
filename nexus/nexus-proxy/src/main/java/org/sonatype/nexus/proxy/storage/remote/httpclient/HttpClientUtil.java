@@ -95,10 +95,10 @@ public class HttpClientUtil
      * Key of optional system property for customizing the connection pool size. If not present HTTP client default is
      * used (20 connections)
      * 
-     * @deprecated This key is deprecated, use {@link #CONNECTION_POOL_SIZE_SUFFIX} instead.
+     * @deprecated This key is deprecated, use {@link #CONNECTION_POOL_SIZE_KEY} instead.
      */
     @Deprecated
-    private static final String CONNECTION_POOL_SIZE_KEY_DEPRECATED = "httpClient.connectionPoolSize";
+    public static final String CONNECTION_POOL_SIZE_KEY_DEPRECATED = "httpClient.connectionPoolSize";
 
     /**
      * Key for customizing connection pool maximum size. Value should be integer equal to 0 or greater. Pool size of 0
