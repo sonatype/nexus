@@ -91,11 +91,6 @@ public class HttpClientUtil
      */
     private static final String CTX_KEY_S3_FLAG = ".remoteIsAmazonS3";
 
-    /**
-     * Context key of a flag present in case that NTLM authentication is configured.
-     */
-    private static final String CTX_KEY_NTLM_IS_IN_USE = ".ntlmIsInUse";
-
     // ==
     // HTTPClient4x pool and connection eviction related settings
 
@@ -201,12 +196,6 @@ public class HttpClientUtil
 
         // put client into context
         ctx.putContextObject( ctxPrefix + CTX_KEY_CLIENT, httpClient );
-        // NTLM flag: if for any auth NTLM is used, it has to be set
-        if ( ( ctx.getRemoteAuthenticationSettings() != null && ctx.getRemoteAuthenticationSettings() instanceof NtlmRemoteAuthenticationSettings )
-            || ( ctx.getRemoteProxySettings() != null && ctx.getRemoteProxySettings().getProxyAuthentication() != null && ctx.getRemoteProxySettings().getProxyAuthentication() instanceof NtlmRemoteAuthenticationSettings ) )
-        {
-            ctx.putContextObject( ctxPrefix + CTX_KEY_NTLM_IS_IN_USE, Boolean.TRUE );
-        }
         // NEXUS-3338: we don't know after config change is remote S3 (url changed maybe)
         ctx.putContextObject( ctxPrefix + CTX_KEY_S3_FLAG, new BooleanFlagHolder() );
 
@@ -270,7 +259,6 @@ public class HttpClientUtil
             ctx.removeContextObject( ctxPrefix + CTX_KEY_CLIENT );
         }
         ctx.removeContextObject( ctxPrefix + CTX_KEY_S3_FLAG );
-        ctx.putContextObject( ctxPrefix + CTX_KEY_NTLM_IS_IN_USE, Boolean.FALSE );
     }
 
     /**
@@ -301,19 +289,6 @@ public class HttpClientUtil
     static HttpClient getHttpClient( final String ctxPrefix, final RemoteStorageContext ctx )
     {
         return (HttpClient) ctx.getContextObject( ctxPrefix + CTX_KEY_CLIENT );
-    }
-
-    /**
-     * Whether or not the NTLM authentication is used.
-     * 
-     * @param ctxPrefix context keys prefix
-     * @param ctx remote repository context
-     * @return {@code true} if NTLM authentication is used, {@code false} otherwise
-     */
-    static Boolean isNTLMAuthenticationUsed( final String ctxPrefix, final RemoteStorageContext ctx )
-    {
-        final Object ntlmInUse = ctx.getContextObject( ctxPrefix + CTX_KEY_NTLM_IS_IN_USE );
-        return ntlmInUse != null && Boolean.parseBoolean( ntlmInUse.toString() );
     }
 
     /**
