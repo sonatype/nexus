@@ -12,11 +12,11 @@
  */
 package org.sonatype.nexus.proxy.storage.remote.httpclient;
 
-import java.util.HashMap;
+import java.util.concurrent.TimeUnit;
 
-import org.apache.http.client.HttpClient;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.http.conn.ClientConnectionManager;
+
+import com.google.common.base.Preconditions;
 
 /**
  * Low priority daemon thread responsible to evic connection manager pools of HttpClient instances that were created
@@ -28,49 +28,18 @@ import org.slf4j.LoggerFactory;
 class ConnectionPoolEvictingThread
     extends Thread
 {
-    final static ConnectionPoolEvictingThread INSTANCE = new ConnectionPoolEvictingThread();
+    private final ClientConnectionManager clientConnectionManager;
 
-    private final HashMap<String, HttpClient> managedClients;
+    private final long idleTimeMillis;
 
-    private final Logger logger;
-
-    private ConnectionPoolEvictingThread()
+    ConnectionPoolEvictingThread( final ClientConnectionManager clientConnectionManager, final long idleTimeMillis )
     {
         super( "HC4x-ConnectionPoolEvictingThread" );
+        Preconditions.checkArgument( idleTimeMillis > -1, "Keep alive period in milliseconds cannot be negative." );
+        this.clientConnectionManager = Preconditions.checkNotNull( clientConnectionManager );
+        this.idleTimeMillis = idleTimeMillis;
         setDaemon( true );
         setPriority( MIN_PRIORITY );
-        this.logger = LoggerFactory.getLogger( getClass() );
-        this.managedClients = new HashMap<String, HttpClient>();
-        logger.info( "Starting connection pool evicting thread..." );
-        start();
-    }
-
-    public synchronized HttpClient register( final HttpClient client )
-    {
-        final Object id = client.getParams().getParameter( HttpClientUtil.CLIENT_ID_KEY );
-        if ( id != null )
-        {
-            logger.debug( "Instance {} registered for eviction.", HttpClientUtil.getHttpClientDescription( client ) );
-            return managedClients.put( String.valueOf( id ), client );
-        }
-        else
-        {
-            throw new IllegalArgumentException( "This is not a managed HTTPClient instance!" );
-        }
-    }
-
-    public synchronized HttpClient unregister( final HttpClient client )
-    {
-        final Object id = client.getParams().getParameter( HttpClientUtil.CLIENT_ID_KEY );
-        if ( id != null )
-        {
-            logger.debug( "Instance {} unregistered from eviction.", HttpClientUtil.getHttpClientDescription( client ) );
-            return managedClients.remove( String.valueOf( id ) );
-        }
-        else
-        {
-            throw new IllegalArgumentException( "This is not a managed HTTPClient instance!" );
-        }
     }
 
     @Override
@@ -83,15 +52,8 @@ class ConnectionPoolEvictingThread
                 Thread.sleep( 5000 );
                 synchronized ( this )
                 {
-                    for ( HttpClient managedClient : managedClients.values() )
-                    {
-                        if ( logger.isTraceEnabled() )
-                        {
-                            logger.trace( "Evicting pool of instance {}.",
-                                HttpClientUtil.getHttpClientDescription( managedClient ) );
-                        }
-                        HttpClientUtil.evictConnectionManagerPool( managedClient );
-                    }
+                    clientConnectionManager.closeExpiredConnections();
+                    clientConnectionManager.closeIdleConnections( idleTimeMillis, TimeUnit.MILLISECONDS );
                 }
             }
         }

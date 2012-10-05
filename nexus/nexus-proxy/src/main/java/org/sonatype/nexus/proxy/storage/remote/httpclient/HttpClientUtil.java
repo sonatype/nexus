@@ -16,7 +16,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
@@ -65,8 +64,6 @@ import org.sonatype.nexus.proxy.storage.remote.RemoteRepositoryStorage;
 import org.sonatype.nexus.proxy.storage.remote.RemoteStorageContext;
 import org.sonatype.nexus.util.SystemPropertiesHelper;
 
-import com.google.common.annotations.VisibleForTesting;
-
 /**
  * Utilities related to HTTP client. This whole class will need to be reworked, as it started as simple
  * "static utility class", but today it;s grown out it's limit to be still that. It would probably need to be
@@ -101,57 +98,98 @@ public class HttpClientUtil
      * @deprecated This key is deprecated, use {@link #CONNECTION_POOL_SIZE_SUFFIX} instead.
      */
     @Deprecated
-    public static final String CONNECTION_POOL_SIZE_KEY_DEPRECATED = "httpClient.connectionPoolSize";
+    private static final String CONNECTION_POOL_SIZE_KEY_DEPRECATED = "httpClient.connectionPoolSize";
 
     /**
-     * The common prefix for all parameters.
+     * Key for customizing connection pool maximum size. Value should be integer equal to 0 or greater. Pool size of 0
+     * will actually prevent use of pool. Any positive number means the actual size of the pool to be created. This is a
+     * hard limit, connection pool will never contain more than this count of open sockets.
      */
-    public static final String PARAMETER_PREFIX = "nexus.apacheHttpClient4x.";
+    static final String CONNECTION_POOL_MAX_SIZE_KEY = "nexus.apacheHttpClient4x.connectionPoolMaxSize";
 
     /**
-     * Key for customizing connection pool size. Value should be integer equal to 0 or greater. Pool size of 0 will
-     * actually prevent use of pool. Any positive number means the actual size of the pool to be created.
+     * Default pool max size: 200.
      */
-    public static final String CONNECTION_POOL_SIZE_SUFFIX = "connectionPoolSize";
+    private static final int CONNECTION_POOL_MAX_SIZE_DEFAULT = 200;
+
+    /**
+     * Key for customizing connection pool size per route (usually per-repository, but not quite in case of Mirrors).
+     * Value should be integer equal to 0 or greater. Pool size of 0 will actually prevent use of pool. Any positive
+     * number means the actual size of the pool to be created.
+     */
+    static final String CONNECTION_POOL_SIZE_KEY = "nexus.apacheHttpClient4x.connectionPoolSize";
 
     /**
      * Default pool size: 20.
      */
-    public static final int CONNECTION_POOL_SIZE_DEFAULT = 20;
+    private static final int CONNECTION_POOL_SIZE_DEFAULT = 20;
 
     /**
      * Key for customizing connection pool keep-alive. In other words, how long open connections (sockets) are kept in
      * pool before evicted and closed. Value is milliseconds.
      */
-    public static final String CONNECTION_POOL_KEEPALIVE_SUFFIX = "connectionPoolKeepalive";
+    static final String CONNECTION_POOL_KEEPALIVE_KEY = "nexus.apacheHttpClient4x.connectionPoolKeepalive";
 
     /**
      * Default pool keep-alive: 1 minute.
      */
-    public static final long CONNECTION_POOL_KEEPALIVE_DEFAULT = TimeUnit.MINUTES.toMillis( 1 );
+    private static final long CONNECTION_POOL_KEEPALIVE_DEFAULT = TimeUnit.MINUTES.toMillis( 1 );
 
     /**
      * Key for customizing connection pool timeout. In other words, how long should a HTTP request execution be blocked
      * when pool is depleted, for a connection. Value is milliseconds.
      */
-    public static final String CONNECTION_POOL_TIMEOUT_SUFFIX = "connectionPoolTimeout";
+    static final String CONNECTION_POOL_TIMEOUT_KEY = "nexus.apacheHttpClient4x.connectionPoolTimeout";
 
     /**
      * Default pool timeout: equals to {@link #CONNECTION_POOL_KEEPALIVE_DEFAULT}.
      */
-    public static final long CONNECTION_POOL_TIMEOUT_DEFAULT = TimeUnit.MINUTES.toMillis( 1 );
-
-    // --
-
-    static final String CLIENT_ID_KEY = "nexus.apacheHttpClient4x.id";
-
-    static final String CLIENT_DESIGNATOR_KEY = "nexus.apacheHttpClient4x.designator";
+    private static final long CONNECTION_POOL_TIMEOUT_DEFAULT = CONNECTION_POOL_KEEPALIVE_DEFAULT;
 
     // ----------------------------------------------------------------------
     // Implementation fields
     // ----------------------------------------------------------------------
 
     private static final Logger LOGGER = LoggerFactory.getLogger( HttpClientUtil.class );
+
+    private static final ClientConnectionManager CONNECTION_MANAGER;
+
+    private static final ConnectionPoolEvictingThread EVICTING_THREAD;
+
+    private static final int CONNECTION_POOL_MAX_SIZE;
+
+    private static final int CONNECTION_POOL_SIZE;
+
+    private static final long CONNECTION_POOL_KEEPALIVE;
+
+    private static final long CONNECTION_POOL_TIMEOUT;
+
+    static
+    {
+        // pool size: we have a new (documented) keys for per route and max, and an old (deprecated, undocumented but
+        // used) that was per repo (connMgr was not shared before). If new present, will be used, otherwise the
+        // deprecated will be looked up, and if not found, the default is used. Max Size is hard limit, always "wins".
+        // NOTE: pool size is per-repository, hence all of those will connect to same host (unless mirrors are used)
+        // so, we are violating intentionally the RFC and we let the whole pool size to chase same host by setting
+        // maxPerRoute to same value as maxTotal
+        CONNECTION_POOL_MAX_SIZE =
+            SystemPropertiesHelper.getInteger( CONNECTION_POOL_MAX_SIZE_KEY, CONNECTION_POOL_MAX_SIZE_DEFAULT );
+        CONNECTION_POOL_SIZE =
+            SystemPropertiesHelper.getInteger( CONNECTION_POOL_SIZE_KEY,
+                SystemPropertiesHelper.getInteger( CONNECTION_POOL_SIZE_KEY_DEPRECATED, CONNECTION_POOL_SIZE_DEFAULT ) );
+        // keepalive
+        CONNECTION_POOL_KEEPALIVE =
+            SystemPropertiesHelper.getLong( CONNECTION_POOL_KEEPALIVE_KEY, CONNECTION_POOL_KEEPALIVE_DEFAULT );
+        // pool timeout: max how long to wait for connection (without this, pool would block indefinitely)
+        CONNECTION_POOL_TIMEOUT =
+            SystemPropertiesHelper.getLong( CONNECTION_POOL_TIMEOUT_KEY, CONNECTION_POOL_TIMEOUT_DEFAULT );
+
+        CONNECTION_MANAGER = createConnectionManager( CONNECTION_POOL_MAX_SIZE, CONNECTION_POOL_SIZE );
+        EVICTING_THREAD = new ConnectionPoolEvictingThread( CONNECTION_MANAGER, CONNECTION_POOL_KEEPALIVE );
+        EVICTING_THREAD.start();
+
+        LOGGER.info( "Created shared ClientConnectionManager with following parameters: poolMaxSize={}, poolSize={}, keepAlive={}, poolTimeout={}" );
+    }
 
     // ----------------------------------------------------------------------
     // Public methods
@@ -215,12 +253,12 @@ public class HttpClientUtil
      * @throws IllegalStateException when client was not created due to (usually TLS/SSL related) some problem.
      * @since 2.2
      */
-    public static DefaultHttpClient configure( final String designator, final RemoteStorageContext ctx )
+    static DefaultHttpClient configure( final String designator, final RemoteStorageContext ctx )
         throws IllegalStateException
     {
         final DefaultHttpClient httpClient =
-            new DefaultHttpClient( createConnectionManager( designator ), createHttpParams( designator,
-                ctx.getRemoteConnectionSettings() ) )
+            new DefaultHttpClient( CONNECTION_MANAGER, createHttpParams( ctx.getRemoteConnectionSettings(),
+                CONNECTION_POOL_TIMEOUT ) )
             {
                 @Override
                 protected BasicHttpProcessor createHttpProcessor()
@@ -231,15 +269,9 @@ public class HttpClientUtil
                 }
             };
         // needed for internal bookkeeping
-        httpClient.getParams().setParameter( CLIENT_ID_KEY, UUID.randomUUID().toString() );
-        httpClient.getParams().setParameter( CLIENT_DESIGNATOR_KEY, designator );
         configureAuthentication( httpClient, ctx.getRemoteAuthenticationSettings(), null );
         configureProxy( httpClient, ctx.getRemoteProxySettings() );
-
-        ConnectionPoolEvictingThread.INSTANCE.register( httpClient );
-
         logAction( "Created", httpClient );
-
         return httpClient;
     }
 
@@ -273,8 +305,6 @@ public class HttpClientUtil
     public static void release( final HttpClient httpClient )
     {
         logAction( "Releasing ", httpClient );
-        ConnectionPoolEvictingThread.INSTANCE.unregister( httpClient );
-        httpClient.getConnectionManager().shutdown();
     }
 
     // ==
@@ -393,17 +423,14 @@ public class HttpClientUtil
         }
     }
 
-    private static HttpParams createHttpParams( final String designator,
-                                                final RemoteConnectionSettings remoteConnectionSettings )
+    private static HttpParams createHttpParams( final RemoteConnectionSettings remoteConnectionSettings,
+                                                final long poolTimeout )
     {
         HttpParams params = new SyncBasicHttpParams();
         params.setParameter( HttpProtocolParams.PROTOCOL_VERSION, HttpVersion.HTTP_1_1 );
         params.setBooleanParameter( HttpProtocolParams.USE_EXPECT_CONTINUE, false );
         params.setBooleanParameter( HttpConnectionParams.STALE_CONNECTION_CHECK, false );
         params.setIntParameter( HttpConnectionParams.SOCKET_BUFFER_SIZE, 8 * 1024 );
-
-        // pool timeout: max how long to wait for connection (without this, pool would block indefinitely)
-        long poolTimeout = getLong( CONNECTION_POOL_TIMEOUT_SUFFIX, designator, CONNECTION_POOL_TIMEOUT_DEFAULT );
         params.setLongParameter( ClientPNames.CONN_MANAGER_TIMEOUT, poolTimeout );
 
         // connection and socket timeouts come from Nexus config
@@ -415,7 +442,8 @@ public class HttpClientUtil
         return params;
     }
 
-    private static PoolingClientConnectionManager createConnectionManager( final String designator )
+    private static PoolingClientConnectionManager createConnectionManager( final int poolMaxSize,
+                                                                           final int poolPerRouteSize )
         throws IllegalStateException
     {
         final SchemeRegistry schemeRegistry = new SchemeRegistry();
@@ -423,88 +451,12 @@ public class HttpClientUtil
         schemeRegistry.register( new Scheme( "https", 443, SSLSocketFactory.getSocketFactory() ) );
         final PoolingClientConnectionManager connManager = new PoolingClientConnectionManager( schemeRegistry );
 
-        // pool size: we have a new (documented) key, and an old (deprecated, undocumented but used). If new present,
-        // will be used, otherwise the deprecated will be looked up, and if not found, the default is used.
-        // NOTE: pool size is per-repository, hence all of those will connect to same host (unless mirrors are used)
-        // so, we are violating intentionally the RFC and we let the whole pool size to chase same host by setting
-        // maxPerRoute to same value as maxTotal
-        final int poolSize =
-            getInt( CONNECTION_POOL_SIZE_SUFFIX, designator,
-                SystemPropertiesHelper.getInteger( CONNECTION_POOL_SIZE_KEY_DEPRECATED, CONNECTION_POOL_SIZE_DEFAULT ) );
-        connManager.setMaxTotal( poolSize );
-        connManager.setDefaultMaxPerRoute( poolSize );
+        connManager.setMaxTotal( poolMaxSize );
+        connManager.setDefaultMaxPerRoute( Math.min( poolPerRouteSize, poolMaxSize ) );
         return connManager;
     }
 
-    static void evictConnectionManagerPool( final HttpClient client )
-    {
-        // this might be null as well
-        final String designator = (String) client.getParams().getParameter( CLIENT_DESIGNATOR_KEY );
-        evictConnectionManagerPool( designator, client.getConnectionManager() );
-    }
-
-    private static void evictConnectionManagerPool( final String designator, final ClientConnectionManager connManager )
-    {
-        // as default DefaultConnectionKeepAliveStrategy is used, and it obeys to remote peer (if it says anything at
-        // all) we do eviction properly, using both methods. First call will evict those expired, after time
-        // that remote peer told us. If remote peer did not say anything, they are pooled for indefinite time
-        // and second call will handle them.
-        // NOTE: Having the 1st call we are simply polite to the remote peers that explicitly state for how
-        // long they want to keep-alive the connection, AND that value is less than our keep-alive
-        connManager.closeExpiredConnections();
-        // NOTE: Having the 2nd call we are simply "capping" the possible maximum time for how long to keep idle open
-        // sockets. If you consider servers mentioned above (that state timeout for keep-alive), this also
-        // protect us against abusive ones, that for example could say "keep socket open for one year" ;)
-        final long keepAlive =
-            getLong( CONNECTION_POOL_KEEPALIVE_SUFFIX, designator, CONNECTION_POOL_KEEPALIVE_DEFAULT );
-        connManager.closeIdleConnections( keepAlive, TimeUnit.MILLISECONDS );
-    }
-
-    // parameter fetching
-
-    @VisibleForTesting
-    static int getInt( final String suffix, final String designator, final int defaultValue )
-    {
-        // prefix[id]suffix
-        // nexus.apacheHttpClient4x.id.connectionPoolKeepalive
-        // nexus.apacheHttpClient4x.connectionPoolKeepalive
-        // default value
-        if ( designator == null )
-        {
-            return SystemPropertiesHelper.getInteger( PARAMETER_PREFIX, suffix, null, defaultValue );
-        }
-        else
-        {
-            return SystemPropertiesHelper.getInteger( PARAMETER_PREFIX, suffix, designator + ".", defaultValue );
-        }
-    }
-
-    @VisibleForTesting
-    static long getLong( final String suffix, final String designator, final long defaultValue )
-    {
-        // prefix[id]suffix
-        // nexus.apacheHttpClient4x.id.connectionPoolKeepalive
-        // nexus.apacheHttpClient4x.connectionPoolKeepalive
-        // default value
-        if ( designator == null )
-        {
-            return SystemPropertiesHelper.getLong( PARAMETER_PREFIX, suffix, null, defaultValue );
-        }
-        else
-        {
-            return SystemPropertiesHelper.getLong( PARAMETER_PREFIX, suffix, designator + ".", defaultValue );
-        }
-    }
-
     // ==
-
-    protected static String getHttpClientDescription( final HttpClient client )
-    {
-        final String id = String.valueOf( client.getParams().getParameter( CLIENT_ID_KEY ) );
-        final String designator = (String) client.getParams().getParameter( CLIENT_DESIGNATOR_KEY );
-
-        return "HttpClient4x ID=\"" + id + "\" (designator=\"" + designator + "\")";
-    }
 
     protected static void logAction( final String action, final HttpClient client )
     {
@@ -512,6 +464,6 @@ public class HttpClientUtil
         {
             return;
         }
-        LOGGER.debug( "{} {}", action, getHttpClientDescription( client ) );
+        LOGGER.debug( "{} {}", action, client.toString() );
     }
 }

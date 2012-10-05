@@ -35,6 +35,7 @@ import org.apache.http.impl.conn.PoolingClientConnectionManager;
 import org.apache.http.message.BasicHeader;
 import org.apache.http.protocol.HttpContext;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.Mock;
 import org.sonatype.nexus.proxy.repository.ProxyRepository;
@@ -145,7 +146,14 @@ public class HttpClientUtilTest
         assertThat( connMgr.getTotalStats().getLeased(), equalTo( 0 ) );
     }
 
+    /**
+     * Ignored as now parameters are not always re-read but are made constants once Classloader loads the class. Hence,
+     * this test below that modifies System properties does not quite make sense right now.
+     * 
+     * @throws Exception
+     */
     @Test
+    @Ignore
     public void testKeepAlive()
         throws Exception
     {
@@ -155,7 +163,7 @@ public class HttpClientUtilTest
         // the server
         final ServerSocket ss = new ServerSocket();
         final HttpRoute route = new HttpRoute( new HttpHost( "localhost", ss.getLocalPort() ) );
-        final String keepaliveKey = HttpClientUtil.PARAMETER_PREFIX + HttpClientUtil.CONNECTION_POOL_KEEPALIVE_SUFFIX;
+        final String keepaliveKey = HttpClientUtil.CONNECTION_POOL_KEEPALIVE_KEY;
 
         try
         {
@@ -175,64 +183,5 @@ public class HttpClientUtilTest
             System.clearProperty( keepaliveKey );
             ss.close();
         }
-    }
-
-    @Test
-    public void testGetInt()
-    {
-        final int defaultValue = 1;
-
-        // nexus.apacheHttpClient4x.central.connectionPoolKeepalive
-        final String designatedKey =
-            HttpClientUtil.PARAMETER_PREFIX + "central." + HttpClientUtil.CONNECTION_POOL_KEEPALIVE_SUFFIX;
-        final int designatedValue = 3;
-        // nexus.apacheHttpClient4x.connectionPoolKeepalive
-        final String globalKey = HttpClientUtil.PARAMETER_PREFIX + HttpClientUtil.CONNECTION_POOL_KEEPALIVE_SUFFIX;
-        final int globalValue = 5;
-
-        //
-        System.clearProperty( globalKey );
-        System.clearProperty( designatedKey );
-
-        assertThat( HttpClientUtil.getInt( HttpClientUtil.CONNECTION_POOL_KEEPALIVE_SUFFIX, null, defaultValue ),
-            equalTo( defaultValue ) );
-        assertThat( HttpClientUtil.getInt( HttpClientUtil.CONNECTION_POOL_KEEPALIVE_SUFFIX, "foo", defaultValue ),
-            equalTo( defaultValue ) );
-        assertThat( HttpClientUtil.getInt( HttpClientUtil.CONNECTION_POOL_KEEPALIVE_SUFFIX, "central", defaultValue ),
-            equalTo( defaultValue ) );
-
-        //
-        System.setProperty( globalKey, String.valueOf( globalValue ) );
-        System.clearProperty( designatedKey );
-
-        assertThat( HttpClientUtil.getInt( HttpClientUtil.CONNECTION_POOL_KEEPALIVE_SUFFIX, null, defaultValue ),
-            equalTo( globalValue ) );
-        assertThat( HttpClientUtil.getInt( HttpClientUtil.CONNECTION_POOL_KEEPALIVE_SUFFIX, "foo", defaultValue ),
-            equalTo( globalValue ) );
-        assertThat( HttpClientUtil.getInt( HttpClientUtil.CONNECTION_POOL_KEEPALIVE_SUFFIX, "central", defaultValue ),
-            equalTo( globalValue ) );
-
-        //
-        System.setProperty( globalKey, String.valueOf( globalValue ) );
-        System.setProperty( designatedKey, String.valueOf( designatedValue ) );
-
-        assertThat( HttpClientUtil.getInt( HttpClientUtil.CONNECTION_POOL_KEEPALIVE_SUFFIX, null, defaultValue ),
-            equalTo( globalValue ) );
-        assertThat( HttpClientUtil.getInt( HttpClientUtil.CONNECTION_POOL_KEEPALIVE_SUFFIX, "foo", defaultValue ),
-            equalTo( globalValue ) );
-        assertThat( HttpClientUtil.getInt( HttpClientUtil.CONNECTION_POOL_KEEPALIVE_SUFFIX, "central", defaultValue ),
-            equalTo( designatedValue ) );
-
-        //
-        System.clearProperty( globalKey );
-        System.setProperty( designatedKey, String.valueOf( designatedValue ) );
-
-        assertThat( HttpClientUtil.getInt( HttpClientUtil.CONNECTION_POOL_KEEPALIVE_SUFFIX, null, defaultValue ),
-            equalTo( defaultValue ) );
-        assertThat( HttpClientUtil.getInt( HttpClientUtil.CONNECTION_POOL_KEEPALIVE_SUFFIX, "foo", defaultValue ),
-            equalTo( defaultValue ) );
-        assertThat( HttpClientUtil.getInt( HttpClientUtil.CONNECTION_POOL_KEEPALIVE_SUFFIX, "central", defaultValue ),
-            equalTo( designatedValue ) );
-
     }
 }
