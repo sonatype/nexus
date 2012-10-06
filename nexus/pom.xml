@@ -1096,6 +1096,11 @@
         <version>1.6.3</version>
         <scope>test</scope>
       </dependency>
+      <dependency>
+        <groupId>org.sonatype.sisu.goodies</groupId>
+        <artifactId>goodies-jmx</artifactId>
+        <version>1.5-SNAPSHOT</version>
+      </dependency>
 
       <!-- The modules -->
       <dependency>

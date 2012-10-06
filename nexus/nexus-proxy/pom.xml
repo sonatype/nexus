@@ -139,6 +139,10 @@
       <artifactId>sisu-resource-scanner</artifactId>
       <version>1.0</version>
     </dependency>
+    <dependency>
+      <groupId>org.sonatype.sisu.goodies</groupId>
+      <artifactId>goodies-jmx</artifactId>
+    </dependency>
 
     <!-- Testing -->
     <dependency>
