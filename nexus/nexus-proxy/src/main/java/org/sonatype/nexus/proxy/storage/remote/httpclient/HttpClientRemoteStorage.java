@@ -67,7 +67,7 @@ import com.google.common.base.Stopwatch;
 
 /**
  * Apache HTTP client (4) {@link RemoteRepositoryStorage} implementation.
- *
+ * 
  * @since 2.0
  */
 @Named( HttpClientRemoteStorage.PROVIDER_STRING )
@@ -116,8 +116,8 @@ public class HttpClientRemoteStorage
 
     @Inject
     HttpClientRemoteStorage( final UserAgentBuilder userAgentBuilder,
-                             final ApplicationStatusSource applicationStatusSource,
-                             final MimeSupport mimeSupport, QueryStringBuilder queryStringBuilder)
+                             final ApplicationStatusSource applicationStatusSource, final MimeSupport mimeSupport,
+                             QueryStringBuilder queryStringBuilder )
     {
         super( userAgentBuilder, applicationStatusSource, mimeSupport );
         this.queryStringBuilder = queryStringBuilder;
@@ -134,8 +134,7 @@ public class HttpClientRemoteStorage
     }
 
     @Override
-    public AbstractStorageItem retrieveItem( final ProxyRepository repository,
-                                             final ResourceStoreRequest request,
+    public AbstractStorageItem retrieveItem( final ProxyRepository repository, final ResourceStoreRequest request,
                                              final String baseUrl )
         throws ItemNotFoundException, RemoteStorageException
     {
@@ -170,14 +169,14 @@ public class HttpClientRemoteStorage
                 String mimeType = ContentType.getOrDefault( httpResponse.getEntity() ).getMimeType();
                 if ( mimeType == null )
                 {
-                    mimeType = getMimeSupport().guessMimeTypeFromPath(
-                        repository.getMimeRulesSource(), request.getRequestPath()
-                    );
+                    mimeType =
+                        getMimeSupport().guessMimeTypeFromPath( repository.getMimeRulesSource(),
+                            request.getRequestPath() );
                 }
 
-                final DefaultStorageFileItem httpItem = new DefaultStorageFileItem(
-                    repository, request, CAN_READ, CAN_WRITE, new PreparedContentLocator( is, mimeType )
-                );
+                final DefaultStorageFileItem httpItem =
+                    new DefaultStorageFileItem( repository, request, CAN_READ, CAN_WRITE, new PreparedContentLocator(
+                        is, mimeType ) );
 
                 if ( httpResponse.getEntity().getContentLength() != -1 )
                 {
@@ -194,9 +193,8 @@ public class HttpClientRemoteStorage
             {
                 release( httpResponse );
                 throw new RemoteStorageException( "IO Error during response stream handling [repositoryId=\""
-                                                      + repository.getId() + "\", requestPath=\""
-                                                      + request.getRequestPath() + "\", remoteUrl=\""
-                                                      + remoteURL.toString() + "\"]!", ex );
+                    + repository.getId() + "\", requestPath=\"" + request.getRequestPath() + "\", remoteUrl=\""
+                    + remoteURL.toString() + "\"]!", ex );
             }
             catch ( RuntimeException ex )
             {
@@ -213,8 +211,8 @@ public class HttpClientRemoteStorage
                     "The remoteURL we requested does not exists on remote server (remoteUrl=\"" + remoteURL.toString()
                         + "\", response code is 404)", request, repository );
             }
-            else if ( httpResponse.getStatusLine().getStatusCode() == HttpStatus.SC_MOVED_TEMPORARILY ||
-                httpResponse.getStatusLine().getStatusCode() == HttpStatus.SC_MOVED_PERMANENTLY )
+            else if ( httpResponse.getStatusLine().getStatusCode() == HttpStatus.SC_MOVED_TEMPORARILY
+                || httpResponse.getStatusLine().getStatusCode() == HttpStatus.SC_MOVED_PERMANENTLY )
             {
                 // NEXUS-5125 unfollowed redirect means collection (path.endsWith("/"))
                 // see also HttpClientUtil#configure
@@ -224,16 +222,16 @@ public class HttpClientRemoteStorage
             }
             else
             {
-                throw new RemoteStorageException( "The method execution returned result code " + httpResponse.getStatusLine().getStatusCode()
-                    + " (expected 200). [repositoryId=\"" + repository.getId() + "\", requestPath=\"" + request.getRequestPath()
-                    + "\", remoteUrl=\"" + remoteURL.toString() + "\"]" );
+                throw new RemoteStorageException( "The method execution returned result code "
+                    + httpResponse.getStatusLine().getStatusCode() + " (expected 200). [repositoryId=\""
+                    + repository.getId() + "\", requestPath=\"" + request.getRequestPath() + "\", remoteUrl=\""
+                    + remoteURL.toString() + "\"]" );
             }
         }
     }
 
     @Override
-    public void storeItem( final ProxyRepository repository,
-                           final StorageItem item )
+    public void storeItem( final ProxyRepository repository, final StorageItem item )
         throws UnsupportedStorageOperationException, RemoteStorageException
     {
         if ( !( item instanceof StorageFileItem ) )
@@ -256,14 +254,9 @@ public class HttpClientRemoteStorage
         }
         catch ( IOException e )
         {
-            throw new RemoteStorageException(
-                e.getMessage()
-                    + " [repositoryId=\"" + repository.getId()
-                    + "\", requestPath=\"" + request.getRequestPath()
-                    + "\", remoteUrl=\"" + remoteUrl.toString()
-                    + "\"]",
-                e
-            );
+            throw new RemoteStorageException( e.getMessage() + " [repositoryId=\"" + repository.getId()
+                + "\", requestPath=\"" + request.getRequestPath() + "\", remoteUrl=\"" + remoteUrl.toString() + "\"]",
+                e );
         }
 
         entity.setContentType( fileItem.getMimeType() );
@@ -276,18 +269,14 @@ public class HttpClientRemoteStorage
             && statusCode != HttpStatus.SC_NO_CONTENT && statusCode != HttpStatus.SC_ACCEPTED )
         {
             throw new RemoteStorageException( "Unexpected response code while executing " + method.getMethod()
-                                                  + " method [repositoryId=\"" + repository.getId()
-                                                  + "\", requestPath=\"" + request.getRequestPath()
-                                                  + "\", remoteUrl=\"" + remoteUrl.toString()
-                                                  + "\"]. Expected: \"any success (2xx)\". Received: "
-                                                  + statusCode + " : "
-                                                  + httpResponse.getStatusLine().getReasonPhrase() );
+                + " method [repositoryId=\"" + repository.getId() + "\", requestPath=\"" + request.getRequestPath()
+                + "\", remoteUrl=\"" + remoteUrl.toString() + "\"]. Expected: \"any success (2xx)\". Received: "
+                + statusCode + " : " + httpResponse.getStatusLine().getReasonPhrase() );
         }
     }
 
     @Override
-    public void deleteItem( final ProxyRepository repository,
-                            final ResourceStoreRequest request )
+    public void deleteItem( final ProxyRepository repository, final ResourceStoreRequest request )
         throws ItemNotFoundException, UnsupportedStorageOperationException, RemoteStorageException
     {
         final URL remoteUrl = appendQueryString( getAbsoluteUrlFromBase( repository, request ), repository );
@@ -297,24 +286,19 @@ public class HttpClientRemoteStorage
         final HttpResponse httpResponse = executeRequestAndRelease( repository, request, method );
         final int statusCode = httpResponse.getStatusLine().getStatusCode();
 
-        if ( statusCode != HttpStatus.SC_OK
-            && statusCode != HttpStatus.SC_NO_CONTENT
+        if ( statusCode != HttpStatus.SC_OK && statusCode != HttpStatus.SC_NO_CONTENT
             && statusCode != HttpStatus.SC_ACCEPTED )
         {
             throw new RemoteStorageException( "The response to HTTP " + method.getMethod()
-                                                  + " was unexpected HTTP Code " + statusCode + " : "
-                                                  + httpResponse.getStatusLine().getReasonPhrase()
-                                                  + " [repositoryId=\"" + repository.getId() + "\", requestPath=\""
-                                                  + request.getRequestPath()
-                                                  + "\", remoteUrl=\"" + remoteUrl.toString() + "\"]" );
+                + " was unexpected HTTP Code " + statusCode + " : " + httpResponse.getStatusLine().getReasonPhrase()
+                + " [repositoryId=\"" + repository.getId() + "\", requestPath=\"" + request.getRequestPath()
+                + "\", remoteUrl=\"" + remoteUrl.toString() + "\"]" );
         }
     }
 
     @Override
-    protected boolean checkRemoteAvailability( final long newerThen,
-                                               final ProxyRepository repository,
-                                               final ResourceStoreRequest request,
-                                               final boolean isStrict )
+    protected boolean checkRemoteAvailability( final long newerThen, final ProxyRepository repository,
+                                               final ResourceStoreRequest request, final boolean isStrict )
         throws RemoteStorageException
     {
         final URL remoteUrl = appendQueryString( getAbsoluteUrlFromBase( repository, request ), repository );
@@ -390,12 +374,9 @@ public class HttpClientRemoteStorage
             else
             {
                 throw new RemoteStorageException( "Unexpected response code while executing " + method.getMethod()
-                                                      + " method [repositoryId=\"" + repository.getId()
-                                                      + "\", requestPath=\"" + request.getRequestPath()
-                                                      + "\", remoteUrl=\"" + remoteUrl.toString()
-                                                      + "\"]. Expected: \"SUCCESS (200)\". Received: "
-                                                      + statusCode + " : " +
-                                                      httpResponse.getStatusLine().getReasonPhrase() );
+                    + " method [repositoryId=\"" + repository.getId() + "\", requestPath=\"" + request.getRequestPath()
+                    + "\", remoteUrl=\"" + remoteUrl.toString() + "\"]. Expected: \"SUCCESS (200)\". Received: "
+                    + statusCode + " : " + httpResponse.getStatusLine().getReasonPhrase() );
             }
         }
     }
@@ -410,7 +391,7 @@ public class HttpClientRemoteStorage
         try
         {
             // and create a new one
-            HttpClientUtil.configure( CTX_KEY, ctx, getLogger() );
+            HttpClientUtil.configure( repository, CTX_KEY, ctx, getLogger() );
         }
         catch ( IllegalStateException e )
         {
@@ -431,18 +412,17 @@ public class HttpClientRemoteStorage
     /**
      * Executes the HTTP request.
      * <p/>
-     * In case of any exception thrown by HttpClient, it will release the connection. In other cases it
-     * is the duty of caller to do it, or process the input stream.
-     *
-     * @param repository  to execute the HTTP method fpr
-     * @param request     resource store request that triggered the HTTP request
+     * In case of any exception thrown by HttpClient, it will release the connection. In other cases it is the duty of
+     * caller to do it, or process the input stream.
+     * 
+     * @param repository to execute the HTTP method fpr
+     * @param request resource store request that triggered the HTTP request
      * @param httpRequest HTTP request to be executed
      * @return response of making the request
      * @throws RemoteStorageException If an error occurred during execution of HTTP request
      */
     @VisibleForTesting
-    HttpResponse executeRequest( final ProxyRepository repository,
-                                 final ResourceStoreRequest request,
+    HttpResponse executeRequest( final ProxyRepository repository, final ResourceStoreRequest request,
                                  final HttpUriRequest httpRequest )
         throws RemoteStorageException
     {
@@ -456,16 +436,13 @@ public class HttpClientRemoteStorage
             if ( stopwatch != null )
             {
                 stopwatch.stop();
-                timingLog.debug(
-                    "[{}] {} {} took {}",
-                    new Object[]{ repository.getId(), httpRequest.getMethod(), httpRequest.getURI(), stopwatch }
-                );
+                timingLog.debug( "[{}] {} {} took {}", new Object[] { repository.getId(), httpRequest.getMethod(),
+                    httpRequest.getURI(), stopwatch } );
             }
         }
     }
 
-    private HttpResponse doExecuteRequest( final ProxyRepository repository,
-                                           final ResourceStoreRequest request,
+    private HttpResponse doExecuteRequest( final ProxyRepository repository, final ResourceStoreRequest request,
                                            final HttpUriRequest httpRequest )
         throws RemoteStorageException
     {
@@ -474,8 +451,7 @@ public class HttpClientRemoteStorage
         if ( getLogger().isDebugEnabled() )
         {
             getLogger().debug(
-                "Invoking HTTP " + httpRequest.getMethod() + " method against remote location " + methodUri
-            );
+                "Invoking HTTP " + httpRequest.getMethod() + " method against remote location " + methodUri );
         }
 
         final RemoteStorageContext ctx = getRemoteStorageContext( repository );
@@ -495,9 +471,8 @@ public class HttpClientRemoteStorage
             final int statusCode = httpResponse.getStatusLine().getStatusCode();
 
             final Header httpServerHeader = httpResponse.getFirstHeader( "server" );
-            checkForRemotePeerAmazonS3Storage(
-                repository, httpServerHeader == null ? null : httpServerHeader.getValue()
-            );
+            checkForRemotePeerAmazonS3Storage( repository,
+                httpServerHeader == null ? null : httpServerHeader.getValue() );
 
             Header proxyReturnedErrorHeader = httpResponse.getFirstHeader( NEXUS_MISSING_ARTIFACT_HEADER );
             boolean proxyReturnedError =
@@ -505,21 +480,18 @@ public class HttpClientRemoteStorage
 
             if ( statusCode == HttpStatus.SC_FORBIDDEN )
             {
-                throw new RemoteAccessDeniedException(
-                    repository, methodUri.toASCIIString(), httpResponse.getStatusLine().getReasonPhrase()
-                );
+                throw new RemoteAccessDeniedException( repository, methodUri.toASCIIString(),
+                    httpResponse.getStatusLine().getReasonPhrase() );
             }
             else if ( statusCode == HttpStatus.SC_UNAUTHORIZED )
             {
-                throw new RemoteAuthenticationNeededException(
-                    repository, httpResponse.getStatusLine().getReasonPhrase()
-                );
+                throw new RemoteAuthenticationNeededException( repository,
+                    httpResponse.getStatusLine().getReasonPhrase() );
             }
             else if ( statusCode == HttpStatus.SC_OK && proxyReturnedError )
             {
                 throw new RemoteStorageException(
-                    "Invalid artifact found, most likely a proxy redirected to an HTML error page."
-                );
+                    "Invalid artifact found, most likely a proxy redirected to an HTML error page." );
             }
 
             return httpResponse;
@@ -533,32 +505,29 @@ public class HttpClientRemoteStorage
         {
             release( httpResponse );
             throw new RemoteStorageException( "Protocol error while executing " + httpRequest.getMethod()
-                                                  + " method. [repositoryId=\"" + repository.getId()
-                                                  + "\", requestPath=\"" + request.getRequestPath()
-                                                  + "\", remoteUrl=\"" + methodUri.toASCIIString() + "\"]", ex );
+                + " method. [repositoryId=\"" + repository.getId() + "\", requestPath=\"" + request.getRequestPath()
+                + "\", remoteUrl=\"" + methodUri.toASCIIString() + "\"]", ex );
         }
         catch ( IOException ex )
         {
             release( httpResponse );
             throw new RemoteStorageException( "Transport error while executing " + httpRequest.getMethod()
-                                                  + " method [repositoryId=\"" + repository.getId()
-                                                  + "\", requestPath=\"" + request.getRequestPath()
-                                                  + "\", remoteUrl=\"" + methodUri.toASCIIString() + "\"]", ex );
+                + " method [repositoryId=\"" + repository.getId() + "\", requestPath=\"" + request.getRequestPath()
+                + "\", remoteUrl=\"" + methodUri.toASCIIString() + "\"]", ex );
         }
     }
 
     /**
      * Executes the HTTP request and automatically releases any related resources.
-     *
-     * @param repository  to execute the HTTP method fpr
-     * @param request     resource store request that triggered the HTTP request
+     * 
+     * @param repository to execute the HTTP method fpr
+     * @param request resource store request that triggered the HTTP request
      * @param httpRequest HTTP request to be executed
      * @return response of making the request
      * @throws RemoteStorageException If an error occurred during execution of HTTP request
      */
     private HttpResponse executeRequestAndRelease( final ProxyRepository repository,
-                                                   final ResourceStoreRequest request,
-                                                   final HttpUriRequest httpRequest )
+                                                   final ResourceStoreRequest request, final HttpUriRequest httpRequest )
         throws RemoteStorageException
     {
         final HttpResponse httpResponse = executeRequest( repository, request, httpRequest );
@@ -568,7 +537,7 @@ public class HttpClientRemoteStorage
 
     /**
      * Make date from header.
-     *
+     * 
      * @param date the date
      * @return the long
      */
@@ -596,14 +565,13 @@ public class HttpClientRemoteStorage
 
     /**
      * Appends repository configured additional query string to provided URL.
-     *
-     * @param url        to append to
+     * 
+     * @param url to append to
      * @param repository that may contain additional query string
      * @return URL with appended query string or original URL if repository does not have an configured query string
      * @throws RemoteStorageException if query string could not be appended (resulted in an Malformed URL exception)
      */
-    private URL appendQueryString( final URL url,
-                                   final ProxyRepository repository )
+    private URL appendQueryString( final URL url, final ProxyRepository repository )
         throws RemoteStorageException
     {
         final RemoteStorageContext ctx = getRemoteStorageContext( repository );
@@ -625,9 +593,8 @@ public class HttpClientRemoteStorage
             }
             catch ( MalformedURLException e )
             {
-                throw new RemoteStorageException(
-                    "Could not append query string \"" + queryString + "\" to url \"" + url + "\"", e
-                );
+                throw new RemoteStorageException( "Could not append query string \"" + queryString + "\" to url \""
+                    + url + "\"", e );
             }
         }
         return url;
@@ -635,7 +602,7 @@ public class HttpClientRemoteStorage
 
     /**
      * Releases connection resources (back to pool). If an exception appears during releasing, exception is just logged.
-     *
+     * 
      * @param httpResponse to be released
      */
     private void release( final HttpResponse httpResponse )

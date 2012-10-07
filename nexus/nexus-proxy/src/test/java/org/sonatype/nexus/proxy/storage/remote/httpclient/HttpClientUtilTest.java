@@ -13,10 +13,14 @@
 package org.sonatype.nexus.proxy.storage.remote.httpclient;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
-import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.when;
 
+import java.net.ServerSocket;
+import java.util.concurrent.TimeUnit;
+
+import org.apache.http.HttpHost;
 import org.apache.http.HttpRequest;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
@@ -24,12 +28,17 @@ import org.apache.http.ProtocolException;
 import org.apache.http.RequestLine;
 import org.apache.http.StatusLine;
 import org.apache.http.client.RedirectStrategy;
+import org.apache.http.conn.ManagedClientConnection;
+import org.apache.http.conn.routing.HttpRoute;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.impl.conn.PoolingClientConnectionManager;
 import org.apache.http.message.BasicHeader;
 import org.apache.http.protocol.HttpContext;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.Mock;
+import org.sonatype.nexus.proxy.repository.ProxyRepository;
 import org.sonatype.nexus.proxy.repository.RemoteConnectionSettings;
 import org.sonatype.nexus.proxy.repository.RemoteProxySettings;
 import org.sonatype.nexus.proxy.storage.remote.RemoteStorageContext;
@@ -68,12 +77,16 @@ public class HttpClientUtilTest
     @Mock
     private RemoteProxySettings remoteProxySettings;
 
+    @Mock
+    private ProxyRepository proxyRepository;
+
     @Before
     public void before()
     {
         when( ctx.getRemoteConnectionSettings() ).thenReturn( remoteConnectionSettings );
         when( ctx.getRemoteProxySettings() ).thenReturn( remoteProxySettings );
-        underTest = (DefaultHttpClient) HttpClientUtil.configure( "ctx", ctx, logger );
+        when( proxyRepository.getId() ).thenReturn( "central" );
+        underTest = (DefaultHttpClient) HttpClientUtil.configure( proxyRepository, "ctx", ctx, logger );
 
         when( response.getStatusLine() ).thenReturn( statusLine );
 
@@ -99,10 +112,76 @@ public class HttpClientUtilTest
         assertThat( redirectStrategy.isRedirected( request, response, httpContext ), is( true ) );
 
         // redirect to dir
-        when( response.getFirstHeader( "location" ) ).thenReturn(
-            new BasicHeader( "location", "http://localhost/dir/" ) );
+        when( response.getFirstHeader( "location" ) ).thenReturn( new BasicHeader( "location", "http://localhost/dir/" ) );
         assertThat( redirectStrategy.isRedirected( request, response, httpContext ), is( false ) );
     }
 
+    private void useConnection( final PoolingClientConnectionManager connMgr, final HttpRoute route,
+                                final boolean shouldBeEvicted )
+        throws Exception
+    {
+        // ask for a connection
+        final ManagedClientConnection connection = connMgr.requestConnection( route, null ).getConnection( 0, null );
+        // mark it reusable (in HC, this would come from higher level, based on HTTP protocol and other
+        connection.markReusable();
+        // check some stats
+        assertThat( connMgr.getTotalStats().getAvailable(), equalTo( 0 ) );
+        assertThat( connMgr.getTotalStats().getLeased(), equalTo( 1 ) );
+        // release the connection, and keep it forever (we test will our monitor thread evict it)
+        connMgr.releaseConnection( connection, -1, TimeUnit.MILLISECONDS );
+        // check some stats
+        assertThat( connMgr.getTotalStats().getAvailable(), equalTo( 1 ) );
+        assertThat( connMgr.getTotalStats().getLeased(), equalTo( 0 ) );
+        // sleep 5.5 second to give eviction change to kick in (runs every 5 sec)
+        Thread.sleep( 5500 );
+        // check some stats
+        if ( shouldBeEvicted )
+        {
+            assertThat( connMgr.getTotalStats().getAvailable(), equalTo( 0 ) );
+        }
+        else
+        {
+            assertThat( connMgr.getTotalStats().getAvailable(), equalTo( 1 ) );
+        }
+        assertThat( connMgr.getTotalStats().getLeased(), equalTo( 0 ) );
+    }
 
+    /**
+     * Ignored as now parameters are not always re-read but are made constants once Classloader loads the class. Hence,
+     * this test below that modifies System properties does not quite make sense right now.
+     * 
+     * @throws Exception
+     */
+    @Test
+    @Ignore
+    public void testKeepAlive()
+        throws Exception
+    {
+        final PoolingClientConnectionManager connMgr =
+            (PoolingClientConnectionManager) underTest.getConnectionManager();
+
+        // the server
+        final ServerSocket ss = new ServerSocket();
+        final HttpRoute route = new HttpRoute( new HttpHost( "localhost", ss.getLocalPort() ) );
+        final String keepaliveKey = HttpClientUtil.CONNECTION_POOL_KEEPALIVE_KEY;
+
+        try
+        {
+            // set pool timeout to 1 second, eviction happens per every 5 seconds so it should be evicted
+            System.setProperty( keepaliveKey, String.valueOf( TimeUnit.SECONDS.toMillis( 1 ) ) );
+            // this setting above will make the connection to be evicted
+
+            useConnection( connMgr, route, true );
+
+            // set pool timeout to 1 hour, eviction happens per every 5 seconds so it should not be evicted
+            System.setProperty( keepaliveKey, String.valueOf( TimeUnit.HOURS.toMillis( 1 ) ) );
+
+            useConnection( connMgr, route, false );
+        }
+        finally
+        {
+            System.clearProperty( keepaliveKey );
+            ss.close();
+        }
+    }
 }
