@@ -11,11 +11,10 @@
  * Eclipse Foundation. All other trademarks are the property of their respective owners.
  */
 
-package org.sonatype.nexus.proxy.repository.management;
+package org.sonatype.nexus.plugins.management;
 
+import org.sonatype.nexus.plugins.events.PluginActivatedEvent;
 import org.sonatype.nexus.proxy.events.EventInspector;
-import org.sonatype.nexus.proxy.events.RepositoryRegistryEventAdd;
-import org.sonatype.nexus.proxy.events.RepositoryRegistryEventRemove;
 import org.sonatype.plexus.appevents.Event;
 
 import javax.inject.Inject;
@@ -25,19 +24,19 @@ import javax.inject.Singleton;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
- * Handles events for {@link RepositoryMBean} installation.
+ * Handles events for {@link PluginMBean} installation.
  *
- * @since 2.2
+ * @since 2.3
  */
 @Named
 @Singleton
-public class RepositoryMBeanEventHandler
+public class PluginMBeanEventHandler
     implements EventInspector
 {
-    private final RepositoryMBeanInstaller installer;
+    private final PluginMBeanInstaller installer;
 
     @Inject
-    public RepositoryMBeanEventHandler(final RepositoryMBeanInstaller installer) {
+    public PluginMBeanEventHandler(final PluginMBeanInstaller installer) {
         this.installer = checkNotNull(installer);
     }
 
@@ -48,19 +47,14 @@ public class RepositoryMBeanEventHandler
 
     @Override
     public void inspect(final Event<?> event) {
-        if (event instanceof RepositoryRegistryEventAdd) {
-            handle((RepositoryRegistryEventAdd) event);
+        if (event instanceof PluginActivatedEvent) {
+            handle((PluginActivatedEvent) event);
         }
-        else if (event instanceof RepositoryRegistryEventRemove) {
-            handle((RepositoryRegistryEventRemove) event);
-        }
+        // NOTE: There is no uninstall really, deactivate event is never used
+        // NOTE: There is however a separate event for active or rejected (failed) which is a PITA
     }
 
-    private void handle(final RepositoryRegistryEventAdd event) {
-        installer.install(event.getRepository());
-    }
-
-    private void handle(final RepositoryRegistryEventRemove event) {
-        installer.uninstall(event.getRepository());
+    private void handle(final PluginActivatedEvent event) {
+        installer.install(event.getPluginDescriptor());
     }
 }
