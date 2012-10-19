@@ -18,38 +18,55 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>org.sonatype.nexus</groupId>
-    <artifactId>nexus</artifactId>
+    <groupId>org.sonatype.nexus.plugins.rest</groupId>
+    <artifactId>nexus-legacy-rest-api-parent</artifactId>
     <version>2.3-SNAPSHOT</version>
   </parent>
 
-  <artifactId>nexus-rest-api</artifactId>
-  <name>Nexus : Core Rest API</name>
+  <artifactId>nexus-legacy-rest-api-plugin</artifactId>
+  <packaging>nexus-plugin</packaging>
+  <name>Nexus : Core Plugins : Legacy Rest API Plugin</name>
 
   <dependencies>
     <dependency>
+      <groupId>org.sonatype.nexus.plugins.rest</groupId>
+      <artifactId>nexus-legacy-rest-api-model</artifactId>
+      <version>${project.version}</version>
+      <scope>compile</scope>
+    </dependency>
+
+    <dependency>
       <groupId>org.sonatype.nexus</groupId>
       <artifactId>nexus-app</artifactId>
+      <scope>provided</scope>
     </dependency>
 
     <dependency>
       <groupId>org.sonatype.nexus</groupId>
       <artifactId>nexus-logging-extras</artifactId>
+      <scope>provided</scope>
     </dependency>
-
     <dependency>
       <groupId>org.sonatype.nexus</groupId>
-      <artifactId>nexus-rest-api-model</artifactId>
+      <artifactId>nexus-configuration</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.sonatype.nexus</groupId>
+      <artifactId>nexus-proxy</artifactId>
+      <scope>provided</scope>
     </dependency>
 
     <dependency>
       <groupId>org.sonatype.nexus</groupId>
       <artifactId>nexus-web-utils</artifactId>
+      <scope>provided</scope>
     </dependency>
 
     <dependency>
       <groupId>org.sonatype.sisu</groupId>
       <artifactId>sisu-inject-plexus</artifactId>
+      <scope>provided</scope>
     </dependency>
 
     <dependency>
@@ -72,6 +89,16 @@
           <groupId>javax.activation</groupId>
           <artifactId>activation</artifactId>
         </exclusion>
+        <!-- Velocity is in core -->
+        <exclusion>
+          <groupId>org.apache.velocity</groupId>
+          <artifactId>velocity</artifactId>
+        </exclusion>
+        <!-- plexus-host-api is in core -->
+        <exclusion>
+          <groupId>org.sonatype.plugin</groupId>
+          <artifactId>plugin-host-api</artifactId>
+        </exclusion>
       </exclusions>
     </dependency>
 
@@ -82,12 +109,36 @@
 
     <dependency>
       <groupId>org.sonatype.security</groupId>
+      <artifactId>security-system</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.sonatype.security.realms</groupId>
+      <artifactId>security-xml-realm</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.sonatype.security</groupId>
       <artifactId>security-web</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.shiro</groupId>
+      <artifactId>shiro-web</artifactId>
+      <scope>provided</scope>
+    </dependency>
+
+    <!-- This module does depend as "compile", also, plugin depending on this module needs it too -->
+    <dependency>
+      <groupId>javax.servlet</groupId>
+      <artifactId>servlet-api</artifactId>
+      <scope>provided</scope>
     </dependency>
 
     <dependency>
       <groupId>org.codehaus.plexus</groupId>
       <artifactId>plexus-utils</artifactId>
+      <scope>provided</scope>
     </dependency>
 
     <dependency>
@@ -106,6 +157,11 @@
     <dependency>
       <groupId>org.codehaus.enunciate</groupId>
       <artifactId>enunciate-core</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.thoughtworks.xstream</groupId>
+      <artifactId>xstream</artifactId>
       <scope>provided</scope>
     </dependency>
 
@@ -146,6 +202,23 @@
 
   <build>
     <plugins>
+      <plugin>
+        <groupId>org.sonatype.plugins</groupId>
+        <artifactId>app-lifecycle-maven-plugin</artifactId>
+        <configuration>
+          <sharedDependencies>
+            <sharedDependency>org.sonatype.nexus.plugins.rest:nexus-legacy-rest-api-model</sharedDependency>
+            <sharedDependency>org.sonatype.plexus:plexus-restlet-bridge</sharedDependency>
+            <sharedDependency>org.restlet:org.restlet</sharedDependency>
+            <sharedDependency>org.sonatype.security:security-rest-api</sharedDependency>
+            <sharedDependency>org.sonatype.security:security-rest-model</sharedDependency>
+          </sharedDependencies>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.plexus</groupId>
+        <artifactId>plexus-component-metadata</artifactId>
+      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-jar-plugin</artifactId>
