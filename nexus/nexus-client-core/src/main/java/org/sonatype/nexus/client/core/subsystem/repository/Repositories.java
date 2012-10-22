@@ -10,33 +10,26 @@
  * of Sonatype, Inc. Apache Maven is a trademark of the Apache Software Foundation. M2eclipse is a trademark of the
  * Eclipse Foundation. All other trademarks are the property of their respective owners.
  */
-package org.sonatype.nexus.client.core.subsystem.artifact;
+package org.sonatype.nexus.client.core.subsystem.repository;
 
-import org.sonatype.nexus.rest.model.ArtifactCoordinate;
+import java.util.Set;
 
 /**
- * The core service at URI of {@code /service/local/artifact/maven}.
+ * TODO
  *
- * @author cstamas
+ * @since 2.2
  */
-public interface ArtifactMaven
+public interface Repositories
 {
 
-    /**
-     * Performs a "resolve" operation on Nexus side, using whatever metadata targeted repository uses and returns the
-     * resolved artifact or {@code null} if resolution failed.
-     *
-     * @param req
-     * @return
-     */
-    ResolveResponse resolve( ResolveRequest req );
+    <R extends Repository> R get( String id );
 
-  /**
-   * Uploads a file to a Nexus repostory
-   * 
-   * @param req
-   *          contains repository, meta data and file information
-   * @return
-   */
-  ArtifactCoordinate upload(UploadRequest req);
+    <R extends Repository> R getGroup( String id );
+
+    Set<Repository> get();
+
+    Set<Repository> getGroups();
+
+    <R extends Repository> R create( Class<R> type, String id );
+
 }
