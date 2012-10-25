@@ -56,7 +56,7 @@ public class IndexTemplatePlexusResource
 
     @Requirement( role = NexusIndexHtmlCustomizer.class )
     private Map<String, NexusIndexHtmlCustomizer> bundles;
-    
+
     @Configuration( value = "${index.template.file}" )
     String templateFilename;
 
@@ -184,7 +184,7 @@ public class IndexTemplatePlexusResource
                 postBodyTemplate,
                 pluginPostBodyContributions );
         }
-        
+
         templatingContext.put( "appName", nexus.getSystemStatus().getAppName() );
         templatingContext.put( "formattedAppName", nexus.getSystemStatus().getFormattedAppName() );
 
@@ -220,13 +220,6 @@ public class IndexTemplatePlexusResource
                         "Was not able to interpolate (check the logs for Velocity messages about the reason)!" );
                 }
             }
-            catch ( IOException e )
-            {
-                throw new ResourceException(
-                    Status.SERVER_ERROR_INTERNAL,
-                    "Got IO exception during Velocity invocation!",
-                    e );
-            }
             catch ( ParseErrorException e )
             {
                 throw new ResourceException(
@@ -250,7 +243,7 @@ public class IndexTemplatePlexusResource
             }
         }
     }
-    
+
     public void initialize()
         throws InitializationException
     {
