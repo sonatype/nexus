@@ -498,7 +498,7 @@
       <dependency>
         <groupId>org.apache.velocity</groupId>
         <artifactId>velocity</artifactId>
-        <version>1.5</version>
+        <version>1.7</version>
         <type>jar</type>
       </dependency>
 
@@ -1310,10 +1310,10 @@
               <rules>
                 <bannedDependencies>
                   <excludes>
-                    <exclude>velocity:velocity:jar:1.4</exclude>
-                    <exclude>velocity:velocity-dep:jar:1.4</exclude>
+                    <exclude>velocity:velocity</exclude>
+                    <exclude>velocity:velocity-dep</exclude>
                   </excludes>
-                  <message>Velocity 1.4 is banned, Velocity 1.5 should be used!
+                  <message>Velocity 1.4 is banned, org.apache.velocity:velocity should be used!
                     You probably added a dependency that is missing the exclusions.
                   </message>
                 </bannedDependencies>
