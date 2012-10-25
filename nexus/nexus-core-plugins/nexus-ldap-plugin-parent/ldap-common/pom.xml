@@ -171,7 +171,7 @@
           <dependency>
             <groupId>commons-collections</groupId>
             <artifactId>commons-collections</artifactId>
-            <version>${commons-collections.version}</version>
+            <version>3.2.1</version>
           </dependency>
         </dependencies>
       </plugin>

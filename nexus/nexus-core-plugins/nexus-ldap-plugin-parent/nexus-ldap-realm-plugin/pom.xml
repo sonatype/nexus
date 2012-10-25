@@ -27,7 +27,6 @@
   <packaging>nexus-plugin</packaging>
 
   <properties>
-    <commons-collections.version>3.2.1</commons-collections.version>
     <ldap.js>${project.build.directory}/classes/static/js/nexus-ldap-realm-plugin-all.js</ldap.js>
   </properties>
 
@@ -129,7 +128,6 @@
     <dependency>
       <groupId>commons-collections</groupId>
       <artifactId>commons-collections</artifactId>
-      <version>${commons-collections.version}</version>
       <scope>test</scope>
     </dependency>
 
