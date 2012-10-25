@@ -159,7 +159,7 @@
     <!-- version properties -->
     <applifecycle.version>1.6</applifecycle.version>
     <sonatype.plugin.version>1.1.0</sonatype.plugin.version>
-    
+
     <!-- Logging -->
     <slf4j.version>1.7.2</slf4j.version>
     <logback.version>1.0.7</logback.version>
@@ -746,18 +746,18 @@
         <version>0.9</version>
         <type>jar</type>
       </dependency>
-      
+
       <!-- Jackson -->
       <dependency>
         <groupId>org.codehaus.jackson</groupId>
         <artifactId>jackson-core-asl</artifactId>
-        <version>1.9.4</version>
+        <version>1.9.10</version>
         <type>jar</type>
       </dependency>
       <dependency>
         <groupId>org.codehaus.jackson</groupId>
         <artifactId>jackson-mapper-asl</artifactId>
-        <version>1.9.4</version>
+        <version>1.9.10</version>
         <type>jar</type>
       </dependency>
       <dependency>
@@ -771,7 +771,7 @@
           </exclusion>
         </exclusions>
       </dependency>
-      
+
       <dependency>
         <groupId>com.thoughtworks.xstream</groupId>
         <artifactId>xstream</artifactId>
@@ -994,7 +994,7 @@
         <version>${sisu-problem-reporter.version}</version>
         <scope>test</scope>
       </dependency>
-      
+
       <!-- TODO remove easymock -->
       <dependency>
         <groupId>org.easymock</groupId>
@@ -1003,7 +1003,7 @@
         <type>jar</type>
         <scope>test</scope>
       </dependency>
-      
+
       <!-- TODO remove carrotsearch and replace with contiperf -->
       <!-- profiling -->
       <dependency>
@@ -1802,7 +1802,7 @@
         <dependency>
           <groupId>org.codehaus.jackson</groupId>
           <artifactId>jackson-xc</artifactId>
-          <version>1.2.0</version>
+          <version>1.9.10</version>
           <scope>provided</scope>
         </dependency>
         <dependency>
