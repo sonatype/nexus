@@ -159,7 +159,7 @@
     <!-- version properties -->
     <applifecycle.version>1.6</applifecycle.version>
     <sonatype.plugin.version>1.1.0</sonatype.plugin.version>
-    
+
     <!-- Logging -->
     <slf4j.version>1.7.2</slf4j.version>
     <logback.version>1.0.7</logback.version>
@@ -180,7 +180,7 @@
     <sisu-ehcache.version>1.1</sisu-ehcache.version>
     <plexus-interpolation.version>1.14</plexus-interpolation.version>
     <sisu-jetty8.version>1.4.1</sisu-jetty8.version>
-    <sisu-velocity.version>1.1</sisu-velocity.version>
+    <sisu-velocity.version>1.2-SNAPSHOT</sisu-velocity.version>
     <sisu-problem-reporter.version>1.5.2</sisu-problem-reporter.version>
     <plexus-jetty-testsuite.version>2.1</plexus-jetty-testsuite.version>
     <plexus.restlet.bridge.version>1.22</plexus.restlet.bridge.version>
@@ -498,7 +498,7 @@
       <dependency>
         <groupId>org.apache.velocity</groupId>
         <artifactId>velocity</artifactId>
-        <version>1.5</version>
+        <version>1.7</version>
         <type>jar</type>
       </dependency>
 
@@ -746,18 +746,18 @@
         <version>0.9</version>
         <type>jar</type>
       </dependency>
-      
+
       <!-- Jackson -->
       <dependency>
         <groupId>org.codehaus.jackson</groupId>
         <artifactId>jackson-core-asl</artifactId>
-        <version>1.9.4</version>
+        <version>1.9.10</version>
         <type>jar</type>
       </dependency>
       <dependency>
         <groupId>org.codehaus.jackson</groupId>
         <artifactId>jackson-mapper-asl</artifactId>
-        <version>1.9.4</version>
+        <version>1.9.10</version>
         <type>jar</type>
       </dependency>
       <dependency>
@@ -771,17 +771,17 @@
           </exclusion>
         </exclusions>
       </dependency>
-      
+
       <dependency>
         <groupId>com.thoughtworks.xstream</groupId>
         <artifactId>xstream</artifactId>
-        <version>1.4.2</version>
+        <version>1.4.3</version>
         <type>jar</type>
       </dependency>
       <dependency>
         <groupId>commons-fileupload</groupId>
         <artifactId>commons-fileupload</artifactId>
-        <version>1.2.1</version>
+        <version>1.2.2</version>
         <type>jar</type>
       </dependency>
       <dependency>
@@ -897,7 +897,7 @@
       <dependency>
         <groupId>commons-io</groupId>
         <artifactId>commons-io</artifactId>
-        <version>1.4</version>
+        <version>2.4</version>
         <type>jar</type>
       </dependency>
       <dependency>
@@ -921,13 +921,13 @@
       <dependency>
         <groupId>commons-codec</groupId>
         <artifactId>commons-codec</artifactId>
-        <version>1.4</version>
+        <version>1.7</version>
         <type>jar</type>
       </dependency>
       <dependency>
         <groupId>commons-lang</groupId>
         <artifactId>commons-lang</artifactId>
-        <version>2.3</version>
+        <version>2.6</version>
         <type>jar</type>
       </dependency>
       <dependency>
@@ -994,7 +994,7 @@
         <version>${sisu-problem-reporter.version}</version>
         <scope>test</scope>
       </dependency>
-      
+
       <!-- TODO remove easymock -->
       <dependency>
         <groupId>org.easymock</groupId>
@@ -1003,13 +1003,13 @@
         <type>jar</type>
         <scope>test</scope>
       </dependency>
-      
+
       <!-- TODO remove carrotsearch and replace with contiperf -->
       <!-- profiling -->
       <dependency>
         <groupId>com.carrotsearch</groupId>
         <artifactId>junit-benchmarks</artifactId>
-        <version>0.3.0-SONATYPE</version>
+        <version>0.4.0</version>
         <scope>test</scope>
       </dependency>
       <!-- h2 used by junit benchmarks to store perf data -->
@@ -1041,7 +1041,7 @@
       <dependency>
         <groupId>org.jsoup</groupId>
         <artifactId>jsoup</artifactId>
-        <version>1.6.3</version>
+        <version>1.7.1</version>
         <scope>test</scope>
       </dependency>
 
@@ -1310,10 +1310,10 @@
               <rules>
                 <bannedDependencies>
                   <excludes>
-                    <exclude>velocity:velocity:jar:1.4</exclude>
-                    <exclude>velocity:velocity-dep:jar:1.4</exclude>
+                    <exclude>velocity:velocity</exclude>
+                    <exclude>velocity:velocity-dep</exclude>
                   </excludes>
-                  <message>Velocity 1.4 is banned, Velocity 1.5 should be used!
+                  <message>Velocity 1.4 is banned, org.apache.velocity:velocity should be used!
                     You probably added a dependency that is missing the exclusions.
                   </message>
                 </bannedDependencies>
@@ -1704,6 +1704,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-jar-plugin</artifactId>
+          <version>2.4</version>
           <executions>
             <execution>
               <id>attach-test-jar</id>
@@ -1711,6 +1712,7 @@
                 <goal>test-jar</goal>
               </goals>
               <configuration>
+                <skipIfEmpty>true</skipIfEmpty>
                 <includes>
                   <include>**/*.class</include>
                 </includes>
@@ -1802,7 +1804,7 @@
         <dependency>
           <groupId>org.codehaus.jackson</groupId>
           <artifactId>jackson-xc</artifactId>
-          <version>1.2.0</version>
+          <version>1.9.10</version>
           <scope>provided</scope>
         </dependency>
         <dependency>
