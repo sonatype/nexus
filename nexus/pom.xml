@@ -169,6 +169,8 @@
     <restlet.version>1.1.6-SONATYPE-5348-V4</restlet.version>
     <shiro.version>1.2.1</shiro.version>
     <surefire.version>2.12.4</surefire.version>
+    <jackson.version>1.9.10</jackson.version>
+    <goodies.version>1.5-SNAPSHOT</goodies.version>
 
     <!-- HACK: Workaround for issue with IDEA loading nexus-plugins -->
     <nexus-plugin.type>nexus-plugin</nexus-plugin.type>
@@ -252,6 +254,18 @@
         <groupId>tanukisoft</groupId>
         <artifactId>wrapper</artifactId>
         <version>3.2.3</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.sonatype.sisu.goodies</groupId>
+        <artifactId>goodies-common</artifactId>
+        <version>${goodies.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.sonatype.sisu.goodies</groupId>
+        <artifactId>goodies-marshal</artifactId>
+        <version>${goodies.version}</version>
       </dependency>
 
       <!-- Jetty -->
@@ -356,31 +370,9 @@
       </dependency>
 
       <dependency>
-        <groupId>org.codehaus.plexus</groupId>
-        <artifactId>plexus-archiver</artifactId>
-        <version>2.1.1</version>
-        <exclusions>
-          <exclusion>
-            <groupId>org.codehaus.plexus</groupId>
-            <artifactId>plexus-container-default</artifactId>
-          </exclusion>
-          <exclusion>
-            <groupId>org.codehaus.plexus</groupId>
-            <artifactId>plexus-component-api</artifactId>
-          </exclusion>
-        </exclusions>
-      </dependency>
-
-      <dependency>
         <groupId>org.sonatype.plexus</groupId>
         <artifactId>plexus-cipher</artifactId>
-        <version>1.5</version>
-        <exclusions>
-          <exclusion>
-            <groupId>org.codehaus.plexus</groupId>
-            <artifactId>plexus-container-default</artifactId>
-          </exclusion>
-        </exclusions>
+        <version>1.7</version>
       </dependency>
 
       <dependency>
@@ -399,12 +391,6 @@
         <groupId>org.sonatype.sisu</groupId>
         <artifactId>sisu-task-scheduler</artifactId>
         <version>1.7</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.codehaus.plexus</groupId>
-        <artifactId>plexus-utils</artifactId>
-        <version>3.0</version>
       </dependency>
 
       <dependency>
@@ -444,42 +430,14 @@
 
       <dependency>
         <groupId>org.codehaus.plexus</groupId>
-        <artifactId>plexus-cli</artifactId>
-        <version>1.2</version>
-        <exclusions>
-          <exclusion>
-            <groupId>org.codehaus.plexus</groupId>
-            <artifactId>plexus-container-default</artifactId>
-          </exclusion>
-          <exclusion>
-            <groupId>commons-logging</groupId>
-            <artifactId>commons-logging</artifactId>
-          </exclusion>
-        </exclusions>
-      </dependency>
-
-      <dependency>
-        <groupId>org.codehaus.plexus</groupId>
         <artifactId>plexus-interpolation</artifactId>
-        <version>1.14</version>
-        <exclusions>
-          <exclusion>
-            <groupId>org.codehaus.plexus</groupId>
-            <artifactId>plexus-container-default</artifactId>
-          </exclusion>
-        </exclusions>
+        <version>1.15</version>
       </dependency>
 
       <dependency>
         <groupId>org.sonatype.configuration</groupId>
         <artifactId>base-configuration</artifactId>
         <version>1.1.1</version>
-        <exclusions>
-          <exclusion>
-            <groupId>org.codehaus.plexus</groupId>
-            <artifactId>plexus-container-default</artifactId>
-          </exclusion>
-        </exclusions>
       </dependency>
 
       <dependency>
@@ -760,12 +718,12 @@
       <dependency>
         <groupId>org.codehaus.jackson</groupId>
         <artifactId>jackson-core-asl</artifactId>
-        <version>1.9.10</version>
+        <version>${jackson.version}</version>
       </dependency>
       <dependency>
         <groupId>org.codehaus.jackson</groupId>
         <artifactId>jackson-mapper-asl</artifactId>
-        <version>1.9.10</version>
+        <version>${jackson.version}</version>
       </dependency>
 
       <dependency>
@@ -897,6 +855,9 @@
         <version>4.2.2</version>
       </dependency>
 
+      <!--
+      FIXME: Get rid of this dependency.
+      -->
       <dependency>
         <groupId>commons-httpclient</groupId>
         <artifactId>commons-httpclient</artifactId>
@@ -1895,7 +1856,7 @@
         <dependency>
           <groupId>org.codehaus.jackson</groupId>
           <artifactId>jackson-xc</artifactId>
-          <version>1.9.10</version>
+          <version>${jackson.version}</version>
           <scope>provided</scope>
         </dependency>
         <dependency>
