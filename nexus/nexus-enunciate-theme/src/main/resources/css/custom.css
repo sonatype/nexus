@@ -10,35 +10,13 @@
  * of Sonatype, Inc. Apache Maven is a trademark of the Apache Software Foundation. M2eclipse is a trademark of the
  * Eclipse Foundation. All other trademarks are the property of their respective owners.
  */
-package org.sonatype.nexus.mock;
 
-import org.restlet.data.Method;
+/*
+TODO: Customize style...
 
-public class MockEvent
-{
-
-    private Method method;
-
-    private boolean blocked;
-
-    protected final boolean isBlocked()
-    {
-        return blocked;
-    }
-
-    public Method getMethod()
-    {
-        return method;
-    }
-
-    public MockEvent( Method method )
-    {
-        super();
-        this.method = method;
-    }
-
-    public void block()
-    {
-        this.blocked = true;
-    }
+.xbreadcrumbs {
+    color: white;
+    background: black;
+    width: 100%;
 }
+*/
