@@ -46,8 +46,9 @@ public class HtmlEscapeStringConverter
     }
 
     @Override
-    public Object fromString( String str )
+    public String toString( Object str )
     {
-        return StringEscapeUtils.escapeHtml( str );
+        return StringEscapeUtils.escapeHtml( (String)str );
     }
+
 }

@@ -12,19 +12,14 @@
  */
 package org.sonatype.nexus.security.ldap.realms.api;
 
+import com.thoughtworks.xstream.XStream;
 import org.sonatype.nexus.rest.model.AliasingListConverter;
-import org.sonatype.nexus.rest.model.HtmlUnescapeStringConverter;
-import org.sonatype.nexus.security.ldap.realms.api.dto.LdapConnectionInfoDTO;
 import org.sonatype.nexus.security.ldap.realms.api.dto.LdapConnectionInfoResponse;
-import org.sonatype.nexus.security.ldap.realms.api.dto.LdapUserAndGroupConfigurationDTO;
 import org.sonatype.nexus.security.ldap.realms.api.dto.LdapUserAndGroupConfigurationResponse;
 import org.sonatype.nexus.security.ldap.realms.api.dto.LdapUserListResponse;
 import org.sonatype.nexus.security.ldap.realms.api.dto.LdapUserResponseDTO;
 import org.sonatype.nexus.security.ldap.realms.test.api.dto.LdapAuthenticationTestRequest;
 import org.sonatype.nexus.security.ldap.realms.test.api.dto.LdapUserAndGroupConfigTestRequest;
-import org.sonatype.nexus.security.ldap.realms.test.api.dto.LdapUserAndGroupConfigTestRequestDTO;
-
-import com.thoughtworks.xstream.XStream;
 
 /**
  * XStream configurator for LDAP.
@@ -40,22 +35,6 @@ public class LdapXStreamConfigurator
         xstream.processAnnotations( LdapUserListResponse.class );
         xstream.processAnnotations( LdapAuthenticationTestRequest.class );
         xstream.processAnnotations( LdapUserAndGroupConfigTestRequest.class );
-
-        // NXCM-2974 unescape html entities like "o=org&amp;org", they get escaped by nexus-rest-api json->DTO
-        // conversion
-        final HtmlUnescapeStringConverter converter = new HtmlUnescapeStringConverter( true );
-
-        xstream.registerLocalConverter( LdapConnectionInfoDTO.class, "systemUsername", converter );
-        xstream.registerLocalConverter( LdapConnectionInfoDTO.class, "systemPassword", converter );
-        xstream.registerLocalConverter( LdapConnectionInfoDTO.class, "searchBase", converter );
-        xstream.registerLocalConverter( LdapUserAndGroupConfigurationDTO.class, "groupBaseDn", converter );
-        xstream.registerLocalConverter( LdapUserAndGroupConfigurationDTO.class, "userBaseDn", converter );
-        xstream.registerLocalConverter( LdapUserAndGroupConfigurationDTO.class, "groupMemberFormat", converter );
-        xstream.registerLocalConverter( LdapUserAndGroupConfigurationDTO.class, "ldapFilter", converter );
-
-        xstream.registerLocalConverter( LdapUserAndGroupConfigTestRequestDTO.class, "systemUsername", converter );
-        xstream.registerLocalConverter( LdapUserAndGroupConfigTestRequestDTO.class, "systemPassword", converter );
-        xstream.registerLocalConverter( LdapUserAndGroupConfigTestRequestDTO.class, "searchBase", converter );
 
         xstream.registerLocalConverter( LdapUserListResponse.class, "data", new AliasingListConverter(
             LdapUserResponseDTO.class, "user" ) );
