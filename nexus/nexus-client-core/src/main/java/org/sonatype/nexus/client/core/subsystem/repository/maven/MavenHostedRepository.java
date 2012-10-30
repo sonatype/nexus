@@ -13,16 +13,29 @@
 package org.sonatype.nexus.client.core.subsystem.repository.maven;
 
 import org.sonatype.nexus.client.core.subsystem.repository.HostedRepository;
+import org.sonatype.nexus.client.core.subsystem.repository.Repository;
 
 /**
+ * A Nexus Maven hosted {@link Repository}.
+ *
  * @since 2.3
  */
 public interface MavenHostedRepository
     extends HostedRepository<MavenHostedRepository>
 {
 
+    /**
+     * Artifact of this repository will be included in search results.
+     *
+     * @return itself, for fluent api usage
+     */
     MavenHostedRepository includeInSearchResults();
 
+    /**
+     * Artifact of this repository will be excluded from search results.
+     *
+     * @return itself, for fluent api usage
+     */
     MavenHostedRepository excludeFromSearchResults();
 
 }

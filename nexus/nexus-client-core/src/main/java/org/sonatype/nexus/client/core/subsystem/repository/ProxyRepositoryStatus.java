@@ -13,14 +13,22 @@
 package org.sonatype.nexus.client.core.subsystem.repository;
 
 /**
+ * Status of a {@link ProxyRepository}.
+ *
  * @since 2.3
  */
 public interface ProxyRepositoryStatus
     extends RepositoryStatus
 {
 
+    /**
+     * @return if repository is currently blocked (manual or automatic)
+     */
     boolean isBlocked();
 
+    /**
+     * @return if repository is currently automatically blocked
+     */
     boolean isAutoBlocked();
 
 }

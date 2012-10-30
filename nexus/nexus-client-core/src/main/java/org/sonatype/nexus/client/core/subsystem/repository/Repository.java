@@ -13,29 +13,74 @@
 package org.sonatype.nexus.client.core.subsystem.repository;
 
 /**
+ * A Nexus repository.
+ *
  * @since 2.3
  */
 public interface Repository<T extends Repository, U extends RepositoryStatus>
 {
 
+    /**
+     * @return repository id (never null)
+     */
     String id();
 
+    /**
+     * @return repository name
+     */
     String name();
 
+    /**
+     * @return content URI (null when repository does not publish its URI)
+     */
     String contentUri();
 
+    /**
+     * @return repository status.
+     */
     U status();
 
+    /**
+     * Sets repository name.
+     *
+     * @param name repository name
+     * @return itself, for fluent api usage
+     */
     T withName( String name );
 
+    /**
+     * Directly puts repository out of service (no save required).
+     *
+     * @return itself, for fluent api usage
+     */
     T putOutOfService();
 
+    /**
+     * Directly puts repository in service (no save required).
+     *
+     * @return itself, for fluent api usage
+     */
     T putInService();
 
+    /**
+     * Refreshes repository, replacing any current changes.
+     *
+     * @return itself, for fluent api usage
+     */
     T refresh();
 
+    /**
+     * Saves current changes.
+     *
+     * @return itself, for fluent api usage
+     */
     T save();
 
+    /**
+     * Removes the repository.
+     *
+     * @return itself, for fluent api usage
+     */
     T remove();
 
 }

@@ -13,12 +13,20 @@
 package org.sonatype.nexus.client.core.subsystem.repository;
 
 /**
+ * A Nexus group {@link Repository}.
+ *
  * @since 2.3
  */
 public interface GroupRepository<T extends GroupRepository>
     extends Repository<T, RepositoryStatus>
 {
 
+    /**
+     * Configures member repositories. Provided member repositories will replace exiting members (if any).
+     *
+     * @param memberRepositoryIds id of member repositories to be added (cannot be null)
+     * @return itself, for fluent api usage
+     */
     T ofRepositories( String... memberRepositoryIds );
 
 }

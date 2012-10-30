@@ -103,7 +103,7 @@ public class JerseyProxyRepository<T extends ProxyRepository>
     }
 
     @Override
-    public T asProxyOf( final String remoteUrl )
+    public T asProxyOf( final String remoteUri )
     {
         RepositoryResourceRemoteStorage remoteStorage = settings().getRemoteStorage();
         if ( remoteStorage == null )
@@ -111,7 +111,7 @@ public class JerseyProxyRepository<T extends ProxyRepository>
             remoteStorage = new RepositoryResourceRemoteStorage();
             settings().setRemoteStorage( remoteStorage );
         }
-        remoteStorage.setRemoteStorageUrl( remoteUrl );
+        remoteStorage.setRemoteStorageUrl( remoteUri );
         return me();
     }
 

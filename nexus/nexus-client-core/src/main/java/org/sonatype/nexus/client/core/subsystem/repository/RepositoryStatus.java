@@ -13,11 +13,16 @@
 package org.sonatype.nexus.client.core.subsystem.repository;
 
 /**
+ * Status of a {@link Repository}.
+ *
  * @since 2.3
  */
 public interface RepositoryStatus
 {
 
+    /**
+     * @return ir repository is in service or not
+     */
     boolean isInService();
 
 }

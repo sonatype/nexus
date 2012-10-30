@@ -13,12 +13,20 @@
 package org.sonatype.nexus.client.core.subsystem.repository;
 
 /**
+ * A Nexus virtual (shadow) {@link Repository}.
+ *
  * @since 2.3
  */
 public interface ShadowRepository<T extends ShadowRepository>
     extends Repository<T, RepositoryStatus>
 {
 
+    /**
+     * Specify the id of virtualized repository.
+     *
+     * @param repositoryId of virtualized repository
+     * @return itself, for fluent api usage
+     */
     T asShadowOf( String repositoryId );
 
 }

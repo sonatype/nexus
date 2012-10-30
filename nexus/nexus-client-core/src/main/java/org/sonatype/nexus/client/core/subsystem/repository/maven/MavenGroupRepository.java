@@ -13,8 +13,11 @@
 package org.sonatype.nexus.client.core.subsystem.repository.maven;
 
 import org.sonatype.nexus.client.core.subsystem.repository.GroupRepository;
+import org.sonatype.nexus.client.core.subsystem.repository.Repository;
 
 /**
+ * A Nexus Maven group {@link Repository}.
+ *
  * @since 2.3
  */
 public interface MavenGroupRepository

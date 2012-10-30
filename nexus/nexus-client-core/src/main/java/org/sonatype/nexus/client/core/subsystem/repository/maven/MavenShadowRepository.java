@@ -12,9 +12,12 @@
  */
 package org.sonatype.nexus.client.core.subsystem.repository.maven;
 
+import org.sonatype.nexus.client.core.subsystem.repository.Repository;
 import org.sonatype.nexus.client.core.subsystem.repository.ShadowRepository;
 
 /**
+ * A Nexus Maven M2 -> M1 virtual {@link Repository}.
+ *
  * @since 2.3
  */
 public interface MavenShadowRepository

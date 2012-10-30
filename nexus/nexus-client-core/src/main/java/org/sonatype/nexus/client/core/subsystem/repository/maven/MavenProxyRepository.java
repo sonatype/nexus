@@ -13,16 +13,31 @@
 package org.sonatype.nexus.client.core.subsystem.repository.maven;
 
 import org.sonatype.nexus.client.core.subsystem.repository.ProxyRepository;
+import org.sonatype.nexus.client.core.subsystem.repository.Repository;
 
 /**
+ * A Nexus Maven proxy {@link Repository}.
+ *
  * @since 2.3
  */
 public interface MavenProxyRepository
     extends ProxyRepository<MavenProxyRepository>
 {
 
+    /**
+     * Configures number of minutes artifacts will be cached.
+     *
+     * @param minutes to be cached
+     * @return itself, for fluent api usage
+     */
     MavenProxyRepository withArtifactMaxAge( int minutes );
 
+    /**
+     * Configures number of minutes artifact metadata will be cached.
+     *
+     * @param minutes to be cached
+     * @return itself, for fluent api usage
+     */
     MavenProxyRepository withMetadataMaxAge( int minutes );
 
 }
