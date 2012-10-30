@@ -47,7 +47,7 @@ public class JerseyMavenM1VirtualRepositoryFactory
 
     @Override
     public JerseyMavenM1VirtualRepository adapt( final JerseyNexusClient nexusClient,
-                                              final RepositoryBaseResource resource )
+                                                 final RepositoryBaseResource resource )
     {
         return new JerseyMavenM1VirtualRepository( nexusClient, (RepositoryShadowResource) resource );
     }
