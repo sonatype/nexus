@@ -21,6 +21,8 @@ public interface ProxyRepository<T extends ProxyRepository>
     extends Repository<T, ProxyRepositoryStatus>
 {
 
+    String proxyUri();
+
     T withRepoPolicy( final String policy );
 
     T asProxyOf( String remoteUrl );

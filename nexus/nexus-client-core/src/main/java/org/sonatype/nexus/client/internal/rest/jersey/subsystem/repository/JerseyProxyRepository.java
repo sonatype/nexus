@@ -78,6 +78,17 @@ public class JerseyProxyRepository<T extends ProxyRepository>
     }
 
     @Override
+    public String proxyUri()
+    {
+        final RepositoryResourceRemoteStorage remoteStorage = settings().getRemoteStorage();
+        if ( remoteStorage == null )
+        {
+            return null;
+        }
+        return remoteStorage.getRemoteStorageUrl();
+    }
+
+    @Override
     public T withRepoPolicy( final String policy )
     {
         settings().setRepoPolicy( policy );
