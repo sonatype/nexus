@@ -22,6 +22,8 @@ public class JerseyMavenProxyRepository
     implements MavenProxyRepository
 {
 
+    static final String PROVIDER = "maven2";
+
     public JerseyMavenProxyRepository( final JerseyNexusClient nexusClient, final String id )
     {
         super( nexusClient, id );
@@ -37,7 +39,7 @@ public class JerseyMavenProxyRepository
     {
         final RepositoryProxyResource settings = super.createSettings();
 
-        settings.setProvider( "maven2" );
+        settings.setProvider( PROVIDER );
         settings.setIndexable( true );
         settings.setRepoPolicy( "RELEASE" );
 

@@ -34,7 +34,7 @@ public class JerseyMavenShadowRepositoryFactory
         int score = super.canAdapt( resource );
         if ( score > 0 )
         {
-            if ( "m2-m1-shadow".equals( resource.getProvider() ) )
+            if ( JerseyMavenShadowRepository.PROVIDER.equals( resource.getProvider() ) )
             {
                 score++;
             }

@@ -27,6 +27,10 @@ public class JerseyProxyRepository<T extends ProxyRepository>
     implements ProxyRepository<T>
 {
 
+    static final String REPO_TYPE = "proxy";
+
+    static final String PROVIDER_ROLE = "org.sonatype.nexus.proxy.repository.Repository";
+
     public JerseyProxyRepository( final JerseyNexusClient nexusClient, final String id )
     {
         super( nexusClient, id );
@@ -42,8 +46,8 @@ public class JerseyProxyRepository<T extends ProxyRepository>
     {
         final RepositoryProxyResource settings = new RepositoryProxyResource();
 
-        settings.setRepoType( "proxy" );
-        settings.setProviderRole( "org.sonatype.nexus.proxy.repository.Repository" );
+        settings.setRepoType( REPO_TYPE );
+        settings.setProviderRole( PROVIDER_ROLE );
         settings.setExposed( true );
         settings.setWritePolicy( "READ_ONLY" );
         settings.setBrowseable( true );

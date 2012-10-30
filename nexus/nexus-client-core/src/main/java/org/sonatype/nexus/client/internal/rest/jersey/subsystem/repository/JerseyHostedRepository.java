@@ -25,6 +25,10 @@ public class JerseyHostedRepository<T extends HostedRepository>
     implements HostedRepository<T>
 {
 
+    static final String REPO_TYPE = "hosted";
+
+    static final String PROVIDER_ROLE = "org.sonatype.nexus.proxy.repository.Repository";
+
     public JerseyHostedRepository( final JerseyNexusClient nexusClient, final String id )
     {
         super( nexusClient, id );
@@ -40,8 +44,8 @@ public class JerseyHostedRepository<T extends HostedRepository>
     {
         final RepositoryResource settings = new RepositoryResource();
 
-        settings.setRepoType( "hosted" );
-        settings.setProviderRole( "org.sonatype.nexus.proxy.repository.Repository" );
+        settings.setRepoType( REPO_TYPE );
+        settings.setProviderRole( PROVIDER_ROLE );
         settings.setExposed( true );
         settings.setWritePolicy( "ALLOW_WRITE_ONCE" );
         settings.setBrowseable( true );

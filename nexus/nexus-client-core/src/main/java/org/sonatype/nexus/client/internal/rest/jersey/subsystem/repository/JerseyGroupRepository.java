@@ -27,6 +27,10 @@ public class JerseyGroupRepository<T extends GroupRepository>
     implements GroupRepository<T>
 {
 
+    static final String REPO_TYPE = "group";
+
+    static final String PROVIDER_ROLE = "org.sonatype.nexus.proxy.repository.GroupRepository";
+
     public JerseyGroupRepository( final JerseyNexusClient nexusClient, final String id )
     {
         super( nexusClient, id );
@@ -42,8 +46,8 @@ public class JerseyGroupRepository<T extends GroupRepository>
     {
         final RepositoryGroupResource settings = new RepositoryGroupResource();
 
-        settings.setRepoType( "group" );
-        settings.setProviderRole( "org.sonatype.nexus.proxy.repository.GroupRepository" );
+        settings.setRepoType( REPO_TYPE );
+        settings.setProviderRole( PROVIDER_ROLE );
         settings.setExposed( true );
 
         return settings;

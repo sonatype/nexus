@@ -39,7 +39,7 @@ public class JerseyShadowRepositoryFactory
         {
             score++;
         }
-        if ( "virtual".equals( resource.getRepoType() ) )
+        if ( JerseyShadowRepository.REPO_TYPE.equals( resource.getRepoType() ) )
         {
             score++;
         }

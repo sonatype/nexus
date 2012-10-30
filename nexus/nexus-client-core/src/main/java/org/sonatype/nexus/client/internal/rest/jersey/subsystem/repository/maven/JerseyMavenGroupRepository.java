@@ -22,6 +22,8 @@ public class JerseyMavenGroupRepository
     implements MavenGroupRepository
 {
 
+    static final String PROVIDER = "maven2";
+
     public JerseyMavenGroupRepository( final JerseyNexusClient nexusClient, final String id )
     {
         super( nexusClient, id );
@@ -37,7 +39,7 @@ public class JerseyMavenGroupRepository
     {
         final RepositoryGroupResource settings = super.createSettings();
 
-        settings.setProvider( "maven2" );
+        settings.setProvider( PROVIDER );
 
         return settings;
     }

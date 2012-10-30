@@ -39,7 +39,7 @@ public class JerseyHostedRepositoryFactory
         {
             score++;
         }
-        if ( "hosted".equals( resource.getRepoType() ) )
+        if ( JerseyHostedRepository.REPO_TYPE.equals( resource.getRepoType() ) )
         {
             score++;
         }

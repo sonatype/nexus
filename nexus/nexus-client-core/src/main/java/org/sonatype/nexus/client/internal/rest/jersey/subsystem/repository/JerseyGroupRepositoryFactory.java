@@ -39,6 +39,10 @@ public class JerseyGroupRepositoryFactory
         {
             score++;
         }
+        if ( JerseyGroupRepository.REPO_TYPE.equals( resource.getRepoType() ) )
+        {
+            score++;
+        }
         return score;
     }
 

@@ -22,6 +22,8 @@ public class JerseyMavenHostedRepository
     implements MavenHostedRepository
 {
 
+    static final String PROVIDER = "maven2";
+
     public JerseyMavenHostedRepository( final JerseyNexusClient nexusClient, final String id )
     {
         super( nexusClient, id );
@@ -37,7 +39,7 @@ public class JerseyMavenHostedRepository
     {
         final RepositoryResource settings = super.createSettings();
 
-        settings.setProvider( "maven2" );
+        settings.setProvider( PROVIDER );
         settings.setIndexable( true );
         settings.setRepoPolicy( "RELEASE" );
 

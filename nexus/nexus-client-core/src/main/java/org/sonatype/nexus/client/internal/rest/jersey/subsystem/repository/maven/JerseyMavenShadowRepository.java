@@ -22,6 +22,8 @@ public class JerseyMavenShadowRepository
     implements MavenShadowRepository
 {
 
+    static final String PROVIDER = "m2-m1-shadow";
+
     public JerseyMavenShadowRepository( final JerseyNexusClient nexusClient, final String id )
     {
         super( nexusClient, id );
@@ -37,7 +39,7 @@ public class JerseyMavenShadowRepository
     {
         final RepositoryShadowResource settings = super.createSettings();
 
-        settings.setProvider( "m2-m1-shadow" );
+        settings.setProvider( PROVIDER );
 
         return settings;
     }

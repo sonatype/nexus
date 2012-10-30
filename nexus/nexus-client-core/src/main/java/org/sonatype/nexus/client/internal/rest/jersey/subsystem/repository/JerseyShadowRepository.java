@@ -25,6 +25,10 @@ public class JerseyShadowRepository<T extends ShadowRepository>
     implements ShadowRepository<T>
 {
 
+    static final String REPO_TYPE = "virtual";
+
+    static final String PROVIDER_ROLE = "org.sonatype.nexus.proxy.repository.ShadowRepository";
+
     public JerseyShadowRepository( final JerseyNexusClient nexusClient, final String id )
     {
         super( nexusClient, id );
@@ -40,8 +44,8 @@ public class JerseyShadowRepository<T extends ShadowRepository>
     {
         final RepositoryShadowResource settings = new RepositoryShadowResource();
 
-        settings.setRepoType( "virtual" );
-        settings.setProviderRole( "org.sonatype.nexus.proxy.repository.ShadowRepository" );
+        settings.setRepoType( REPO_TYPE );
+        settings.setProviderRole( PROVIDER_ROLE );
         settings.setExposed( true );
 
         return settings;

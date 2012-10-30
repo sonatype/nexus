@@ -34,7 +34,7 @@ public class JerseyMavenGroupRepositoryFactory
         int score = super.canAdapt( resource );
         if ( score > 0 )
         {
-            if ( "maven2".equals( resource.getProvider() ) )
+            if ( JerseyMavenGroupRepository.PROVIDER.equals( resource.getProvider() ) )
             {
                 score++;
             }

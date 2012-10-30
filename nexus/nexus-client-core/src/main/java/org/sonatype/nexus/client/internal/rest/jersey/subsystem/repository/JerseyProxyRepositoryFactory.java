@@ -39,7 +39,7 @@ public class JerseyProxyRepositoryFactory
         {
             score++;
         }
-        if ( "proxy".equals( resource.getRepoType() ) )
+        if ( JerseyProxyRepository.REPO_TYPE.equals( resource.getRepoType() ) )
         {
             score++;
         }
