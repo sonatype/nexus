@@ -89,6 +89,7 @@ public class LazyContextMemberProvider
                     logger.debug( "Lazy context provider unable to lookup member by ID!", e );
                 }
             }
+            contexts = Contexts.sort( contexts );
         }
         return contexts;
     }

@@ -55,7 +55,6 @@ import org.apache.maven.index.MatchHighlightRequest;
 import org.apache.maven.index.NexusIndexer;
 import org.apache.maven.index.SearchType;
 import org.apache.maven.index.artifact.VersionUtils;
-import org.apache.maven.index.context.ContextMemberProvider;
 import org.apache.maven.index.context.DefaultIndexingContext;
 import org.apache.maven.index.context.DocumentFilter;
 import org.apache.maven.index.context.IndexCreator;
@@ -1470,13 +1469,6 @@ public class DefaultIndexerManager
                                                   Integer hitLimit )
         throws NoSuchRepositoryException
     {
-        IndexingContext context = null;
-
-        if ( repositoryId != null )
-        {
-            context = getRepositoryIndexContext( repositoryId );
-        }
-
         Query q1 = nexusIndexer.constructQuery( MAVEN.GROUP_ID, term, SearchType.SCORED );
 
         Query q2 = nexusIndexer.constructQuery( MAVEN.ARTIFACT_ID, term, SearchType.SCORED );
@@ -1487,18 +1479,9 @@ public class DefaultIndexerManager
 
         bq.add( q2, BooleanClause.Occur.SHOULD );
 
-        FlatSearchRequest req = null;
+        FlatSearchRequest req = new FlatSearchRequest( bq, ArtifactInfo.REPOSITORY_VERSION_COMPARATOR );
 
-        if ( repositoryId == null )
-        {
-            req = new FlatSearchRequest( bq, ArtifactInfo.REPOSITORY_VERSION_COMPARATOR );
-        }
-        else
-        {
-            req = new FlatSearchRequest( bq, ArtifactInfo.REPOSITORY_VERSION_COMPARATOR );
-
-            req.getContexts().add( context );
-        }
+        req.getContexts().addAll( getSearchTargetContexts( repositoryId ) );
 
         // if ( from != null )
         // {
@@ -1548,18 +1531,33 @@ public class DefaultIndexerManager
         }
     }
 
+    private Collection<IndexingContext> getSearchTargetContexts( String repositoryId )
+        throws NoSuchRepositoryException
+    {
+        if ( repositoryId != null )
+        {
+            IndexingContext context = getRepositoryIndexContext( repositoryId );
+            if ( context != null )
+            {
+                return Collections.singletonList( context );
+            }
+        }
+        ArrayList<IndexingContext> result = new ArrayList<IndexingContext>();
+        for ( IndexingContext context : nexusIndexer.getIndexingContexts().values() )
+        {
+            if ( context.isSearchable() )
+            {
+                result.add( context );
+            }
+        }
+        return Contexts.sort( result );
+    }
+
     @Deprecated
     public FlatSearchResponse searchArtifactClassFlat( String term, String repositoryId, Integer from, Integer count,
                                                        Integer hitLimit )
         throws NoSuchRepositoryException
     {
-        IndexingContext context = null;
-
-        if ( repositoryId != null )
-        {
-            context = getRepositoryIndexContext( repositoryId );
-        }
-
         if ( term.endsWith( ".class" ) )
         {
             term = term.substring( 0, term.length() - 6 );
@@ -1567,18 +1565,9 @@ public class DefaultIndexerManager
 
         Query q = nexusIndexer.constructQuery( MAVEN.CLASSNAMES, term, SearchType.SCORED );
 
-        FlatSearchRequest req = null;
+        FlatSearchRequest req = new FlatSearchRequest( q, ArtifactInfo.REPOSITORY_VERSION_COMPARATOR );
 
-        if ( repositoryId == null )
-        {
-            req = new FlatSearchRequest( q, ArtifactInfo.REPOSITORY_VERSION_COMPARATOR );
-        }
-        else
-        {
-            req = new FlatSearchRequest( q, ArtifactInfo.REPOSITORY_VERSION_COMPARATOR );
-
-            req.getContexts().add( context );
-        }
+        req.getContexts().addAll( getSearchTargetContexts( repositoryId ) );
 
         // if ( from != null )
         // {
@@ -1638,12 +1627,6 @@ public class DefaultIndexerManager
             return new FlatSearchResponse( null, -1, new HashSet<ArtifactInfo>() );
         }
 
-        IndexingContext context = null;
-
-        if ( repositoryId != null )
-        {
-            context = getRepositoryIndexContext( repositoryId );
-        }
         BooleanQuery bq = new BooleanQuery();
 
         if ( gTerm != null )
@@ -1671,18 +1654,9 @@ public class DefaultIndexerManager
             bq.add( constructQuery( MAVEN.CLASSIFIER, cTerm, SearchType.SCORED ), BooleanClause.Occur.MUST );
         }
 
-        FlatSearchRequest req = null;
+        FlatSearchRequest req = new FlatSearchRequest( bq, ArtifactInfo.REPOSITORY_VERSION_COMPARATOR );
 
-        if ( repositoryId == null )
-        {
-            req = new FlatSearchRequest( bq, ArtifactInfo.REPOSITORY_VERSION_COMPARATOR );
-        }
-        else
-        {
-            req = new FlatSearchRequest( bq, ArtifactInfo.REPOSITORY_VERSION_COMPARATOR );
-
-            req.getContexts().add( context );
-        }
+        req.getContexts().addAll( getSearchTargetContexts( repositoryId ) );
 
         // if ( from != null )
         // {
@@ -1859,15 +1833,7 @@ public class DefaultIndexerManager
     {
         IteratorSearchRequest req = createRequest( query, from, count, hitLimit, uniqueRGA, filters );
 
-        if ( repositoryId != null )
-        {
-            IndexingContext context = getRepositoryIndexContext( repositoryId );
-
-            if ( context != null )
-            {
-                req.getContexts().add( context );
-            }
-        }
+        req.getContexts().addAll( getSearchTargetContexts( repositoryId ) );
 
         try
         {
@@ -1898,13 +1864,6 @@ public class DefaultIndexerManager
                                                           SearchType searchType, List<ArtifactInfoFilter> filters )
         throws NoSuchRepositoryException
     {
-        IndexingContext context = null;
-
-        if ( repositoryId != null )
-        {
-            context = getRepositoryIndexContext( repositoryId );
-        }
-
         Query q1 = constructQuery( MAVEN.GROUP_ID, term, searchType );
 
         q1.setBoost( 2.0f );
@@ -1944,10 +1903,7 @@ public class DefaultIndexerManager
         req.getMatchHighlightRequests().add( new MatchHighlightRequest( MAVEN.GROUP_ID, q1, MatchHighlightMode.HTML ) );
         req.getMatchHighlightRequests().add( new MatchHighlightRequest( MAVEN.ARTIFACT_ID, q2, MatchHighlightMode.HTML ) );
 
-        if ( repositoryId != null )
-        {
-            req.getContexts().add( context );
-        }
+        req.getContexts().addAll( getSearchTargetContexts( repositoryId ) );
 
         try
         {
@@ -1978,13 +1934,6 @@ public class DefaultIndexerManager
                                                                List<ArtifactInfoFilter> filters )
         throws NoSuchRepositoryException
     {
-        IndexingContext context = null;
-
-        if ( repositoryId != null )
-        {
-            context = getRepositoryIndexContext( repositoryId );
-        }
-
         if ( term.endsWith( ".class" ) )
         {
             term = term.substring( 0, term.length() - 6 );
@@ -1996,10 +1945,7 @@ public class DefaultIndexerManager
 
         req.getMatchHighlightRequests().add( new MatchHighlightRequest( MAVEN.CLASSNAMES, q, MatchHighlightMode.HTML ) );
 
-        if ( repositoryId != null )
-        {
-            req.getContexts().add( context );
-        }
+        req.getContexts().addAll( getSearchTargetContexts( repositoryId ) );
 
         try
         {
@@ -2034,13 +1980,6 @@ public class DefaultIndexerManager
         if ( gTerm == null && aTerm == null && vTerm == null )
         {
             return IteratorSearchResponse.TOO_MANY_HITS_ITERATOR_SEARCH_RESPONSE;
-        }
-
-        IndexingContext context = null;
-
-        if ( repositoryId != null )
-        {
-            context = getRepositoryIndexContext( repositoryId );
         }
 
         BooleanQuery bq = new BooleanQuery();
@@ -2090,10 +2029,7 @@ public class DefaultIndexerManager
 
         IteratorSearchRequest req = createRequest( bq, from, count, hitLimit, uniqueRGA, filters );
 
-        if ( repositoryId != null )
-        {
-            req.getContexts().add( context );
-        }
+        req.getContexts().addAll( getSearchTargetContexts( repositoryId ) );
 
         try
         {
@@ -2129,13 +2065,6 @@ public class DefaultIndexerManager
             return IteratorSearchResponse.TOO_MANY_HITS_ITERATOR_SEARCH_RESPONSE;
         }
 
-        IndexingContext context = null;
-
-        if ( repositoryId != null )
-        {
-            context = getRepositoryIndexContext( repositoryId );
-        }
-
         SearchType searchType = sha1Checksum.length() == 40 ? SearchType.EXACT : SearchType.SCORED;
 
         BooleanQuery bq = new BooleanQuery();
@@ -2147,10 +2076,7 @@ public class DefaultIndexerManager
 
         IteratorSearchRequest req = createRequest( bq, from, count, hitLimit, false, filters );
 
-        if ( repositoryId != null )
-        {
-            req.getContexts().add( context );
-        }
+        req.getContexts().addAll( getSearchTargetContexts( repositoryId ) );
 
         try
         {
