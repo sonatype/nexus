@@ -13,28 +13,28 @@
 package org.sonatype.nexus.client.internal.rest.jersey.subsystem.repository;
 
 import org.sonatype.nexus.client.core.subsystem.repository.RepositoryStatus;
-import org.sonatype.nexus.client.core.subsystem.repository.ShadowRepository;
+import org.sonatype.nexus.client.core.subsystem.repository.VirtualRepository;
 import org.sonatype.nexus.client.rest.jersey.JerseyNexusClient;
 import org.sonatype.nexus.rest.model.RepositoryShadowResource;
 
 /**
  * @since 2.3
  */
-public class JerseyShadowRepository<T extends ShadowRepository>
+public class JerseyVirtualRepository<T extends VirtualRepository>
     extends JerseyRepository<T, RepositoryShadowResource, RepositoryStatus>
-    implements ShadowRepository<T>
+    implements VirtualRepository<T>
 {
 
     static final String REPO_TYPE = "virtual";
 
     static final String PROVIDER_ROLE = "org.sonatype.nexus.proxy.repository.ShadowRepository";
 
-    public JerseyShadowRepository( final JerseyNexusClient nexusClient, final String id )
+    public JerseyVirtualRepository( final JerseyNexusClient nexusClient, final String id )
     {
         super( nexusClient, id );
     }
 
-    public JerseyShadowRepository( final JerseyNexusClient nexusClient, final RepositoryShadowResource settings )
+    public JerseyVirtualRepository( final JerseyNexusClient nexusClient, final RepositoryShadowResource settings )
     {
         super( nexusClient, settings );
     }
@@ -57,7 +57,7 @@ public class JerseyShadowRepository<T extends ShadowRepository>
     }
 
     @Override
-    public T asShadowOf( final String repositoryId )
+    public T ofRepository( final String repositoryId )
     {
         settings().setShadowOf( repositoryId );
         return me();

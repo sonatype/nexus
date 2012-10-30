@@ -10,14 +10,14 @@
  * of Sonatype, Inc. Apache Maven is a trademark of the Apache Software Foundation. M2eclipse is a trademark of the
  * Eclipse Foundation. All other trademarks are the property of their respective owners.
  */
-package org.sonatype.nexus.client.internal.rest.jersey.subsystem.repository;
+package org.sonatype.nexus.client.internal.rest.jersey.subsystem.repository.maven;
 
 import javax.inject.Named;
 import javax.inject.Singleton;
 
-import org.sonatype.nexus.client.core.spi.subsystem.repository.RepositoryFactory;
 import org.sonatype.nexus.client.core.subsystem.repository.Repository;
-import org.sonatype.nexus.client.core.subsystem.repository.ShadowRepository;
+import org.sonatype.nexus.client.core.subsystem.repository.maven.MavenM1VirtualRepository;
+import org.sonatype.nexus.client.internal.rest.jersey.subsystem.repository.JerseyVirtualRepositoryFactory;
 import org.sonatype.nexus.client.rest.jersey.JerseyNexusClient;
 import org.sonatype.nexus.rest.model.RepositoryBaseResource;
 import org.sonatype.nexus.rest.model.RepositoryShadowResource;
@@ -27,42 +27,41 @@ import org.sonatype.nexus.rest.model.RepositoryShadowResource;
  */
 @Named
 @Singleton
-public class JerseyShadowRepositoryFactory
-    implements RepositoryFactory<ShadowRepository>
+public class JerseyMavenM1VirtualRepositoryFactory
+    extends JerseyVirtualRepositoryFactory
 {
 
     @Override
     public int canAdapt( final RepositoryBaseResource resource )
     {
-        int score = 0;
-        if ( resource instanceof RepositoryShadowResource )
+        int score = super.canAdapt( resource );
+        if ( score > 0 )
         {
-            score++;
-        }
-        if ( JerseyShadowRepository.REPO_TYPE.equals( resource.getRepoType() ) )
-        {
-            score++;
+            if ( JerseyMavenM1VirtualRepository.PROVIDER.equals( resource.getProvider() ) )
+            {
+                score++;
+            }
         }
         return score;
     }
 
     @Override
-    public JerseyShadowRepository adapt( final JerseyNexusClient nexusClient,
-                                         final RepositoryBaseResource resource )
+    public JerseyMavenM1VirtualRepository adapt( final JerseyNexusClient nexusClient,
+                                              final RepositoryBaseResource resource )
     {
-        return new JerseyShadowRepository( nexusClient, (RepositoryShadowResource) resource );
+        return new JerseyMavenM1VirtualRepository( nexusClient, (RepositoryShadowResource) resource );
     }
 
     @Override
     public boolean canCreate( final Class<? extends Repository> type )
     {
-        return ShadowRepository.class.equals( type );
+        return MavenM1VirtualRepository.class.equals( type );
     }
 
     @Override
-    public JerseyShadowRepository create( final JerseyNexusClient nexusClient, final String id )
+    public JerseyMavenM1VirtualRepository create( final JerseyNexusClient nexusClient, final String id )
     {
-        return new JerseyShadowRepository( nexusClient, id );
+        return new JerseyMavenM1VirtualRepository( nexusClient, id );
     }
 
 }

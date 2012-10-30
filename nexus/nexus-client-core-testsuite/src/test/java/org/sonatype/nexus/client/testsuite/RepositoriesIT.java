@@ -24,8 +24,8 @@ import org.sonatype.nexus.client.core.subsystem.repository.Repositories;
 import org.sonatype.nexus.client.core.subsystem.repository.Repository;
 import org.sonatype.nexus.client.core.subsystem.repository.maven.MavenGroupRepository;
 import org.sonatype.nexus.client.core.subsystem.repository.maven.MavenHostedRepository;
+import org.sonatype.nexus.client.core.subsystem.repository.maven.MavenM1VirtualRepository;
 import org.sonatype.nexus.client.core.subsystem.repository.maven.MavenProxyRepository;
-import org.sonatype.nexus.client.core.subsystem.repository.maven.MavenShadowRepository;
 
 public class RepositoriesIT
     extends NexusClientITSupport
@@ -202,7 +202,7 @@ public class RepositoriesIT
     public void getShadow()
     {
         final Repository repository = repositories().get( "central-m1" );
-        assertThat( repository, is( instanceOf( MavenShadowRepository.class ) ) );
+        assertThat( repository, is( instanceOf( MavenM1VirtualRepository.class ) ) );
     }
 
     @Test
@@ -219,8 +219,8 @@ public class RepositoriesIT
     public void createShadow()
     {
         final String id = repositoryIdForTest();
-        repositories().create( MavenShadowRepository.class, id )
-            .asShadowOf( "apache-snapshots" )
+        repositories().create( MavenM1VirtualRepository.class, id )
+            .ofRepository( "apache-snapshots" )
             .save();
     }
 
@@ -228,8 +228,8 @@ public class RepositoriesIT
     public void removeShadow()
     {
         final String id = repositoryIdForTest();
-        repositories().create( MavenShadowRepository.class, id )
-            .asShadowOf( "apache-snapshots" )
+        repositories().create( MavenM1VirtualRepository.class, id )
+            .ofRepository( "apache-snapshots" )
             .save()
             .remove();
     }
@@ -238,8 +238,8 @@ public class RepositoriesIT
     public void statusShadow()
     {
         final String id = repositoryIdForTest();
-        final MavenShadowRepository repository = repositories().create( MavenShadowRepository.class, id )
-            .asShadowOf( "apache-snapshots" );
+        final MavenM1VirtualRepository repository = repositories().create( MavenM1VirtualRepository.class, id )
+            .ofRepository( "apache-snapshots" );
         assertThat( repository.status().isInService(), is( false ) );
         repository.save();
         assertThat( repository.status().isInService(), is( true ) );

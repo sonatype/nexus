@@ -12,27 +12,28 @@
  */
 package org.sonatype.nexus.client.internal.rest.jersey.subsystem.repository.maven;
 
-import org.sonatype.nexus.client.core.subsystem.repository.maven.MavenShadowRepository;
-import org.sonatype.nexus.client.internal.rest.jersey.subsystem.repository.JerseyShadowRepository;
+import org.sonatype.nexus.client.core.subsystem.repository.maven.MavenM1VirtualRepository;
+import org.sonatype.nexus.client.internal.rest.jersey.subsystem.repository.JerseyVirtualRepository;
 import org.sonatype.nexus.client.rest.jersey.JerseyNexusClient;
 import org.sonatype.nexus.rest.model.RepositoryShadowResource;
 
 /**
  * @since 2.3
  */
-public class JerseyMavenShadowRepository
-    extends JerseyShadowRepository<MavenShadowRepository>
-    implements MavenShadowRepository
+public class JerseyMavenM1VirtualRepository
+    extends JerseyVirtualRepository<MavenM1VirtualRepository>
+    implements MavenM1VirtualRepository
 {
 
     static final String PROVIDER = "m2-m1-shadow";
 
-    public JerseyMavenShadowRepository( final JerseyNexusClient nexusClient, final String id )
+    public JerseyMavenM1VirtualRepository( final JerseyNexusClient nexusClient, final String id )
     {
         super( nexusClient, id );
     }
 
-    public JerseyMavenShadowRepository( final JerseyNexusClient nexusClient, final RepositoryShadowResource settings )
+    public JerseyMavenM1VirtualRepository( final JerseyNexusClient nexusClient,
+                                           final RepositoryShadowResource settings )
     {
         super( nexusClient, settings );
     }

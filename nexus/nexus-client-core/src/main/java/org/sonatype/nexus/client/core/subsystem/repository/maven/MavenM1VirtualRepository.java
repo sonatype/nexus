@@ -10,23 +10,18 @@
  * of Sonatype, Inc. Apache Maven is a trademark of the Apache Software Foundation. M2eclipse is a trademark of the
  * Eclipse Foundation. All other trademarks are the property of their respective owners.
  */
-package org.sonatype.nexus.client.core.subsystem.repository;
+package org.sonatype.nexus.client.core.subsystem.repository.maven;
+
+import org.sonatype.nexus.client.core.subsystem.repository.Repository;
+import org.sonatype.nexus.client.core.subsystem.repository.VirtualRepository;
 
 /**
- * A Nexus virtual (shadow) {@link Repository}.
+ * A Nexus Maven M2 -> M1 virtual {@link Repository}.
  *
  * @since 2.3
  */
-public interface ShadowRepository<T extends ShadowRepository>
-    extends Repository<T, RepositoryStatus>
+public interface MavenM1VirtualRepository
+    extends VirtualRepository<MavenM1VirtualRepository>
 {
-
-    /**
-     * Specify the id of virtualized repository.
-     *
-     * @param repositoryId of virtualized repository
-     * @return itself, for fluent api usage
-     */
-    T asShadowOf( String repositoryId );
 
 }
