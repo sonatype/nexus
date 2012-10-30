@@ -38,6 +38,8 @@ import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.UniformInterfaceException;
 
 /**
+ * Jersey based {@link Repositories} implementation.
+ *
  * @since 2.3
  */
 public class JerseyRepositories

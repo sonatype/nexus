@@ -18,6 +18,8 @@ import org.sonatype.nexus.client.rest.jersey.JerseyNexusClient;
 import org.sonatype.nexus.rest.model.RepositoryProxyResource;
 
 /**
+ * Jersey based {@link MavenProxyRepository} implementation.
+ *
  * @since 2.3
  */
 public class JerseyMavenProxyRepository

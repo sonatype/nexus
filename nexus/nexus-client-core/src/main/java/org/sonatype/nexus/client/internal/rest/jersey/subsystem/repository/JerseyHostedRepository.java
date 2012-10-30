@@ -18,6 +18,8 @@ import org.sonatype.nexus.client.rest.jersey.JerseyNexusClient;
 import org.sonatype.nexus.rest.model.RepositoryResource;
 
 /**
+ * Jersey based {@link HostedRepository} implementation.
+ *
  * @since 2.3
  */
 public class JerseyHostedRepository<T extends HostedRepository>

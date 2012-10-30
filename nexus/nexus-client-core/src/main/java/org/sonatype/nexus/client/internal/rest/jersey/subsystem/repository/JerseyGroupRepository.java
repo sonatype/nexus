@@ -20,6 +20,8 @@ import org.sonatype.nexus.rest.model.RepositoryGroupResource;
 import org.sonatype.nexus.rest.model.RepositoryGroupResourceResponse;
 
 /**
+ * Jersey based {@link GroupRepository} implementation.
+ *
  * @since 2.3
  */
 public class JerseyGroupRepository<T extends GroupRepository>

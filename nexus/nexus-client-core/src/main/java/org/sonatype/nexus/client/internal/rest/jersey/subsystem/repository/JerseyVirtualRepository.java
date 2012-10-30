@@ -18,6 +18,8 @@ import org.sonatype.nexus.client.rest.jersey.JerseyNexusClient;
 import org.sonatype.nexus.rest.model.RepositoryShadowResource;
 
 /**
+ * Jersey based {@link VirtualRepository} implementation.
+ *
  * @since 2.3
  */
 public class JerseyVirtualRepository<T extends VirtualRepository>

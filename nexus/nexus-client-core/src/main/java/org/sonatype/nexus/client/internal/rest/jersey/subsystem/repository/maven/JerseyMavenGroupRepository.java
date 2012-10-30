@@ -18,6 +18,8 @@ import org.sonatype.nexus.client.rest.jersey.JerseyNexusClient;
 import org.sonatype.nexus.rest.model.RepositoryGroupResource;
 
 /**
+ * Jersey based {@link MavenGroupRepository} implementation.
+ *
  * @since 2.3
  */
 public class JerseyMavenGroupRepository

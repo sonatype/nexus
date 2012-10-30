@@ -15,6 +15,8 @@ package org.sonatype.nexus.client.internal.rest.jersey.subsystem.repository;
 import org.sonatype.nexus.client.core.subsystem.repository.ProxyRepositoryStatus;
 
 /**
+ * Immutable {@link ProxyRepositoryStatus}.
+ *
  * @since 2.3
  */
 public class ProxyRepositoryStatusImpl

@@ -18,6 +18,8 @@ import org.sonatype.nexus.client.rest.jersey.JerseyNexusClient;
 import org.sonatype.nexus.rest.model.RepositoryShadowResource;
 
 /**
+ * Jersey based {@link MavenM1VirtualRepository} implementation.
+ *
  * @since 2.3
  */
 public class JerseyMavenM1VirtualRepository

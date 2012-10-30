@@ -23,6 +23,8 @@ import org.sonatype.nexus.rest.model.RepositoryBaseResource;
 import org.sonatype.nexus.rest.model.RepositoryResource;
 
 /**
+ * {@link JerseyHostedRepository} factory.
+ *
  * @since 2.3
  */
 @Named
