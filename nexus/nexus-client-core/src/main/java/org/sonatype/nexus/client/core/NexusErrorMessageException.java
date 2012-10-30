@@ -18,13 +18,14 @@ import java.util.Map;
 
 /**
  * Thrown when Nexus responds with an Client Error status code and (optionally) with an error message.
- * 
+ *
  * @author cstamas
  */
 @SuppressWarnings( "serial" )
 public class NexusErrorMessageException
     extends NexusUnexpectedResponseException
 {
+
     private final Map<String, String> errors;
 
     public NexusErrorMessageException( final int statusCode, final String statusMessage,

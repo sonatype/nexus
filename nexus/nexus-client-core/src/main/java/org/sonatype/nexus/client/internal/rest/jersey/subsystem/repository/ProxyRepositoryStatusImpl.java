@@ -10,31 +10,41 @@
  * of Sonatype, Inc. Apache Maven is a trademark of the Apache Software Foundation. M2eclipse is a trademark of the
  * Eclipse Foundation. All other trademarks are the property of their respective owners.
  */
-package org.sonatype.nexus.client.core;
+package org.sonatype.nexus.client.internal.rest.jersey.subsystem.repository;
+
+import org.sonatype.nexus.client.core.subsystem.repository.ProxyRepositoryStatus;
 
 /**
- * Generic runtime exception to be thrown by Subsystems, when some error is reported by Nexus. This exception here is
- * solely for purpose of not proliferating possible runtime exceptions of underlying implementation.
- *
- * @author cstamas
+ * @since 2.2
  */
-@SuppressWarnings( "serial" )
-public abstract class NexusClientException
-    extends RuntimeException
+public class ProxyRepositoryStatusImpl
+    extends RepositoryStatusImpl
+    implements ProxyRepositoryStatus
 {
 
-    public NexusClientException( String message )
+    private final boolean blocked;
+
+    private final boolean autoBlocked;
+
+    public ProxyRepositoryStatusImpl( final boolean inService,
+                                      final boolean blocked,
+                                      final boolean autoBlocked )
     {
-        super( message );
+        super( inService );
+        this.blocked = blocked;
+        this.autoBlocked = autoBlocked;
     }
 
-    public NexusClientException( String message, Throwable cause )
+    @Override
+    public boolean isBlocked()
     {
-        super( message, cause );
+        return blocked;
     }
 
-    public NexusClientException( Throwable cause )
+    @Override
+    public boolean isAutoBlocked()
     {
-        super( cause );
+        return autoBlocked;
     }
+
 }

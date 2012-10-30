@@ -17,6 +17,7 @@ import java.io.IOException;
 
 public interface Content
 {
+
     void download( Location location, File target )
         throws IOException;
 

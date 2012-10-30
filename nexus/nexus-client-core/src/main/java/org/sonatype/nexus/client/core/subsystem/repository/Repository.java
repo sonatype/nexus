@@ -10,31 +10,34 @@
  * of Sonatype, Inc. Apache Maven is a trademark of the Apache Software Foundation. M2eclipse is a trademark of the
  * Eclipse Foundation. All other trademarks are the property of their respective owners.
  */
-package org.sonatype.nexus.client.core;
+package org.sonatype.nexus.client.core.subsystem.repository;
 
 /**
- * Generic runtime exception to be thrown by Subsystems, when some error is reported by Nexus. This exception here is
- * solely for purpose of not proliferating possible runtime exceptions of underlying implementation.
+ * TODO
  *
- * @author cstamas
+ * @since 2.2
  */
-@SuppressWarnings( "serial" )
-public abstract class NexusClientException
-    extends RuntimeException
+public interface Repository<T extends Repository, U extends RepositoryStatus>
 {
 
-    public NexusClientException( String message )
-    {
-        super( message );
-    }
+    String id();
 
-    public NexusClientException( String message, Throwable cause )
-    {
-        super( message, cause );
-    }
+    String name();
 
-    public NexusClientException( Throwable cause )
-    {
-        super( cause );
-    }
+    String contentUri();
+
+    U status();
+
+    T withName( String name );
+
+    T putOutOfService();
+
+    T putInService();
+
+    T refresh();
+
+    T save();
+
+    T remove();
+
 }

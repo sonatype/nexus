@@ -12,26 +12,37 @@
  */
 package org.sonatype.nexus.client.rest.jersey.subsystem;
 
+import java.util.Set;
+import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 
 import org.sonatype.nexus.client.core.Condition;
 import org.sonatype.nexus.client.core.condition.NexusStatusConditions;
 import org.sonatype.nexus.client.core.spi.SubsystemFactory;
-import org.sonatype.nexus.client.core.subsystem.ServerConfiguration;
-import org.sonatype.nexus.client.internal.rest.jersey.subsystem.JerseyServerConfiguration;
+import org.sonatype.nexus.client.core.spi.subsystem.repository.RepositoryFactory;
+import org.sonatype.nexus.client.core.subsystem.repository.Repositories;
+import org.sonatype.nexus.client.internal.rest.jersey.subsystem.repository.JerseyRepositories;
 import org.sonatype.nexus.client.rest.jersey.JerseyNexusClient;
 
 /**
- * Jersey based {@link ServerConfiguration} subsystem factory.
+ * Jersey based {@link Repositories} subsystem factory.
  *
  * @since 2.2
  */
 @Named
 @Singleton
-public class JerseyServerConfigurationFactory
-    implements SubsystemFactory<ServerConfiguration, JerseyNexusClient>
+public class JerseyRepositoriesFactory
+    implements SubsystemFactory<Repositories, JerseyNexusClient>
 {
+
+    private final Set<RepositoryFactory> repositoryFactories;
+
+    @Inject
+    public JerseyRepositoriesFactory( final Set<RepositoryFactory> repositoryFactories )
+    {
+        this.repositoryFactories = repositoryFactories;
+    }
 
     @Override
     public Condition availableWhen()
@@ -40,14 +51,15 @@ public class JerseyServerConfigurationFactory
     }
 
     @Override
-    public Class<ServerConfiguration> getType()
+    public Class<Repositories> getType()
     {
-        return ServerConfiguration.class;
+        return Repositories.class;
     }
 
     @Override
-    public ServerConfiguration create( final JerseyNexusClient nexusClient )
+    public Repositories create( final JerseyNexusClient nexusClient )
     {
-        return new JerseyServerConfiguration( nexusClient );
+        return new JerseyRepositories( nexusClient, repositoryFactories );
     }
+
 }

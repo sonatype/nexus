@@ -17,13 +17,14 @@ package org.sonatype.nexus.client.core;
  * here is solely for purpose of not proliferating possible runtime exceptions of underlying implementation. Best to use
  * some subclass of this exception, but this is the last resort (ie. resource does not send proper response, just HTTP
  * code and reason phrase).
- * 
+ *
  * @author cstamas
  */
 @SuppressWarnings( "serial" )
 public class NexusUnexpectedResponseException
     extends NexusClientException
 {
+
     private final int statusCode;
 
     private final String statusMessage;
@@ -31,7 +32,7 @@ public class NexusUnexpectedResponseException
     public NexusUnexpectedResponseException( final int statusCode, final String statusMessage )
     {
         this( statusCode, statusMessage, String.format( "Unexpected response: %s %s", String.valueOf( statusCode ),
-            String.valueOf( statusMessage ) ) );
+                                                        String.valueOf( statusMessage ) ) );
     }
 
     public NexusUnexpectedResponseException( final int statusCode, final String statusMessage, final String message )

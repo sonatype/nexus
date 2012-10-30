@@ -15,8 +15,8 @@ package org.sonatype.nexus.client.internal.rest;
 import org.sonatype.nexus.client.internal.msg.ErrorMessage;
 import org.sonatype.nexus.client.internal.msg.ErrorResponse;
 import org.sonatype.nexus.rest.model.XStreamConfiguratorLightweight;
+import org.sonatype.plexus.rest.xstream.xml.LookAheadXppDriver;
 import com.thoughtworks.xstream.XStream;
-import com.thoughtworks.xstream.io.xml.XppDriver;
 
 /**
  * Creates XStream instances "preconfigured" for Nexus Core DTOs.
@@ -33,7 +33,7 @@ public class NexusXStreamFactory
      */
     public XStream createForXml()
     {
-        final XStream xstream = new XStream( new XppDriver() );
+        final XStream xstream = new XStream( new LookAheadXppDriver() );
         xstream.setMode( XStream.NO_REFERENCES );
         xstream.autodetectAnnotations( false );
         return xstream;
