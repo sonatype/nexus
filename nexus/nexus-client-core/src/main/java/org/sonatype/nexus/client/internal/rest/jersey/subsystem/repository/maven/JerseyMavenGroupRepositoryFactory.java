@@ -22,6 +22,9 @@ import org.sonatype.nexus.client.rest.jersey.JerseyNexusClient;
 import org.sonatype.nexus.rest.model.RepositoryBaseResource;
 import org.sonatype.nexus.rest.model.RepositoryGroupResource;
 
+/**
+ * @since 2.3
+ */
 @Named
 @Singleton
 public class JerseyMavenGroupRepositoryFactory

@@ -17,6 +17,9 @@ import org.sonatype.nexus.client.internal.rest.jersey.subsystem.repository.Jerse
 import org.sonatype.nexus.client.rest.jersey.JerseyNexusClient;
 import org.sonatype.nexus.rest.model.RepositoryGroupResource;
 
+/**
+ * @since 2.3
+ */
 public class JerseyMavenGroupRepository
     extends JerseyGroupRepository<MavenGroupRepository>
     implements MavenGroupRepository
