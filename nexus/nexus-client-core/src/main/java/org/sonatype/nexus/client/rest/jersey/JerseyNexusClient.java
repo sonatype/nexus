@@ -40,7 +40,7 @@ import com.thoughtworks.xstream.XStream;
  * encapsulated, I did not want to proliferate it through all of Nexus Client. This class should not be instantiated
  * manually, use {@link JerseyNexusClientFactory} for it.
  *
- * @author cstamas
+ * @since 2.1
  */
 public class JerseyNexusClient
     extends AbstractXStreamNexusClient

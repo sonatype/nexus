@@ -13,9 +13,7 @@
 package org.sonatype.nexus.client.core.subsystem.repository;
 
 /**
- * TODO
- *
- * @since 2.2
+ * @since 2.3
  */
 public interface Repository<T extends Repository, U extends RepositoryStatus>
 {

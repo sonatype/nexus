@@ -38,7 +38,7 @@ import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.UniformInterfaceException;
 
 /**
- * @since 2.2
+ * @since 2.3
  */
 public class JerseyRepositories
     extends SubsystemSupport<JerseyNexusClient>

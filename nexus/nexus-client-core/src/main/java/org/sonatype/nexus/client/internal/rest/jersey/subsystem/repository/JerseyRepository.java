@@ -25,6 +25,9 @@ import org.sonatype.nexus.rest.model.RepositoryStatusResource;
 import org.sonatype.nexus.rest.model.RepositoryStatusResourceResponse;
 import com.google.common.base.Throwables;
 
+/**
+ * @since 2.3
+ */
 public abstract class JerseyRepository<T extends Repository, S extends RepositoryBaseResource, U extends RepositoryStatus>
     extends SubsystemSupport<JerseyNexusClient>
     implements Repository<T, U>

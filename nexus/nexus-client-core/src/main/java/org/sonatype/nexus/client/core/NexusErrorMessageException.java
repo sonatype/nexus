@@ -19,7 +19,7 @@ import java.util.Map;
 /**
  * Thrown when Nexus responds with an Client Error status code and (optionally) with an error message.
  *
- * @author cstamas
+ * @since 2.1
  */
 @SuppressWarnings( "serial" )
 public class NexusErrorMessageException

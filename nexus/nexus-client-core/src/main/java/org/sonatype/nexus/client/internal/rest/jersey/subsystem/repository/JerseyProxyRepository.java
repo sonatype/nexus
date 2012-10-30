@@ -19,6 +19,9 @@ import org.sonatype.nexus.rest.model.RepositoryProxyResource;
 import org.sonatype.nexus.rest.model.RepositoryResourceRemoteStorage;
 import org.sonatype.nexus.rest.model.RepositoryStatusResource;
 
+/**
+ * @since 2.3
+ */
 public class JerseyProxyRepository<T extends ProxyRepository>
     extends JerseyRepository<T, RepositoryProxyResource, ProxyRepositoryStatus>
     implements ProxyRepository<T>

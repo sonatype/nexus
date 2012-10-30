@@ -18,7 +18,7 @@ package org.sonatype.nexus.client.core;
  * some subclass of this exception, but this is the last resort (ie. resource does not send proper response, just HTTP
  * code and reason phrase).
  *
- * @author cstamas
+ * @since 2.1
  */
 @SuppressWarnings( "serial" )
 public class NexusUnexpectedResponseException
@@ -31,8 +31,7 @@ public class NexusUnexpectedResponseException
 
     public NexusUnexpectedResponseException( final int statusCode, final String statusMessage )
     {
-        this( statusCode, statusMessage, String.format( "Unexpected response: %s %s", String.valueOf( statusCode ),
-                                                        String.valueOf( statusMessage ) ) );
+        this( statusCode, statusMessage, String.format( "Unexpected response: %s %s", statusCode, statusMessage ) );
     }
 
     public NexusUnexpectedResponseException( final int statusCode, final String statusMessage, final String message )
@@ -51,4 +50,5 @@ public class NexusUnexpectedResponseException
     {
         return statusMessage;
     }
+
 }

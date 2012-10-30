@@ -17,9 +17,9 @@ import org.sonatype.nexus.client.rest.jersey.JerseyNexusClient;
 import org.sonatype.nexus.rest.model.RepositoryBaseResource;
 
 /**
- * TODO
+ * A {@link Repository} factory, that can create a new one or from a REST resource.
  *
- * @since 2.2
+ * @since 2.3
  */
 public interface RepositoryFactory<R extends Repository>
 {

@@ -15,9 +15,7 @@ package org.sonatype.nexus.client.core.subsystem.repository.maven;
 import org.sonatype.nexus.client.core.subsystem.repository.ProxyRepository;
 
 /**
- * TODO
- *
- * @since 2.2
+ * @since 2.3
  */
 public interface MavenProxyRepository
     extends ProxyRepository<MavenProxyRepository>

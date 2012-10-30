@@ -26,7 +26,12 @@ import com.thoughtworks.xstream.io.xml.XmlFriendlyReplacer;
 import com.thoughtworks.xstream.io.xml.XppDriver;
 
 /**
+ * COPIED FROM plexus-restlet-bridge to cease the dependency on it (as it would pull in Restlet and many other
+ * dependencies).
+ * <p/>
  * A HierarchicalStreamDriver that loads the {@link LookAheadXppReader}.
+ *
+ * @since 2.3
  */
 public class LookAheadXppDriver
     extends XppDriver
@@ -39,9 +44,6 @@ public class LookAheadXppDriver
         super( new XmlFriendlyReplacer() );
     }
 
-    /**
-     * @since 1.2
-     */
     public LookAheadXppDriver( XmlFriendlyReplacer replacer )
     {
         super( replacer );
@@ -68,8 +70,10 @@ public class LookAheadXppDriver
             }
             catch ( ClassNotFoundException e )
             {
-                throw new IllegalArgumentException( "XPP3 pull parser library not present. Specify another driver." +
-                                                        " For example: new XStream(new DomDriver())" );
+                throw new IllegalArgumentException(
+                    "XPP3 pull parser library not present. Specify another driver."
+                        + " For example: new XStream(new DomDriver())"
+                );
             }
             xppLibraryPresent = true;
         }
@@ -84,4 +88,5 @@ public class LookAheadXppDriver
     {
         return createWriter( new OutputStreamWriter( out ) );
     }
+
 }

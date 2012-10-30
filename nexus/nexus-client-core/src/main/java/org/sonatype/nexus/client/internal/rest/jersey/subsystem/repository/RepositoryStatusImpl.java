@@ -15,7 +15,7 @@ package org.sonatype.nexus.client.internal.rest.jersey.subsystem.repository;
 import org.sonatype.nexus.client.core.subsystem.repository.RepositoryStatus;
 
 /**
- * @since 2.2
+ * @since 2.3
  */
 public class RepositoryStatusImpl
     implements RepositoryStatus

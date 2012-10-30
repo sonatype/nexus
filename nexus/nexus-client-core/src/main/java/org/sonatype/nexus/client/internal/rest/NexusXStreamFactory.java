@@ -21,7 +21,7 @@ import com.thoughtworks.xstream.XStream;
 /**
  * Creates XStream instances "preconfigured" for Nexus Core DTOs.
  *
- * @author cstamas
+ * @since 2.1
  */
 public class NexusXStreamFactory
 {

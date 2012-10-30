@@ -17,6 +17,9 @@ import org.sonatype.nexus.client.core.subsystem.repository.ShadowRepository;
 import org.sonatype.nexus.client.rest.jersey.JerseyNexusClient;
 import org.sonatype.nexus.rest.model.RepositoryShadowResource;
 
+/**
+ * @since 2.3
+ */
 public class JerseyShadowRepository<T extends ShadowRepository>
     extends JerseyRepository<T, RepositoryShadowResource, RepositoryStatus>
     implements ShadowRepository<T>

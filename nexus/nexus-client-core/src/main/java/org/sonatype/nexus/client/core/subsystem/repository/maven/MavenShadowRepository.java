@@ -15,9 +15,7 @@ package org.sonatype.nexus.client.core.subsystem.repository.maven;
 import org.sonatype.nexus.client.core.subsystem.repository.ShadowRepository;
 
 /**
- * TODO
- *
- * @since 2.2
+ * @since 2.3
  */
 public interface MavenShadowRepository
     extends ShadowRepository<MavenShadowRepository>

@@ -19,6 +19,9 @@ import org.sonatype.nexus.rest.model.RepositoryGroupMemberRepository;
 import org.sonatype.nexus.rest.model.RepositoryGroupResource;
 import org.sonatype.nexus.rest.model.RepositoryGroupResourceResponse;
 
+/**
+ * @since 2.3
+ */
 public class JerseyGroupRepository<T extends GroupRepository>
     extends JerseyRepository<T, RepositoryGroupResource, RepositoryStatus>
     implements GroupRepository<T>

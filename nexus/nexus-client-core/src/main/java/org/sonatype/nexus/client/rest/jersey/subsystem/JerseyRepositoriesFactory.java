@@ -26,9 +26,7 @@ import org.sonatype.nexus.client.internal.rest.jersey.subsystem.repository.Jerse
 import org.sonatype.nexus.client.rest.jersey.JerseyNexusClient;
 
 /**
- * Jersey based {@link Repositories} subsystem factory.
- *
- * @since 2.2
+ * @since 2.3
  */
 @Named
 @Singleton

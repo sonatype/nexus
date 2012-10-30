@@ -12,8 +12,15 @@
  */
 package org.sonatype.plexus.rest.xstream;
 
+/**
+ * COPIED FROM plexus-restlet-bridge to cease the dependency on it (as it would pull in Restlet and many other
+ * dependencies).
+ *
+ * @since 2.3
+ */
 public interface LookAheadStreamReader
 {
 
     String getFieldValue( String fieldName );
+
 }

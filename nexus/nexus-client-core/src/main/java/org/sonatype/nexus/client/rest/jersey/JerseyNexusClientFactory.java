@@ -40,6 +40,9 @@ import com.sun.jersey.client.apache4.config.ApacheHttpClient4Config;
 import com.sun.jersey.client.apache4.config.DefaultApacheHttpClient4Config;
 import com.thoughtworks.xstream.XStream;
 
+/**
+ * @since 2.1
+ */
 @Named
 @Singleton
 public class JerseyNexusClientFactory

@@ -34,7 +34,13 @@ import com.thoughtworks.xstream.io.xml.AbstractPullReader;
 import com.thoughtworks.xstream.io.xml.XmlFriendlyReplacer;
 
 /**
- * A wrapper around an XML Pull Parser that allows read events to be queued so it can implement the {@link org.sonatype.plexus.rest.xstream.LookAheadStreamReader} interface.
+ * COPIED FROM plexus-restlet-bridge to cease the dependency on it (as it would pull in Restlet and many other
+ * dependencies).
+ * <p/>
+ * A wrapper around an XML Pull Parser that allows read events to be queued so it can implement the
+ * {@link LookAheadStreamReader} interface.
+ *
+ * @since 2.3
  */
 public class LookAheadXppReader
     extends AbstractPullReader

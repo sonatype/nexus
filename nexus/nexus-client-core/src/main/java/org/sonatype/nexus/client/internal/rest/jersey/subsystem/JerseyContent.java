@@ -26,6 +26,9 @@ import org.sonatype.nexus.client.core.subsystem.content.Location;
 import org.sonatype.nexus.client.rest.jersey.JerseyNexusClient;
 import com.sun.jersey.api.client.ClientResponse;
 
+/**
+ * @since 2.1
+ */
 public class JerseyContent
     extends SubsystemSupport<JerseyNexusClient>
     implements Content
