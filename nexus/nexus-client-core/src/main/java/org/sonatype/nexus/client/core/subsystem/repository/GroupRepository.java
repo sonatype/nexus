@@ -12,6 +12,8 @@
  */
 package org.sonatype.nexus.client.core.subsystem.repository;
 
+import java.util.List;
+
 /**
  * A Nexus group {@link Repository}.
  *
@@ -20,6 +22,8 @@ package org.sonatype.nexus.client.core.subsystem.repository;
 public interface GroupRepository<T extends GroupRepository>
     extends Repository<T, RepositoryStatus>
 {
+
+    List<String> memberRepositories();
 
     /**
      * Configures member repositories. Provided member repositories will replace exiting members (if any).

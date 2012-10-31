@@ -12,12 +12,18 @@
  */
 package org.sonatype.nexus.client.internal.rest.jersey.subsystem.repository;
 
+import java.util.Collections;
+import java.util.List;
+import javax.annotation.Nullable;
+
 import org.sonatype.nexus.client.core.subsystem.repository.GroupRepository;
 import org.sonatype.nexus.client.core.subsystem.repository.RepositoryStatus;
 import org.sonatype.nexus.client.rest.jersey.JerseyNexusClient;
 import org.sonatype.nexus.rest.model.RepositoryGroupMemberRepository;
 import org.sonatype.nexus.rest.model.RepositoryGroupResource;
 import org.sonatype.nexus.rest.model.RepositoryGroupResourceResponse;
+import com.google.common.base.Function;
+import com.google.common.collect.Lists;
 
 /**
  * Jersey based {@link GroupRepository} implementation.
@@ -100,6 +106,25 @@ public class JerseyGroupRepository<T extends GroupRepository>
             .put( RepositoryGroupResourceResponse.class, request );
 
         return response.getData();
+    }
+
+    @Override
+    public List<String> memberRepositories()
+    {
+        final List<RepositoryGroupMemberRepository> memberRepositories = settings().getRepositories();
+        if ( memberRepositories == null )
+        {
+            return Collections.emptyList();
+        }
+        return Collections.unmodifiableList(
+            Lists.transform( memberRepositories, new Function<RepositoryGroupMemberRepository, String>()
+            {
+                @Override
+                public String apply( @Nullable final RepositoryGroupMemberRepository member )
+                {
+                    return member == null ? null : member.getId();
+                }
+            } ) );
     }
 
     @Override
