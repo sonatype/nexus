@@ -22,6 +22,11 @@ public interface VirtualRepository<T extends VirtualRepository>
 {
 
     /**
+     * @return id of virtualized repository
+     */
+    String virtualizedRepository();
+
+    /**
      * Specify the id of virtualized repository.
      *
      * @param repositoryId of virtualized repository

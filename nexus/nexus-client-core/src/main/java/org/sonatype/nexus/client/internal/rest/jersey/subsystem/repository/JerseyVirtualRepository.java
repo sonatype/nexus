@@ -59,6 +59,12 @@ public class JerseyVirtualRepository<T extends VirtualRepository>
     }
 
     @Override
+    public String virtualizedRepository()
+    {
+        return settings().getShadowOf();
+    }
+
+    @Override
     public T ofRepository( final String repositoryId )
     {
         settings().setShadowOf( repositoryId );
