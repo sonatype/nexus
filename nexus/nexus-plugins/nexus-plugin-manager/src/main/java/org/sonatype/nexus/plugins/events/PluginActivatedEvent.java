@@ -14,6 +14,7 @@ package org.sonatype.nexus.plugins.events;
 
 import org.sonatype.nexus.plugins.NexusPluginManager;
 import org.sonatype.nexus.plugins.PluginDescriptor;
+import org.sonatype.nexus.plugins.PluginResponse;
 import org.sonatype.plexus.appevents.AbstractEvent;
 import org.sonatype.plexus.appevents.Event;
 
@@ -33,11 +34,20 @@ public final class PluginActivatedEvent
     // Constructors
     // ----------------------------------------------------------------------
 
+    @Deprecated
     public PluginActivatedEvent( final NexusPluginManager component, final PluginDescriptor descriptor )
     {
         super( component );
 
         this.descriptor = descriptor;
+    }
+
+    /**
+     * @since 2.3
+     */
+    public PluginActivatedEvent( final NexusPluginManager component, final PluginResponse response )
+    {
+        this( component, response.getPluginDescriptor() );
     }
 
     // ----------------------------------------------------------------------

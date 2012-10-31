@@ -13,9 +13,13 @@
 package org.sonatype.nexus.plugins.events;
 
 import org.sonatype.nexus.plugins.NexusPluginManager;
+import org.sonatype.nexus.plugins.PluginDescriptor;
+import org.sonatype.nexus.plugins.PluginResponse;
 import org.sonatype.plexus.appevents.AbstractEvent;
 import org.sonatype.plexus.appevents.Event;
 import org.sonatype.plugin.metadata.GAVCoordinate;
+
+import static com.google.common.base.Preconditions.checkState;
 
 /**
  * This {@link Event} is triggered when a Nexus plugin fails during activation.
@@ -27,6 +31,8 @@ public final class PluginRejectedEvent
     // Implementation fields
     // ----------------------------------------------------------------------
 
+    private final PluginDescriptor descriptor;
+
     private final GAVCoordinate gav;
 
     private final Throwable reason;
@@ -35,17 +41,38 @@ public final class PluginRejectedEvent
     // Constructors
     // ----------------------------------------------------------------------
 
+    @Deprecated
     public PluginRejectedEvent( final NexusPluginManager component, final GAVCoordinate gav, final Throwable reason )
     {
         super( component );
-
+        this.descriptor = null;
         this.gav = gav;
         this.reason = reason;
+    }
+
+    /**
+     * @since 2.3
+     */
+    public PluginRejectedEvent( final NexusPluginManager component, final PluginResponse response )
+    {
+        super( component );
+        this.descriptor = response.getPluginDescriptor();
+        this.gav = response.getPluginCoordinates();
+        this.reason = response.getThrowable();
     }
 
     // ----------------------------------------------------------------------
     // Public methods
     // ----------------------------------------------------------------------
+
+    /**
+     * @since 2.3
+     */
+    public PluginDescriptor getDescriptor()
+    {
+        checkState(descriptor != null);
+        return descriptor;
+    }
 
     public GAVCoordinate getPluginCoordinates()
     {

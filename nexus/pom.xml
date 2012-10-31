@@ -991,6 +991,11 @@
         <artifactId>nexus-enunciate-theme</artifactId>
         <version>${project.version}</version>
       </dependency>
+      <dependency>
+        <groupId>org.sonatype.sisu.goodies</groupId>
+        <artifactId>goodies-jmx</artifactId>
+        <version>1.5-SNAPSHOT</version>
+      </dependency>
 
       <dependency>
         <groupId>org.sonatype.nexus</groupId>

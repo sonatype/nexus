@@ -523,11 +523,11 @@ public class DefaultNexusPluginManager
         final GAVCoordinate gav = result.getPluginCoordinates();
         if ( result.isSuccessful() )
         {
-            pluginEvent = new PluginActivatedEvent( this, result.getPluginDescriptor() );
+            pluginEvent = new PluginActivatedEvent( this, result );
         }
         else
         {
-            pluginEvent = new PluginRejectedEvent( this, gav, result.getThrowable() );
+            pluginEvent = new PluginRejectedEvent( this, result );
             activePlugins.remove( gav );
         }
 
