@@ -55,19 +55,6 @@
       <version>${project.version}</version>
       <scope>provided</scope>
     </dependency>
-
-    <dependency>
-      <groupId>org.sonatype.sisu.jacksbee</groupId>
-      <artifactId>jacksbee-runtime</artifactId>
-      <version>1.1.1</version>
-      <exclusions>
-        <!-- NX builds have enforce rules to ban various XML apis which are included in Java 6 -->
-        <exclusion>
-          <groupId>javax.xml.bind</groupId>
-          <artifactId>jaxb-api</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
   </dependencies>
 
   <build>

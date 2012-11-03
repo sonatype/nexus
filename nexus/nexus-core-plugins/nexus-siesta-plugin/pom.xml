@@ -119,6 +119,22 @@
       <artifactId>siesta-jackson</artifactId>
       <version>${siestaVersion}</version>
     </dependency>
+
+    <dependency>
+      <groupId>org.sonatype.sisu.jacksbee</groupId>
+      <artifactId>jacksbee-runtime</artifactId>
+      <version>1.1.1</version>
+      <exclusions>
+        <exclusion>
+          <groupId>javax.xml.bind</groupId>
+          <artifactId>jaxb-api</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>com.sun.xml.bind</groupId>
+          <artifactId>jaxb-impl</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
   </dependencies>
 
   <build>
