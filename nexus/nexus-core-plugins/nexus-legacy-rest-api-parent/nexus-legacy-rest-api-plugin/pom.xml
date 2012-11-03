@@ -28,7 +28,7 @@
   <name>Nexus : Core Plugins : Legacy Rest API Plugin</name>
 
   <properties>
-    <nexus.plugin.name>Nexus Restlet 1.x REST API Plugin</nexus.plugin.name>
+    <nexus.plugin.name>Nexus Restlet 1.x Plugin</nexus.plugin.name>
     <nexus.plugin.description>Support for Restlet 1.x REST API.</nexus.plugin.description>
   </properties>
 
@@ -36,8 +36,6 @@
     <dependency>
       <groupId>org.sonatype.nexus.plugins.rest</groupId>
       <artifactId>nexus-legacy-rest-api-model</artifactId>
-      <version>${project.version}</version>
-      <scope>compile</scope>
     </dependency>
 
     <dependency>
@@ -49,28 +47,6 @@
     <dependency>
       <groupId>org.sonatype.nexus</groupId>
       <artifactId>nexus-logging-extras</artifactId>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.sonatype.nexus</groupId>
-      <artifactId>nexus-configuration</artifactId>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.sonatype.nexus</groupId>
-      <artifactId>nexus-proxy</artifactId>
-      <scope>provided</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.sonatype.nexus</groupId>
-      <artifactId>nexus-web-utils</artifactId>
-      <scope>provided</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.sonatype.sisu</groupId>
-      <artifactId>sisu-inject-plexus</artifactId>
       <scope>provided</scope>
     </dependency>
 
@@ -111,9 +87,24 @@
       </exclusions>
     </dependency>
 
+    <!--
+    FIXME: This is required due to dependency on NexusGuiceFilter :-(
+    -->
+    <dependency>
+      <groupId>org.sonatype.nexus</groupId>
+      <artifactId>nexus-web-utils</artifactId>
+      <scope>provided</scope>
+    </dependency>
+
     <dependency>
       <groupId>org.sonatype.security</groupId>
       <artifactId>security-rest-api</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.sonatype.sisu</groupId>
+      <artifactId>sisu-velocity</artifactId>
+      <scope>provided</scope>
     </dependency>
 
     <dependency>
@@ -137,7 +128,6 @@
       <scope>provided</scope>
     </dependency>
 
-    <!-- This module does depend as "compile", also, plugin depending on this module needs it too -->
     <dependency>
       <groupId>org.eclipse.jetty.orbit</groupId>
       <artifactId>javax.servlet</artifactId>
@@ -153,15 +143,6 @@
     <dependency>
       <groupId>commons-fileupload</groupId>
       <artifactId>commons-fileupload</artifactId>
-    </dependency>
-
-    <!--
-    FIXME: See note on DM entry.
-    -->
-    <dependency>
-      <groupId>org.codehaus.enunciate</groupId>
-      <artifactId>enunciate-core</artifactId>
-      <scope>provided</scope>
     </dependency>
 
     <dependency>
@@ -219,11 +200,6 @@
             <sharedDependency>org.sonatype.security:security-rest-model</sharedDependency>
           </sharedDependencies>
         </configuration>
-      </plugin>
-
-      <plugin>
-        <groupId>org.codehaus.plexus</groupId>
-        <artifactId>plexus-component-metadata</artifactId>
       </plugin>
 
       <plugin>

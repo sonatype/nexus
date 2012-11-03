@@ -43,7 +43,7 @@
     <xml disabled="true"/>
 
     <docs disabled="false"
-          title="Sonatype Nexus OSS REST API"
+          title="${nexus.plugin.name} REST API"
           copyright="Sonatype, Inc. ${copyright.year}"
           includeExampleXml="true"
           includeExampleJson="true"
