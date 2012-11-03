@@ -168,6 +168,7 @@
             <!--<sharedDependency>asm:asm</sharedDependency>-->
             <!--<sharedDependency>org.jvnet.mimepull:mimepull</sharedDependency>-->
             <!--<sharedDependency>com.sun.xml.bind:jaxb-impl</sharedDependency>-->
+            <sharedDependency>org.sonatype.sisu.jacksbee:jacksbee-runtime</sharedDependency>
           </sharedDependencies>
         </configuration>
       </plugin>
