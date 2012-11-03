@@ -41,6 +41,7 @@
     <dependency>
       <groupId>org.sonatype.nexus.plugins</groupId>
       <artifactId>nexus-siesta-plugin</artifactId>
+      <type>${nexus-plugin.type}</type>
       <version>${project.version}</version>
       <scope>provided</scope>
     </dependency>

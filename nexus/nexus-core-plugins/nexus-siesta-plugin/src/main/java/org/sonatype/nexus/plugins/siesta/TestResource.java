@@ -4,7 +4,7 @@
  * "Sonatype" is a trademark of Sonatype, Inc.
  */
 
-package org.sonatype.nexus.plugins.siesta.test;
+package org.sonatype.nexus.plugins.siesta;
 
 import org.sonatype.sisu.siesta.common.Resource;
 
@@ -23,7 +23,7 @@ import java.util.Date;
  */
 @Named
 @Singleton
-@Path("/test2")
+@Path("/test")
 public class TestResource
     implements Resource
 {

@@ -23,6 +23,10 @@
     <version>2.3-SNAPSHOT</version>
   </parent>
 
+  <!--
+  FIXME: Maybe change this to nexus-siesta-provider-plugin ?
+  -->
+
   <artifactId>nexus-siesta-plugin</artifactId>
   <packaging>nexus-plugin</packaging>
 
@@ -33,6 +37,12 @@
   </properties>
 
   <dependencies>
+    <dependency>
+      <groupId>org.sonatype.nexus</groupId>
+      <artifactId>nexus-plugin-manager</artifactId>
+      <scope>provided</scope>
+    </dependency>
+
     <dependency>
       <groupId>org.sonatype.nexus</groupId>
       <artifactId>nexus-app</artifactId>
@@ -65,6 +75,15 @@
           <artifactId>sisu-inject-bean</artifactId>
         </exclusion>
       </exclusions>
+    </dependency>
+
+    <!--
+    HACK: Trying to get it to work, probably should include siesta-client here instead.
+    -->
+    <dependency>
+        <groupId>com.sun.jersey</groupId>
+        <artifactId>jersey-client</artifactId>
+        <version>1.15</version>
     </dependency>
 
     <!--
@@ -101,13 +120,28 @@
         <artifactId>app-lifecycle-maven-plugin</artifactId>
         <configuration>
           <sharedDependencies>
-            <sharedDependency>org.sonatype.siesta:siesta-common</sharedDependency>
-            <sharedDependency>org.sonatype.siesta:siesta-jackson</sharedDependency>
-            <sharedDependency>org.sonatype.siesta:siesta-server</sharedDependency>
-            <sharedDependency>javax.ws.rs:jsr311-api</sharedDependency>
+            <sharedDependency>org.sonatype.sisu.siesta:siesta-common</sharedDependency>
             <sharedDependency>com.sun.jersey:jersey-core</sharedDependency>
+            <sharedDependency>javax.ws.rs:jsr311-api</sharedDependency>
+
+            <!-- FIXME: Unsure which parts of this need to be marked as shared, and which should not be ... -->
+            <sharedDependency>org.sonatype.sisu.siesta:siesta-server</sharedDependency>
             <sharedDependency>com.sun.jersey:jersey-server</sharedDependency>
             <sharedDependency>com.sun.jersey:jersey-servlet</sharedDependency>
+            <sharedDependency>asm:asm</sharedDependency>
+
+            <!--<sharedDependency>org.sonatype.sisu.siesta:siesta-client</sharedDependency>-->
+            <sharedDependency>com.sun.jersey:jersey-client</sharedDependency>
+
+            <!--<sharedDependency>org.sonatype.sisu.siesta:siesta-jackson</sharedDependency>-->
+            <!--<sharedDependency>org.codehaus.jackson:jackson-core-asl</sharedDependency>-->
+            <!--<sharedDependency>org.codehaus.jackson:jackson-mapper-asl</sharedDependency>-->
+            <!--<sharedDependency>org.codehaus.jackson:jackson-jaxrs</sharedDependency>-->
+            <!--<sharedDependency>org.codehaus.jackson:jackson-xc</sharedDependency>-->
+
+            <!--<sharedDependency>com.sun.jersey:jersey-json</sharedDependency>-->
+            <!--<sharedDependency>com.sun.jersey.contribs:jersey-multipart</sharedDependency>-->
+            <!--<sharedDependency>org.jvnet.mimepull:mimepull</sharedDependency>-->
           </sharedDependencies>
         </configuration>
       </plugin>
