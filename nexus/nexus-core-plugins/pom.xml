@@ -38,6 +38,8 @@
   </dependencies>
 
   <modules>
+    <module>nexus-siesta-plugin</module>
+    <module>nexus-siesta-test-plugin</module>
     <module>nexus-legacy-rest-api-parent</module>
     <module>nexus-indexer-lucene-plugin-parent</module>
     <module>nexus-timeline-plugin</module>
