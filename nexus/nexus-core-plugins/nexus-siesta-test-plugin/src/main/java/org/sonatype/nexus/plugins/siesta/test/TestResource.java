@@ -6,15 +6,22 @@
 
 package org.sonatype.nexus.plugins.siesta.test;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.sonatype.nexus.plugins.siesta.test.model.UserXO;
 import org.sonatype.sisu.siesta.common.Resource;
 
 import javax.inject.Named;
 import javax.inject.Singleton;
+import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
+import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
 import java.util.Date;
+
+import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static javax.ws.rs.core.MediaType.APPLICATION_XML;
 
 /**
  * Siesta testing resource.
@@ -27,11 +34,23 @@ import java.util.Date;
 public class TestResource
     implements Resource
 {
-    // TODO: Add stuff to verify jackson and jaxb use
+    private final Logger log = LoggerFactory.getLogger(getClass());
 
     @GET
-    @Produces(MediaType.TEXT_PLAIN)
-    public String get() {
-        return String.format("Hello %s", new Date());
+    @Produces({APPLICATION_XML, APPLICATION_JSON})
+    public UserXO get() {
+        log.info("GET");
+
+        return new UserXO()
+            .withName("jdillon")
+            .withDescription("avid crack smoker")
+            .withCreated(new Date());
+    }
+
+    @PUT
+    @Consumes({APPLICATION_XML, APPLICATION_JSON})
+    public void put(final UserXO user) {
+        log.info("PUT name='{}' description='{}' created='{}'",
+            user.getName(), user.getDescription(), user.getCreated());
     }
 }
