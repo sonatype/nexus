@@ -16,6 +16,8 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import java.util.Date;
 
+// FIXME: Remove eventually, and/or replace with a more meaningful resource
+
 /**
  * Siesta testing resource.
  *

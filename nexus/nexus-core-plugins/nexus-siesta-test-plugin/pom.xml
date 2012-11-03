@@ -23,6 +23,10 @@
     <version>2.3-SNAPSHOT</version>
   </parent>
 
+  <!--
+  FIXME: Remove this eventually, only here to test if siesta is working from a plugin or not.
+  -->
+
   <artifactId>nexus-siesta-test-plugin</artifactId>
   <packaging>nexus-plugin</packaging>
 
@@ -34,7 +38,7 @@
   <dependencies>
     <dependency>
       <groupId>org.sonatype.nexus</groupId>
-      <artifactId>nexus-api</artifactId>
+      <artifactId>nexus-plugin-api</artifactId>
       <scope>provided</scope>
     </dependency>
 
