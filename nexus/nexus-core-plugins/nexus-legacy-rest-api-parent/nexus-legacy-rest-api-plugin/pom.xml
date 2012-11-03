@@ -27,6 +27,11 @@
   <packaging>nexus-plugin</packaging>
   <name>Nexus : Core Plugins : Legacy Rest API Plugin</name>
 
+  <properties>
+    <nexus.plugin.name>Nexus Restlet 1.x REST API Plugin</nexus.plugin.name>
+    <nexus.plugin.description>Support for Restlet 1.x REST API.</nexus.plugin.description>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>org.sonatype.nexus.plugins.rest</groupId>
@@ -99,6 +104,10 @@
           <groupId>org.sonatype.plugin</groupId>
           <artifactId>plugin-host-api</artifactId>
         </exclusion>
+        <exclusion>
+          <groupId>commons-io</groupId>
+          <artifactId>commons-io</artifactId>
+        </exclusion>
       </exclusions>
     </dependency>
 
@@ -130,8 +139,8 @@
 
     <!-- This module does depend as "compile", also, plugin depending on this module needs it too -->
     <dependency>
-      <groupId>javax.servlet</groupId>
-      <artifactId>servlet-api</artifactId>
+      <groupId>org.eclipse.jetty.orbit</groupId>
+      <artifactId>javax.servlet</artifactId>
       <scope>provided</scope>
     </dependency>
 
@@ -146,17 +155,13 @@
       <artifactId>commons-fileupload</artifactId>
     </dependency>
 
-    <dependency>
-      <groupId>org.apache.shiro</groupId>
-      <artifactId>shiro-web</artifactId>
-    </dependency>
-
     <!--
     FIXME: See note on DM entry.
     -->
     <dependency>
       <groupId>org.codehaus.enunciate</groupId>
       <artifactId>enunciate-core</artifactId>
+      <scope>provided</scope>
     </dependency>
 
     <dependency>
@@ -215,10 +220,12 @@
           </sharedDependencies>
         </configuration>
       </plugin>
+
       <plugin>
         <groupId>org.codehaus.plexus</groupId>
         <artifactId>plexus-component-metadata</artifactId>
       </plugin>
+
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-jar-plugin</artifactId>

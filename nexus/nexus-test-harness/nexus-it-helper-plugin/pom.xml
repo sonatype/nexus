@@ -44,6 +44,13 @@
     </dependency>
 
     <dependency>
+      <groupId>org.sonatype.nexus</groupId>
+      <artifactId>nexus-logging-extras</artifactId>
+      <version>${project.version}</version>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
       <groupId>org.sonatype.nexus.plugins.rest</groupId>
       <artifactId>nexus-legacy-rest-api-plugin</artifactId>
       <version>${project.version}</version>
