@@ -23,10 +23,6 @@
     <version>2.3-SNAPSHOT</version>
   </parent>
 
-  <!--
-  FIXME: Maybe change this to nexus-siesta-provider-plugin ?
-  -->
-
   <artifactId>nexus-siesta-plugin</artifactId>
   <packaging>nexus-plugin</packaging>
 
@@ -78,12 +74,24 @@
     </dependency>
 
     <!--
-    HACK: Trying to get it to work, probably should include siesta-client here instead.
+    TODO: Sort out if we should exclude com.sun.xml.bind:jaxb-impl...
+    TODO: Though probably should pull it in to ensure we have the right JAXB impl and not left up to the version in the JDK.
     -->
+
     <dependency>
-        <groupId>com.sun.jersey</groupId>
-        <artifactId>jersey-client</artifactId>
-        <version>1.15</version>
+      <groupId>org.sonatype.sisu.siesta</groupId>
+      <artifactId>siesta-client</artifactId>
+      <version>${siestaVersion}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>javax.xml.bind</groupId>
+          <artifactId>jaxb-api</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.slf4j</groupId>
+          <artifactId>jcl-over-slf4j</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <!--
@@ -120,28 +128,30 @@
         <artifactId>app-lifecycle-maven-plugin</artifactId>
         <configuration>
           <sharedDependencies>
-            <sharedDependency>org.sonatype.sisu.siesta:siesta-common</sharedDependency>
-            <sharedDependency>com.sun.jersey:jersey-core</sharedDependency>
             <sharedDependency>javax.ws.rs:jsr311-api</sharedDependency>
+            <sharedDependency>org.sonatype.sisu.siesta:siesta-common</sharedDependency>
+            <sharedDependency>org.sonatype.sisu.siesta:siesta-server</sharedDependency>
+            <sharedDependency>org.sonatype.sisu.siesta:siesta-client</sharedDependency>
+            <!--<sharedDependency>org.sonatype.sisu.siesta:siesta-jackson</sharedDependency>-->
 
             <!-- FIXME: Unsure which parts of this need to be marked as shared, and which should not be ... -->
-            <sharedDependency>org.sonatype.sisu.siesta:siesta-server</sharedDependency>
+            <sharedDependency>com.sun.jersey:jersey-core</sharedDependency>
             <sharedDependency>com.sun.jersey:jersey-server</sharedDependency>
             <sharedDependency>com.sun.jersey:jersey-servlet</sharedDependency>
+            <sharedDependency>com.sun.jersey:jersey-client</sharedDependency>
             <sharedDependency>asm:asm</sharedDependency>
 
-            <!--<sharedDependency>org.sonatype.sisu.siesta:siesta-client</sharedDependency>-->
-            <sharedDependency>com.sun.jersey:jersey-client</sharedDependency>
-
-            <!--<sharedDependency>org.sonatype.sisu.siesta:siesta-jackson</sharedDependency>-->
+            <!-- FIXME: Unsure what else to expose here... -->
             <!--<sharedDependency>org.codehaus.jackson:jackson-core-asl</sharedDependency>-->
             <!--<sharedDependency>org.codehaus.jackson:jackson-mapper-asl</sharedDependency>-->
             <!--<sharedDependency>org.codehaus.jackson:jackson-jaxrs</sharedDependency>-->
             <!--<sharedDependency>org.codehaus.jackson:jackson-xc</sharedDependency>-->
-
+            <!--<sharedDependency>com.sun.jersey:jersey-guice</sharedDependency>-->
             <!--<sharedDependency>com.sun.jersey:jersey-json</sharedDependency>-->
             <!--<sharedDependency>com.sun.jersey.contribs:jersey-multipart</sharedDependency>-->
+            <!--<sharedDependency>com.sun.jersey.contribs:jersey-apache-client4</sharedDependency>-->
             <!--<sharedDependency>org.jvnet.mimepull:mimepull</sharedDependency>-->
+            <!--<sharedDependency>com.sun.xml.bind:jaxb-impl</sharedDependency>-->
           </sharedDependencies>
         </configuration>
       </plugin>
