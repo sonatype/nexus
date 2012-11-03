@@ -23,10 +23,12 @@ import java.util.Date;
  */
 @Named
 @Singleton
-@Path("/test2")
+@Path("/test")
 public class TestResource
     implements Resource
 {
+    // TODO: Add stuff to verify jackson and jaxb use
+
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     public String get() {
