@@ -39,6 +39,9 @@ import org.sonatype.nexus.rest.RepositoryURLBuilder;
 public class ArchetypeContentGenerator
     implements ContentGenerator
 {
+    /**
+     * ID used as named parameter and as key in Item context to mark it as generated.
+     */
     public static final String ID = "ArchetypeContentGenerator";
 
     @Inject
@@ -67,9 +70,8 @@ public class ArchetypeContentGenerator
         item.setLength( -1 );
 
         return new ArchetypeContentLocator( repository,
-            repositoryURLBuilder.getExposedRepositoryContentUrl( repository ),
-            ( (DefaultIndexerManager) indexerManager ).getRepositoryIndexContext( repository ), macPlugin,
-            new ArtifactInfoFilter()
+            repositoryURLBuilder.getExposedRepositoryContentUrl( repository ), (DefaultIndexerManager) indexerManager,
+            macPlugin, new ArtifactInfoFilter()
             {
                 public boolean accepts( IndexingContext ctx, ArtifactInfo ai )
                 {

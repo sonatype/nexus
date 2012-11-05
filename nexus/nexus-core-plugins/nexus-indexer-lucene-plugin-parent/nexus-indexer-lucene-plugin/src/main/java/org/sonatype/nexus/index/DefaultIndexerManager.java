@@ -24,20 +24,18 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.RAMDirectory;
 import org.apache.maven.index.AndMultiArtifactInfoFilter;
 import org.apache.maven.index.ArtifactContext;
 import org.apache.maven.index.ArtifactContextProducer;
@@ -55,13 +53,15 @@ import org.apache.maven.index.MatchHighlightRequest;
 import org.apache.maven.index.NexusIndexer;
 import org.apache.maven.index.SearchType;
 import org.apache.maven.index.artifact.VersionUtils;
-import org.apache.maven.index.context.ContextMemberProvider;
 import org.apache.maven.index.context.DefaultIndexingContext;
 import org.apache.maven.index.context.DocumentFilter;
 import org.apache.maven.index.context.IndexCreator;
 import org.apache.maven.index.context.IndexingContext;
 import org.apache.maven.index.context.UnsupportedExistingLuceneIndexException;
 import org.apache.maven.index.expr.SearchExpression;
+import org.apache.maven.index.expr.SearchTypedStringSearchExpression;
+import org.apache.maven.index.expr.SourcedSearchExpression;
+import org.apache.maven.index.expr.UserInputSearchExpression;
 import org.apache.maven.index.packer.IndexPacker;
 import org.apache.maven.index.packer.IndexPackingRequest;
 import org.apache.maven.index.packer.IndexPackingRequest.IndexFormat;
@@ -75,12 +75,13 @@ import org.apache.maven.index.updater.IndexUpdater;
 import org.apache.maven.index.updater.ResourceFetcher;
 import org.codehaus.plexus.component.annotations.Component;
 import org.codehaus.plexus.component.annotations.Requirement;
-import org.codehaus.plexus.logging.Logger;
+import org.codehaus.plexus.personality.plexus.lifecycle.phase.Initializable;
+import org.codehaus.plexus.personality.plexus.lifecycle.phase.InitializationException;
 import org.codehaus.plexus.util.FileUtils;
 import org.codehaus.plexus.util.IOUtil;
 import org.codehaus.plexus.util.StringUtils;
 import org.sonatype.nexus.configuration.application.NexusConfiguration;
-import org.sonatype.nexus.logging.Slf4jPlexusLogger;
+import org.sonatype.nexus.logging.AbstractLoggingComponent;
 import org.sonatype.nexus.maven.tasks.SnapshotRemover;
 import org.sonatype.nexus.mime.MimeSupport;
 import org.sonatype.nexus.proxy.IllegalOperationException;
@@ -111,7 +112,6 @@ import org.sonatype.nexus.proxy.repository.ShadowRepository;
 import org.sonatype.nexus.proxy.storage.local.fs.DefaultFSLocalRepositoryStorage;
 import org.sonatype.nexus.proxy.utils.RepositoryStringUtils;
 import org.sonatype.nexus.util.CompositeException;
-import org.sonatype.nexus.util.SystemPropertiesHelper;
 import org.sonatype.scheduling.TaskInterruptedException;
 import org.sonatype.scheduling.TaskUtil;
 
@@ -119,11 +119,11 @@ import com.google.common.annotations.VisibleForTesting;
 
 /**
  * <p>
- * Indexer Manager. This is a thin layer above Nexus Indexer and simply manages indexingContext additions, updates and
- * removals. Every Nexus repository (except ShadowRepository, which are completely left out of indexing) has two
- * indexing context maintained: local and remote. In case of hosted/proxy repositories, the local context contains the
- * content/cache content and the remote context contains nothing/downloaded index (if remote index download happened and
- * remote peer is publishing index). In case of group reposes, the things are little different: their local context
+ * NexusIndexer Manager. This is a thin layer above Nexus NexusIndexer and simply manages indexingContext additions,
+ * updates and removals. Every Nexus repository (except ShadowRepository, which are completely left out of indexing) has
+ * two indexing context maintained: local and remote. In case of hosted/proxy repositories, the local context contains
+ * the content/cache content and the remote context contains nothing/downloaded index (if remote index download happened
+ * and remote peer is publishing index). In case of group reposes, the things are little different: their local context
  * contains the index of GroupRepository local storage, and remote context contains the merged indexes of it's member
  * repositories.
  * </p>
@@ -135,7 +135,8 @@ import com.google.common.annotations.VisibleForTesting;
  */
 @Component( role = IndexerManager.class )
 public class DefaultIndexerManager
-    implements IndexerManager
+    extends AbstractLoggingComponent
+    implements IndexerManager, Initializable
 {
     /** The key used in working directory. */
     public static final String INDEXER_WORKING_DIRECTORY_KEY = "indexer";
@@ -146,12 +147,8 @@ public class DefaultIndexerManager
     /** Path prefix where index publishing happens */
     public static final String PUBLISHING_PATH_PREFIX = "/.index";
 
-    private static final Map<String, ReadWriteLock> locks = new HashMap<String, ReadWriteLock>();
-
-    private Logger logger = Slf4jPlexusLogger.getPlexusLogger( getClass() );
-
     @Requirement
-    private NexusIndexer nexusIndexer;
+    private NexusIndexer indexer;
 
     @Requirement
     private IndexUpdater indexUpdater;
@@ -187,15 +184,34 @@ public class DefaultIndexerManager
 
     private File tempDirectory;
 
-    public DefaultIndexerManager()
+    /**
+     * "Registry" of indexing contexts defined in Nexus. Access (both R and W) should be synchronized to this map.
+     */
+    private final Map<String, NexusIndexingContext> indexingContexts = new HashMap<String, NexusIndexingContext>();
+
+    /**
+     * Hack: "empty" context. Is package protected as it is used by {@link NexusIndexingContext} too.
+     */
+    static NexusIndexingContext EMPTY_CTX;
+
+    public void initialize()
+        throws InitializationException
     {
-        // Note: this is needed and used in ITs only!
-        // See org.sonatype.nexus.rt.boot.ITIndexerActivationEventInspector for details
-        if ( SystemPropertiesHelper.getBoolean( "mavenIndexerBlockingCommits", DefaultIndexingContext.BLOCKING_COMMIT ) )
+        try
         {
-            DefaultIndexingContext.BLOCKING_COMMIT = true;
+            final DefaultIndexingContext ctx =
+                new DefaultIndexingContext( "empty", "n/a", null, new RAMDirectory(), null, null,
+                    Collections.<IndexCreator> emptyList(), true );
+            EMPTY_CTX = new NexusIndexingContext( ctx );
         }
-        // This above is needed and used in ITs only!
+        catch ( UnsupportedExistingLuceneIndexException e )
+        {
+            throw new InitializationException( "Problem during creation of EMPTY indexing context!", e );
+        }
+        catch ( IOException e )
+        {
+            throw new InitializationException( "Problem during creation of EMPTY indexing context!", e );
+        }
     }
 
     @VisibleForTesting
@@ -207,12 +223,7 @@ public class DefaultIndexerManager
     @VisibleForTesting
     protected void setNexusIndexer( final NexusIndexer nexusIndexer )
     {
-        this.nexusIndexer = nexusIndexer;
-    }
-
-    protected Logger getLogger()
-    {
-        return logger;
+        this.indexer = nexusIndexer;
     }
 
     protected File getWorkingDirectory()
@@ -237,17 +248,22 @@ public class DefaultIndexerManager
     /**
      * Used to close all indexing context explicitly.
      */
-    public void shutdown( boolean deleteFiles )
+    public synchronized void shutdown( boolean deleteFiles )
         throws IOException
     {
         getLogger().info( "Shutting down Nexus IndexerManager" );
 
-        for ( IndexingContext ctx : nexusIndexer.getIndexingContexts().values() )
+        for ( NexusIndexingContext ctx : getRepositoryIndexContexts() )
         {
-            nexusIndexer.removeIndexingContext( ctx, false );
+            try
+            {
+                removeIndexingContext( ctx, false );
+            }
+            catch ( IOException e )
+            {
+                getLogger().warn( "Could not cleanly close indexing context on shutdown: " + ctx.getId(), e );
+            }
         }
-
-        locks.clear();
     }
 
     public void resetConfiguration()
@@ -255,6 +271,21 @@ public class DefaultIndexerManager
         workingDirectory = null;
 
         tempDirectory = null;
+    }
+
+    protected void removeIndexingContext( final NexusIndexingContext context, final boolean deleteFiles )
+        throws IOException
+    {
+        context.getLock().writeLock().lock();
+        try
+        {
+            indexer.removeIndexingContext( context, deleteFiles );
+            indexingContexts.remove( context.getId() );
+        }
+        finally
+        {
+            context.getLock().writeLock().unlock();
+        }
     }
 
     // ----------------------------------------------------------------------------
@@ -310,183 +341,164 @@ public class DefaultIndexerManager
         }
     }
 
-    public void addRepositoryIndexContext( String repositoryId )
-        throws IOException, NoSuchRepositoryException
-    {
-        Repository repository = repositoryRegistry.getRepository( repositoryId );
-
-        Lock lock = getLock( repository.getId() ).writeLock();
-        lock.lock();
-
-        try
-        {
-            if ( !isIndexingSupported( repository ) || !repository.isIndexable() )
-            {
-                logSkippingRepositoryMessage( repository );
-
-                return;
-            }
-
-            IndexingContext ctx = null;
-
-            File indexDirectory = new File( getWorkingDirectory(), getContextId( repository.getId() ) );
-            indexDirectory.mkdirs();
-
-            if ( repository.getRepositoryKind().isFacetAvailable( GroupRepository.class ) )
-            {
-                // group repository
-                // just to throw NoSuchRepositoryGroupException if not existing
-                final GroupRepository groupRepository =
-                    repositoryRegistry.getRepositoryWithFacet( repositoryId, GroupRepository.class );
-
-                final File repoRoot = getRepositoryLocalStorageAsFile( repository );
-                // a lazy context provider
-                final LazyContextMemberProvider memberContextProvider =
-                    new LazyContextMemberProvider( this, groupRepository.getMemberRepositoryIds() );
-                ctx =
-                    nexusIndexer.addMergedIndexingContext( getContextId( repository.getId() ), repository.getId(),
-                        repoRoot, indexDirectory, repository.isSearchable(), memberContextProvider );
-                ctx.setSearchable( repository.isSearchable() );
-            }
-            else
-            {
-                repositoryRegistry.getRepositoryWithFacet( repositoryId, Repository.class );
-
-                File repoRoot = getRepositoryLocalStorageAsFile( repository );
-
-                // add context for repository
-                ctx =
-                    nexusIndexer.addIndexingContextForced( getContextId( repository.getId() ), repository.getId(),
-                        repoRoot, indexDirectory, null, null, indexCreators );
-                ctx.setSearchable( repository.isSearchable() );
-            }
-
-        }
-        finally
-        {
-            lock.unlock();
-        }
-    }
-
-    public void removeRepositoryIndexContext( String repositoryId, boolean deleteFiles )
-        throws IOException, NoSuchRepositoryException
-    {
-        Repository repository = repositoryRegistry.getRepository( repositoryId );
-
-        Lock lock = getLock( repository.getId() ).writeLock();
-        lock.lock();
-
-        try
-        {
-            if ( !isIndexingSupported( repository ) )
-            {
-                logSkippingRepositoryMessage( repository );
-
-                return;
-            }
-
-            IndexingContext ctx = getRepositoryIndexContext( repository );
-
-            if ( ctx != null )
-            {
-                nexusIndexer.removeIndexingContext( ctx, deleteFiles );
-            }
-        }
-        finally
-        {
-            lock.unlock();
-        }
-    }
-
-    public void updateRepositoryIndexContext( String repositoryId )
+    public synchronized void addRepositoryIndexContext( String repositoryId )
         throws IOException, NoSuchRepositoryException
     {
         final Repository repository = repositoryRegistry.getRepository( repositoryId );
 
-        Lock lock = getLock( repository.getId() ).writeLock();
-        lock.lock();
-
-        try
+        if ( !isIndexingSupported( repository ) || !repository.isIndexable() )
         {
-            // cannot do "!repository.isIndexable()" since we may be called to handle that config change (using events)!
-            // the repo might be already non-indexable, but the context would still exist!
-            if ( !isIndexingSupported( repository ) )
-            {
-                logSkippingRepositoryMessage( repository );
+            logSkippingRepositoryMessage( repository );
+            return;
+        }
 
-                return;
-            }
+        IndexingContext ctx = null;
 
-            if ( repository.getRepositoryKind().isFacetAvailable( GroupRepository.class ) )
-            {
-                // group repository
+        File indexDirectory = new File( getWorkingDirectory(), getContextId( repository.getId() ) );
+        indexDirectory.mkdirs();
+
+        if ( repository.getRepositoryKind().isFacetAvailable( GroupRepository.class ) )
+        {
+            // group repository
+            // just to throw NoSuchRepositoryGroupException if not existing
+            final GroupRepository groupRepository =
                 repositoryRegistry.getRepositoryWithFacet( repositoryId, GroupRepository.class );
-            }
-            else
-            {
-                repositoryRegistry.getRepositoryWithFacet( repositoryId, Repository.class );
-            }
+
+            final File repoRoot = getRepositoryLocalStorageAsFile( repository );
+            // a lazy context provider
+            final LazyContextMemberProvider memberContextProvider =
+                new LazyContextMemberProvider( this, groupRepository.getMemberRepositoryIds() );
+            ctx =
+                getIndexer().addMergedIndexingContext( getContextId( repository.getId() ), repository.getId(),
+                    repoRoot, indexDirectory, repository.isSearchable(), memberContextProvider );
+        }
+        else
+        {
+            repositoryRegistry.getRepositoryWithFacet( repositoryId, Repository.class );
 
             File repoRoot = getRepositoryLocalStorageAsFile( repository );
 
-            // get context for repository, check is change needed
-            IndexingContext ctx = getRepositoryIndexContext( repository );
-
-            boolean propagateChangesToGroupsOfRepository = false;
-
-            // remove context, if it already existed (ctx != null) and any of the following is true:
-            // is a group OR repo path changed OR we have an isIndexed transition happening
-            if ( ctx != null
-                && ( repository.getRepositoryKind().isFacetAvailable( GroupRepository.class )
-                    || !ctx.getRepository().getAbsolutePath().equals( repoRoot.getAbsolutePath() )
-                    || !repository.isIndexable() || ctx.isSearchable() != repository.isSearchable() ) )
-            {
-                // remove the context
-                removeRepositoryIndexContext( repositoryId, false );
-                ctx = null;
-                propagateChangesToGroupsOfRepository = true;
-            }
-
-            // add context, if it did not existed yet (ctx == null) or any of the following is true:
-            // is a group OR repo path changed OR we have an isIndexed transition happening
-            if ( repository.isIndexable() && ctx == null )
-            {
-                // recreate the context
-                addRepositoryIndexContext( repositoryId );
-                propagateChangesToGroupsOfRepository = true;
-            }
-
-            if ( propagateChangesToGroupsOfRepository )
-            {
-                // propagate changes to the repositor's groups (where it is a member)
-                // as a "stale" context would remain in the list returned by ContextMemberProvider
-                final List<GroupRepository> groupsOfRepository = repositoryRegistry.getGroupsOfRepository( repository );
-                for ( GroupRepository group : groupsOfRepository )
-                {
-                    updateRepositoryIndexContext( group.getId() );
-                }
-            }
+            // add context for repository, reclaim it, will not throw UnsupportedExistingLuceneIndexException
+            ctx =
+                getIndexer().addIndexingContextForced( getContextId( repository.getId() ), repository.getId(),
+                    repoRoot, indexDirectory, null, null, indexCreators );
+            ctx.setSearchable( repository.isSearchable() );
         }
-        finally
+
+        if ( ctx != null )
         {
-            lock.unlock();
+            final NexusIndexingContext protectedCtx = new NexusIndexingContext( ctx );
+            final NexusIndexingContext old = indexingContexts.put( ctx.getId(), protectedCtx );
+            if ( old != null )
+            {
+                // when could this happen? two addRepositoryIndexContext calls without remove?
+                removeIndexingContext( old, false );
+            }
         }
     }
 
-    public IndexingContext getRepositoryIndexContext( String repositoryId )
+    public synchronized void removeRepositoryIndexContext( String repositoryId, boolean deleteFiles )
+        throws IOException, NoSuchRepositoryException
+    {
+        final Repository repository = repositoryRegistry.getRepository( repositoryId );
+
+        if ( !isIndexingSupported( repository ) )
+        {
+            logSkippingRepositoryMessage( repository );
+
+            return;
+        }
+
+        NexusIndexingContext ctx = getRepositoryIndexContext( repository );
+
+        if ( ctx != null )
+        {
+            removeIndexingContext( ctx, deleteFiles );
+        }
+    }
+
+    public synchronized void updateRepositoryIndexContext( String repositoryId )
+        throws IOException, NoSuchRepositoryException
+    {
+        final Repository repository = repositoryRegistry.getRepository( repositoryId );
+
+        // cannot do "!repository.isIndexable()" since we may be called to handle that config change (using events)!
+        // the repo might be already non-indexable, but the context would still exist!
+        if ( !isIndexingSupported( repository ) )
+        {
+            logSkippingRepositoryMessage( repository );
+
+            return;
+        }
+
+        if ( repository.getRepositoryKind().isFacetAvailable( GroupRepository.class ) )
+        {
+            // group repository
+            repositoryRegistry.getRepositoryWithFacet( repositoryId, GroupRepository.class );
+        }
+        else
+        {
+            repositoryRegistry.getRepositoryWithFacet( repositoryId, Repository.class );
+        }
+
+        File repoRoot = getRepositoryLocalStorageAsFile( repository );
+
+        // get context for repository, check is change needed
+        NexusIndexingContext ctx = getRepositoryIndexContext( repository );
+
+        boolean propagateChangesToGroupsOfRepository = false;
+
+        // remove context, if it already existed (ctx != null) and any of the following is true:
+        // is a group OR repo path changed OR we have an isIndexed transition happening
+        if ( ctx != null
+            && ( repository.getRepositoryKind().isFacetAvailable( GroupRepository.class )
+                || !ctx.getRepository().getAbsolutePath().equals( repoRoot.getAbsolutePath() )
+                || !repository.isIndexable() || ctx.isSearchable() != repository.isSearchable() ) )
+        {
+            // remove the context
+            removeRepositoryIndexContext( repositoryId, false );
+            ctx = null;
+            propagateChangesToGroupsOfRepository = true;
+        }
+
+        // add context, if it did not existed yet (ctx == null) or any of the following is true:
+        // is a group OR repo path changed OR we have an isIndexed transition happening
+        if ( repository.isIndexable() && ctx == null )
+        {
+            // recreate the context
+            addRepositoryIndexContext( repositoryId );
+            propagateChangesToGroupsOfRepository = true;
+        }
+
+        if ( propagateChangesToGroupsOfRepository )
+        {
+            // propagate changes to the repositor's groups (where it is a member)
+            // as a "stale" context would remain in the list returned by ContextMemberProvider
+            final List<GroupRepository> groupsOfRepository = repositoryRegistry.getGroupsOfRepository( repository );
+            for ( GroupRepository group : groupsOfRepository )
+            {
+                updateRepositoryIndexContext( group.getId() );
+            }
+        }
+    }
+
+    public synchronized NexusIndexingContext getRepositoryIndexContext( String repositoryId )
         throws NoSuchRepositoryException
     {
-        Repository repository = repositoryRegistry.getRepository( repositoryId );
-
+        final Repository repository = repositoryRegistry.getRepository( repositoryId );
         return getRepositoryIndexContext( repository );
     }
 
-    public IndexingContext getRepositoryIndexContext( Repository repository )
+    public synchronized NexusIndexingContext getRepositoryIndexContext( Repository repository )
     {
         // get context for repository
-        IndexingContext ctx = nexusIndexer.getIndexingContexts().get( getContextId( repository.getId() ) );
-
+        NexusIndexingContext ctx = indexingContexts.get( getContextId( repository.getId() ) );
         return ctx;
+    }
+
+    public synchronized List<NexusIndexingContext> getRepositoryIndexContexts()
+    {
+        return new ArrayList<NexusIndexingContext>( indexingContexts.values() );
     }
 
     public void setRepositoryIndexContextSearchable( String repositoryId, boolean searchable )
@@ -503,7 +515,7 @@ public class DefaultIndexerManager
             return;
         }
 
-        IndexingContext ctx = getRepositoryIndexContext( repository );
+        NexusIndexingContext ctx = getRepositoryIndexContext( repository );
 
         // do this only if we have contexts, otherwise be muted
         if ( ctx != null )
@@ -553,9 +565,9 @@ public class DefaultIndexerManager
     // Publish the used NexusIndexer
     // ----------------------------------------------------------------------------
 
-    protected NexusIndexer getNexusIndexer()
+    protected NexusIndexer getIndexer()
     {
-        return nexusIndexer;
+        return indexer;
     }
 
     // ----------------------------------------------------------------------------
@@ -593,77 +605,87 @@ public class DefaultIndexerManager
         // do the work
         // Maybe detect Merged context and NOT do the work? Everything works transparently, but still... a lot of calls
         // for nothing
-        IndexingContext context = getRepositoryIndexContext( repository );
-
+        final NexusIndexingContext context = getRepositoryIndexContext( repository );
         if ( context != null )
         {
-            // by calculating GAV we check wether the request is against a repo artifact at all
-            Gav gav = null;
-
-            gav = ( (MavenRepository) repository ).getGavCalculator().pathToGav( item.getRepositoryItemUid().getPath() );
-
-            // signatures and hashes are not considered for processing
-            // reason (NEXUS-814 related): the actual artifact and it's POM will (or already did)
-            // emitted events about modifying them
-            if ( gav == null || gav.isSignature() || gav.isHash() )
-            {
-                // we do not index these
-                return;
-            }
-
-            final RepositoryItemUidLock uidLock = item.getRepositoryItemUid().getLock();
-
-            uidLock.lock( Action.read );
-
+            lockInvolvedContexts( Collections.singletonList( context ) );
             try
             {
+                // by calculating GAV we check wether the request is against a repo artifact at all
+                Gav gav = null;
 
-                ArtifactContext ac = null;
+                gav =
+                    ( (MavenRepository) repository ).getGavCalculator().pathToGav(
+                        item.getRepositoryItemUid().getPath() );
 
-                // if we have a valid indexing context and have access to a File
-                if ( DefaultFSLocalRepositoryStorage.class.isAssignableFrom( repository.getLocalStorage().getClass() ) )
+                // signatures and hashes are not considered for processing
+                // reason (NEXUS-814 related): the actual artifact and it's POM will (or already did)
+                // emitted events about modifying them
+                if ( gav == null || gav.isSignature() || gav.isHash() )
                 {
-                    File file =
-                        ( (DefaultFSLocalRepositoryStorage) repository.getLocalStorage() ).getFileFromBase( repository,
-                            new ResourceStoreRequest( item ) );
+                    // we do not index these
+                    return;
+                }
 
-                    if ( file.exists() )
+                final RepositoryItemUidLock uidLock = item.getRepositoryItemUid().getLock();
+
+                uidLock.lock( Action.read );
+
+                try
+                {
+
+                    ArtifactContext ac = null;
+
+                    // if we have a valid indexing context and have access to a File
+                    if ( DefaultFSLocalRepositoryStorage.class.isAssignableFrom( repository.getLocalStorage().getClass() ) )
                     {
-                        try
-                        {
-                            ac = artifactContextProducer.getArtifactContext( context, file );
-                        }
-                        catch ( IllegalArgumentException e )
-                        {
-                            // cannot create artifact context, forget it
-                            return;
-                        }
+                        File file =
+                            ( (DefaultFSLocalRepositoryStorage) repository.getLocalStorage() ).getFileFromBase(
+                                repository, new ResourceStoreRequest( item ) );
 
-                        if ( ac != null )
+                        if ( file.exists() )
                         {
-                            if ( getLogger().isDebugEnabled() )
+                            try
                             {
-                                getLogger().debug( "The ArtifactContext created from file is fine, continuing." );
+                                ac = artifactContextProducer.getArtifactContext( context, file );
+                            }
+                            catch ( IllegalArgumentException e )
+                            {
+                                // cannot create artifact context, forget it
+                                return;
                             }
 
-                            ArtifactInfo ai = ac.getArtifactInfo();
-
-                            if ( ai.sha1 == null )
+                            if ( ac != null )
                             {
-                                // if repo has no sha1 checksum, odd nexus one
-                                ai.sha1 =
-                                    item.getRepositoryItemAttributes().get( DigestCalculatingInspector.DIGEST_SHA1_KEY );
+                                if ( getLogger().isDebugEnabled() )
+                                {
+                                    getLogger().debug( "The ArtifactContext created from file is fine, continuing." );
+                                }
+
+                                ArtifactInfo ai = ac.getArtifactInfo();
+
+                                if ( ai.sha1 == null )
+                                {
+                                    // if repo has no sha1 checksum, odd nexus one
+                                    ai.sha1 =
+                                        item.getRepositoryItemAttributes().get(
+                                            DigestCalculatingInspector.DIGEST_SHA1_KEY );
+                                }
                             }
                         }
                     }
-                }
 
-                // and finally: index it
-                getNexusIndexer().addArtifactToIndex( ac, context );
+                    // and finally: index it
+                    getIndexer().addArtifactsToIndex( Collections.singleton( ac ), context );
+                }
+                finally
+                {
+                    uidLock.unlock();
+                }
             }
             finally
             {
-                uidLock.unlock();
+                unlockInvolvedContexts( Collections.singletonList( context ) );
             }
         }
     }
@@ -698,82 +720,91 @@ public class DefaultIndexerManager
         }
 
         // do the work
-        IndexingContext context = getRepositoryIndexContext( repository );
-
+        final NexusIndexingContext context = getRepositoryIndexContext( repository );
         if ( context != null )
         {
-            // by calculating GAV we check wether the request is against a repo artifact at all
-            Gav gav = null;
-
-            gav = ( (MavenRepository) repository ).getGavCalculator().pathToGav( item.getRepositoryItemUid().getPath() );
-
-            // signatures and hashes are not considered for processing
-            // reason (NEXUS-814 related): the actual artifact and it's POM will (or already did)
-            // emitted events about modifying them
-            if ( gav == null || gav.isSignature() || gav.isHash() )
-            {
-                return;
-            }
-
-            ArtifactInfo ai =
-                new ArtifactInfo( context.getRepositoryId(), gav.getGroupId(), gav.getArtifactId(),
-                    gav.getBaseVersion(), gav.getClassifier() );
-
-            // store extension if classifier is not empty
-            if ( !StringUtils.isEmpty( ai.classifier ) )
-            {
-                ai.packaging = gav.getExtension();
-            }
-
-            ArtifactContext ac = null;
-
-            // we need to convert Nexus Gav to Indexer Gav
-            org.apache.maven.index.artifact.Gav igav = GavUtils.convert( gav );
-
+            lockInvolvedContexts( Collections.singletonList( context ) );
             try
             {
-                ac = new ArtifactContext( null, null, null, ai, igav );
-            }
-            catch ( IllegalArgumentException e )
-            {
-                // ac cannot be created, just forget it being indexed
-                return;
-            }
+                // by calculating GAV we check wether the request is against a repo artifact at all
+                Gav gav = null;
 
-            // remove file from index
-            if ( getLogger().isDebugEnabled() )
-            {
-                getLogger().debug(
-                    "Deleting artifact " + ai.groupId + ":" + ai.artifactId + ":" + ai.version
-                        + " from index (DELETE)." );
-            }
+                gav =
+                    ( (MavenRepository) repository ).getGavCalculator().pathToGav(
+                        item.getRepositoryItemUid().getPath() );
 
-            // NEXUS-814: we should not delete always
-            if ( !item.getItemContext().containsKey( SnapshotRemover.MORE_TS_SNAPSHOTS_EXISTS_FOR_GAV ) )
-            {
-                final RepositoryItemUidLock uidLock = item.getRepositoryItemUid().getLock();
+                // signatures and hashes are not considered for processing
+                // reason (NEXUS-814 related): the actual artifact and it's POM will (or already did)
+                // emitted events about modifying them
+                if ( gav == null || gav.isSignature() || gav.isHash() )
+                {
+                    return;
+                }
 
-                uidLock.lock( Action.read );
+                ArtifactInfo ai =
+                    new ArtifactInfo( context.getRepositoryId(), gav.getGroupId(), gav.getArtifactId(),
+                        gav.getBaseVersion(), gav.getClassifier() );
+
+                // store extension if classifier is not empty
+                if ( !StringUtils.isEmpty( ai.classifier ) )
+                {
+                    ai.packaging = gav.getExtension();
+                }
+
+                ArtifactContext ac = null;
+
+                // we need to convert Nexus Gav to NexusIndexer Gav
+                org.apache.maven.index.artifact.Gav igav = GavUtils.convert( gav );
 
                 try
                 {
-                    getNexusIndexer().deleteArtifactFromIndex( ac, context );
+                    ac = new ArtifactContext( null, null, null, ai, igav );
                 }
-                finally
+                catch ( IllegalArgumentException e )
                 {
-                    uidLock.unlock();
+                    // ac cannot be created, just forget it being indexed
+                    return;
                 }
-            }
-            else
-            {
-                // do NOT remove file from index
+
+                // remove file from index
                 if ( getLogger().isDebugEnabled() )
                 {
                     getLogger().debug(
-                        "NOT deleting artifact " + ac.getArtifactInfo().groupId + ":" + ac.getArtifactInfo().artifactId
-                            + ":" + ac.getArtifactInfo().version
-                            + " from index (DELETE), since it is a timestamped snapshot and more builds exists." );
+                        "Deleting artifact " + ai.groupId + ":" + ai.artifactId + ":" + ai.version
+                            + " from index (DELETE)." );
                 }
+
+                // NEXUS-814: we should not delete always
+                if ( !item.getItemContext().containsKey( SnapshotRemover.MORE_TS_SNAPSHOTS_EXISTS_FOR_GAV ) )
+                {
+                    final RepositoryItemUidLock uidLock = item.getRepositoryItemUid().getLock();
+
+                    uidLock.lock( Action.read );
+
+                    try
+                    {
+                        getIndexer().deleteArtifactsFromIndex( Collections.singleton( ac ), context );
+                    }
+                    finally
+                    {
+                        uidLock.unlock();
+                    }
+                }
+                else
+                {
+                    // do NOT remove file from index
+                    if ( getLogger().isDebugEnabled() )
+                    {
+                        getLogger().debug(
+                            "NOT deleting artifact " + ac.getArtifactInfo().groupId + ":"
+                                + ac.getArtifactInfo().artifactId + ":" + ac.getArtifactInfo().version
+                                + " from index (DELETE), since it is a timestamped snapshot and more builds exists." );
+                    }
+                }
+            }
+            finally
+            {
+                unlockInvolvedContexts( Collections.singletonList( context ) );
             }
         }
     }
@@ -893,46 +924,48 @@ public class DefaultIndexerManager
             return;
         }
 
-        if ( isAlreadyBeingIndexed( repository.getId() ) )
+        final NexusIndexingContext context = getRepositoryIndexContext( repository );
+
+        if ( isAlreadyBeingIndexed( context ) )
         {
             logAlreadyBeingIndexed( repository.getId(), "re-indexing" );
             return;
         }
 
-        Lock lock = getLock( repository.getId() ).writeLock();
-        lock.lock();
-
+        context.getLock().writeLock().lock();
         try
         {
-            IndexingContext context = getRepositoryIndexContext( repository );
-
-            if ( fullReindex )
+            markAlreadyBeingIndexed( context );
+            try
             {
-                TaskUtil.checkInterruption();
+                if ( fullReindex )
+                {
+                    TaskUtil.checkInterruption();
+                    context.purge();
+                    deleteIndexItems( repository );
+                }
 
-                context.purge();
+                if ( repository.getRepositoryKind().isFacetAvailable( ProxyRepository.class ) )
+                {
+                    TaskUtil.checkInterruption();
+                    downloadRepositoryIndex( repository.adaptToFacet( ProxyRepository.class ), fullReindex );
+                }
 
-                deleteIndexItems( repository );
+                if ( !repository.getRepositoryKind().isFacetAvailable( GroupRepository.class ) )
+                {
+                    TaskUtil.checkInterruption();
+                    // update always true, since we manually manage ctx purge
+                    getIndexer().scan( context, fromPath, null, true );
+                }
             }
-
-            if ( repository.getRepositoryKind().isFacetAvailable( ProxyRepository.class ) )
+            finally
             {
-                TaskUtil.checkInterruption();
-
-                downloadRepositoryIndex( repository.adaptToFacet( ProxyRepository.class ), fullReindex );
-            }
-
-            if ( !repository.getRepositoryKind().isFacetAvailable( GroupRepository.class ) )
-            {
-                TaskUtil.checkInterruption();
-
-                // update always true, since we manually manage ctx purge
-                nexusIndexer.scan( context, fromPath, null, true );
+                unmarkAlreadyBeingIndexed( context );
             }
         }
         finally
         {
-            lock.unlock();
+            context.getLock().writeLock().unlock();
         }
     }
 
@@ -1029,97 +1062,105 @@ public class DefaultIndexerManager
             return false;
         }
 
-        if ( isAlreadyBeingIndexed( repository.getId() ) )
+        final NexusIndexingContext context = getRepositoryIndexContext( repository );
+
+        if ( isAlreadyBeingIndexed( context ) )
         {
             logAlreadyBeingIndexed( repository.getId(), "downloading index" );
             return false;
         }
 
-        MavenProxyRepository mpr = repository.adaptToFacet( MavenProxyRepository.class );
-
-        Lock lock = getLock( repository.getId() ).writeLock();
-        lock.lock();
-
+        context.getLock().writeLock().lock();
         try
         {
-            TaskUtil.checkInterruption();
-
-            // just keep the context 'out of service' while indexing, will be added at end
-            boolean shouldDownloadRemoteIndex = mpr.isDownloadRemoteIndexes();
-
-            boolean hasRemoteIndex = false;
-
-            if ( shouldDownloadRemoteIndex )
+            markAlreadyBeingIndexed( context );
+            try
             {
-                try
-                {
-                    getLogger().info(
-                        RepositoryStringUtils.getFormattedMessage( "Trying to get remote index for repository %s",
-                            repository ) );
+                TaskUtil.checkInterruption();
+                final MavenProxyRepository mpr = repository.adaptToFacet( MavenProxyRepository.class );
 
-                    hasRemoteIndex = updateRemoteIndex( repository, forceFullUpdate );
+                // just keep the context 'out of service' while indexing, will be added at end
+                boolean shouldDownloadRemoteIndex = mpr.isDownloadRemoteIndexes();
 
-                    if ( hasRemoteIndex )
-                    {
-                        getLogger().info(
-                            RepositoryStringUtils.getFormattedMessage(
-                                "Remote indexes updated successfully for repository %s", repository ) );
-                    }
-                    else
-                    {
-                        getLogger().info(
-                            RepositoryStringUtils.getFormattedMessage(
-                                "Remote indexes unchanged (no update needed) for repository %s", repository ) );
-                    }
-                }
-                catch ( TaskInterruptedException e )
+                boolean hasRemoteIndex = false;
+
+                if ( shouldDownloadRemoteIndex )
                 {
-                    getLogger().warn(
-                        RepositoryStringUtils.getFormattedMessage(
-                            "Cannot fetch remote index for repository %s, task cancelled.", repository ) );
-                }
-                catch ( FileNotFoundException e )
-                {
-                    // here, FileNotFoundException literally means ResourceFetcher -- that is HTTP based -- hit a 404 on
-                    // remote, so we neglect this, this is not an error state actually
-                    if ( getLogger().isDebugEnabled() )
+                    try
                     {
                         getLogger().info(
-                            RepositoryStringUtils.getFormattedMessage(
-                                "Cannot fetch remote index for repository %s as it does not publish indexes.",
-                                repository ), e );
-                    }
-                    else
-                    {
-                        getLogger().info(
-                            RepositoryStringUtils.getFormattedMessage(
-                                "Cannot fetch remote index for repository %s as it does not publish indexes.",
+                            RepositoryStringUtils.getFormattedMessage( "Trying to get remote index for repository %s",
                                 repository ) );
+
+                        hasRemoteIndex = updateRemoteIndex( repository, forceFullUpdate );
+
+                        if ( hasRemoteIndex )
+                        {
+                            getLogger().info(
+                                RepositoryStringUtils.getFormattedMessage(
+                                    "Remote indexes updated successfully for repository %s", repository ) );
+                        }
+                        else
+                        {
+                            getLogger().info(
+                                RepositoryStringUtils.getFormattedMessage(
+                                    "Remote indexes unchanged (no update needed) for repository %s", repository ) );
+                        }
+                    }
+                    catch ( TaskInterruptedException e )
+                    {
+                        getLogger().warn(
+                            RepositoryStringUtils.getFormattedMessage(
+                                "Cannot fetch remote index for repository %s, task cancelled.", repository ) );
+                    }
+                    catch ( FileNotFoundException e )
+                    {
+                        // here, FileNotFoundException literally means ResourceFetcher -- that is HTTP based -- hit a
+                        // 404 on
+                        // remote, so we neglect this, this is not an error state actually
+                        if ( getLogger().isDebugEnabled() )
+                        {
+                            getLogger().info(
+                                RepositoryStringUtils.getFormattedMessage(
+                                    "Cannot fetch remote index for repository %s as it does not publish indexes.",
+                                    repository ), e );
+                        }
+                        else
+                        {
+                            getLogger().info(
+                                RepositoryStringUtils.getFormattedMessage(
+                                    "Cannot fetch remote index for repository %s as it does not publish indexes.",
+                                    repository ) );
+                        }
+                    }
+                    catch ( IOException e )
+                    {
+                        getLogger().warn(
+                            RepositoryStringUtils.getFormattedMessage(
+                                "Cannot fetch remote index for repository %s due to IO problem.", repository ), e );
+                        throw e;
+                    }
+                    catch ( Exception e )
+                    {
+                        final String message =
+                            RepositoryStringUtils.getFormattedMessage(
+                                "Cannot fetch remote index for repository %s, error occurred.", repository );
+                        getLogger().warn( message, e );
+                        throw new IOException( message, e );
                     }
                 }
-                catch ( IOException e )
-                {
-                    getLogger().warn(
-                        RepositoryStringUtils.getFormattedMessage(
-                            "Cannot fetch remote index for repository %s due to IO problem.", repository ), e );
-                    throw e;
-                }
-                catch ( Exception e )
-                {
-                    final String message =
-                        RepositoryStringUtils.getFormattedMessage(
-                            "Cannot fetch remote index for repository %s, error occurred.", repository );
-                    getLogger().warn( message, e );
-                    throw new IOException( message, e );
-                }
+
+                return hasRemoteIndex;
+
             }
-
-            return hasRemoteIndex;
-
+            finally
+            {
+                unmarkAlreadyBeingIndexed( context );
+            }
         }
         finally
         {
-            lock.unlock();
+            context.getLock().writeLock().unlock();
         }
     }
 
@@ -1131,7 +1172,7 @@ public class DefaultIndexerManager
         // this will force remote check for newer files
         repository.expireCaches( new ResourceStoreRequest( PUBLISHING_PATH_PREFIX ) );
 
-        IndexingContext context = getRepositoryIndexContext( repository );
+        NexusIndexingContext context = getRepositoryIndexContext( repository );
 
         IndexUpdateRequest updateRequest = new IndexUpdateRequest( context, new ResourceFetcher()
         {
@@ -1184,7 +1225,13 @@ public class DefaultIndexerManager
             }
         } );
 
+        // index/central-ctx/cache
+        final File cacheDir = new File( new File( getWorkingDirectory(), getContextId( repository.getId() ) ), "cache" );
+        cacheDir.mkdirs();
+
         updateRequest.setForceFullUpdate( forceFullUpdate );
+        updateRequest.setCacheOnly( false );
+        updateRequest.setLocalIndexCacheDir( cacheDir );
 
         if ( repository instanceof MavenRepository )
         {
@@ -1318,82 +1365,84 @@ public class DefaultIndexerManager
             return;
         }
 
-        if ( isAlreadyBeingIndexed( repository.getId() ) )
+        final NexusIndexingContext context = getRepositoryIndexContext( repository );
+
+        if ( isAlreadyBeingIndexed( context ) )
         {
             logAlreadyBeingIndexed( repository.getId(), "publishing index" );
             return;
         }
 
-        File targetDir = null;
-
-        Lock lock = getLock( repository.getId() ).readLock();
-        lock.lock();
-
+        lockInvolvedContexts( Collections.singletonList( context ) );
         try
         {
-            TaskUtil.checkInterruption();
-
-            getLogger().info( "Publishing index for repository " + repository.getId() );
-
-            IndexingContext context = getRepositoryIndexContext( repository );
-
-            targetDir = new File( getTempDirectory(), "nx-index-" + Long.toHexString( System.nanoTime() ) );
-
-            if ( !targetDir.mkdirs() )
+            File targetDir = null;
+            try
             {
-                throw new IOException( "Could not create temp dir for packing indexes: " + targetDir );
-            }
+                TaskUtil.checkInterruption();
 
-            IndexPackingRequest packReq = new IndexPackingRequest( context, targetDir );
-            packReq.setCreateIncrementalChunks( true );
+                getLogger().info( "Publishing index for repository " + repository.getId() );
 
-            // not publishing legacy format anymore
-            packReq.setFormats( Arrays.asList( IndexFormat.FORMAT_V1 ) );
-            indexPacker.packIndex( packReq );
+                targetDir = new File( getTempDirectory(), "nx-index-" + Long.toHexString( System.nanoTime() ) );
 
-            File[] files = targetDir.listFiles();
-
-            if ( files != null )
-            {
-                for ( File file : files )
+                if ( !targetDir.mkdirs() )
                 {
-                    TaskUtil.checkInterruption();
+                    throw new IOException( "Could not create temp dir for packing indexes: " + targetDir );
+                }
 
-                    storeIndexItem( repository, file, context );
+                IndexPackingRequest packReq = new IndexPackingRequest( context, targetDir );
+                packReq.setCreateIncrementalChunks( true );
+
+                // not publishing legacy format anymore
+                packReq.setFormats( Arrays.asList( IndexFormat.FORMAT_V1 ) );
+                indexPacker.packIndex( packReq );
+
+                File[] files = targetDir.listFiles();
+
+                if ( files != null )
+                {
+                    for ( File file : files )
+                    {
+                        TaskUtil.checkInterruption();
+
+                        storeIndexItem( repository, file, context );
+                    }
+                }
+            }
+            finally
+            {
+                Exception lastException = null;
+
+                if ( targetDir != null )
+                {
+                    try
+                    {
+                        if ( getLogger().isDebugEnabled() )
+                        {
+                            getLogger().debug( "Cleanup of temp files..." );
+                        }
+
+                        FileUtils.deleteDirectory( targetDir );
+                    }
+                    catch ( IOException e )
+                    {
+                        lastException = e;
+
+                        getLogger().warn( "Cleanup of temp files FAILED...", e );
+                    }
+                }
+
+                if ( lastException != null )
+                {
+                    IOException eek = new IOException( lastException );
+
+                    throw eek;
                 }
             }
         }
         finally
         {
-            lock.unlock();
-
-            Exception lastException = null;
-
-            if ( targetDir != null )
-            {
-                try
-                {
-                    if ( getLogger().isDebugEnabled() )
-                    {
-                        getLogger().debug( "Cleanup of temp files..." );
-                    }
-
-                    FileUtils.deleteDirectory( targetDir );
-                }
-                catch ( IOException e )
-                {
-                    lastException = e;
-
-                    getLogger().warn( "Cleanup of temp files FAILED...", e );
-                }
-            }
-
-            if ( lastException != null )
-            {
-                IOException eek = new IOException( lastException );
-
-                throw eek;
-            }
+            unlockInvolvedContexts( Collections.singletonList( context ) );
         }
     }
 
@@ -1416,7 +1465,7 @@ public class DefaultIndexerManager
         }
     }
 
-    protected void storeIndexItem( Repository repository, File file, IndexingContext context )
+    protected void storeIndexItem( Repository repository, File file, NexusIndexingContext context )
     {
         String path = PUBLISHING_PATH_PREFIX + "/" + file.getName();
 
@@ -1539,15 +1588,20 @@ public class DefaultIndexerManager
         }
 
         // local
-        IndexingContext context = getRepositoryIndexContext( repository );
-
-        TaskUtil.checkInterruption();
-
-        if ( context != null )
+        final NexusIndexingContext context = getRepositoryIndexContext( repository );
+        lockInvolvedContexts( Collections.singletonList( context ) );
+        try
         {
-            getLogger().debug( "Optimizing local index context for repository: " + repository.getId() );
-
-            context.optimize();
+            TaskUtil.checkInterruption();
+            if ( context != null )
+            {
+                getLogger().debug( "Optimizing local index context for repository: " + repository.getId() );
+                context.optimize();
+            }
+        }
+        finally
+        {
+            unlockInvolvedContexts( Collections.singletonList( context ) );
         }
     }
 
@@ -1558,93 +1612,210 @@ public class DefaultIndexerManager
     public Collection<ArtifactInfo> identifyArtifact( Field field, String data )
         throws IOException
     {
-        return nexusIndexer.identify( field, data );
+        final Query query = constructQuery( field, new SourcedSearchExpression( data ) );
+        final List<IndexingContext> allContext = new ArrayList<IndexingContext>( getInvolvedContexts() );
+        // this will be protected by the fact that protected contexts are used, so read locks will be applied
+        // during IndexerSearchers are acquired, and will be unlocked when released
+        return getIndexer().identify( query, allContext );
     }
 
     // ----------------------------------------------------------------------------
     // Combined searching
     // ----------------------------------------------------------------------------
 
+    /**
+     * This method returns the "involved" collection of indexing contexts, and basically "simulates" what
+     * {@link NexusIndexer} actually did in "non targeted" mode, but it is passing in the "wrapped", hence, lock
+     * protected contexts instead of the "naked" ones held by {@link NexusIndexer}.
+     * 
+     * @param repositoryId
+     * @return
+     * @throws NoSuchRepositoryException
+     */
+    protected List<NexusIndexingContext> getInvolvedContexts()
+    {
+        final ArrayList<NexusIndexingContext> result = new ArrayList<NexusIndexingContext>();
+        for ( NexusIndexingContext ctx : getRepositoryIndexContexts() )
+        {
+            // ctx.isSearchable is what NexusIndexer does
+            // but, we also skip repositories that are currently being indexed
+            if ( ctx.isSearchable() && !isAlreadyBeingIndexed( ctx ) )
+            {
+                result.add( ctx );
+            }
+        }
+        if ( result.isEmpty() )
+        {
+            // to prevent NexusIndexer kicking in, we add the "empty" context
+            result.add( EMPTY_CTX );
+        }
+        return result;
+    }
+
+    /**
+     * This method returns the "involved" collection of indexing contexts, and basically "simulates" what
+     * {@link NexusIndexer} actually did in "non targeted" mode, but it is passing in the "wrapped", hence, lock
+     * protected contexts instead of the "naked" ones held by {@link NexusIndexer}.
+     * 
+     * @param repositoryId
+     * @return
+     * @throws NoSuchRepositoryException
+     */
+    protected List<NexusIndexingContext> getInvolvedContexts( final String repositoryId )
+        throws NoSuchRepositoryException
+    {
+        if ( StringUtils.isBlank( repositoryId ) )
+        {
+            return getInvolvedContexts();
+        }
+        else
+        {
+            final NexusIndexingContext ctx = getRepositoryIndexContext( repositoryId );
+            if ( ctx == null || isAlreadyBeingIndexed( ctx ) )
+            {
+                return Collections.singletonList( EMPTY_CTX );
+            }
+            else
+            {
+                return Collections.singletonList( ctx );
+            }
+        }
+    }
+
+    /**
+     * Shared-locks all involved contexts. Note: this method while might seen as "deadlock prone" actually is not, and
+     * it is due to the fact it uses shared locks on multiple contexts, while methods doing exclusive locks always
+     * handle one single context. That means, that while there is no deadlock possible to happen, still, this method
+     * might block during the time that one involved context is exclusively locked. This method should be used in
+     * search-related method only, as this performs shared locking.
+     * 
+     * @param ctxs
+     */
+    protected void lockInvolvedContexts( final List<NexusIndexingContext> ctxs )
+    {
+        final ArrayList<NexusIndexingContext> lockedCtxs = new ArrayList<NexusIndexingContext>( ctxs.size() );
+        for ( NexusIndexingContext ctx : ctxs )
+        {
+            try
+            {
+                ctx.getLock().readLock().lock();
+                lockedCtxs.add( ctx );
+            }
+            catch ( Exception e )
+            {
+                getLogger().error( "Bug: cannot lock involved context: " + ctx.getId(), e );
+                break;
+            }
+        }
+        if ( lockedCtxs.size() != ctxs.size() )
+        {
+            unlockInvolvedContexts( lockedCtxs );
+            throw new IllegalStateException(
+                "Could not lock all the involved contexts! Please see prior log messages for details. The acquired shared-locks were released succesfully." );
+        }
+    }
+
+    /**
+     * Unlocks all involved contexts. This method should be used in search-related method only, as this performs shared
+     * unlocking.
+     * 
+     * @param ctxs
+     */
+    protected void unlockInvolvedContexts( final List<NexusIndexingContext> ctxs )
+    {
+        final ArrayList<NexusIndexingContext> unlockedCtxs = new ArrayList<NexusIndexingContext>( ctxs.size() );
+        for ( NexusIndexingContext ctx : ctxs )
+        {
+            try
+            {
+                ctx.getLock().readLock().unlock();
+                unlockedCtxs.add( ctx );
+            }
+            catch ( Exception e )
+            {
+                getLogger().error( "Bug: cannot unlock involved context: " + ctx.getId(), e );
+            }
+        }
+        if ( unlockedCtxs.size() != ctxs.size() )
+        {
+            throw new IllegalStateException(
+                "Could not unlock all the involved contexts! Please see prior log messages for details." );
+        }
+    }
+
     @Deprecated
     public FlatSearchResponse searchArtifactFlat( String term, String repositoryId, Integer from, Integer count,
                                                   Integer hitLimit )
         throws NoSuchRepositoryException
     {
-        IndexingContext context = null;
-
-        if ( repositoryId != null )
-        {
-            context = getRepositoryIndexContext( repositoryId );
-        }
-
-        Query q1 = nexusIndexer.constructQuery( MAVEN.GROUP_ID, term, SearchType.SCORED );
-
-        Query q2 = nexusIndexer.constructQuery( MAVEN.ARTIFACT_ID, term, SearchType.SCORED );
-
-        BooleanQuery bq = new BooleanQuery();
-
-        bq.add( q1, BooleanClause.Occur.SHOULD );
-
-        bq.add( q2, BooleanClause.Occur.SHOULD );
-
-        FlatSearchRequest req = null;
-
-        if ( repositoryId == null )
-        {
-            req = new FlatSearchRequest( bq, ArtifactInfo.REPOSITORY_VERSION_COMPARATOR );
-        }
-        else
-        {
-            req = new FlatSearchRequest( bq, ArtifactInfo.REPOSITORY_VERSION_COMPARATOR );
-
-            req.getContexts().add( context );
-        }
-
-        // if ( from != null )
-        // {
-        // req.setStart( from );
-        // }
-
-        // MINDEXER-14: no hit limit anymore. But to make change least obtrusive, we set hitLimit as count 1st, and if
-        // user set count, it will override it anyway
-        if ( hitLimit != null )
-        {
-            req.setCount( hitLimit );
-        }
-
-        if ( count != null )
-        {
-            req.setCount( count );
-        }
-
-        // if ( hitLimit != null )
-        // {
-        // req._setResultHitLimit( hitLimit );
-        // }
-
+        final List<NexusIndexingContext> involvedContexts = getInvolvedContexts( repositoryId );
+        lockInvolvedContexts( involvedContexts );
         try
         {
-            FlatSearchResponse result = nexusIndexer.searchFlat( req );
+            Query q1 = constructQuery( MAVEN.GROUP_ID, new UserInputSearchExpression( term ) );
 
-            postprocessResults( result.getResults() );
+            Query q2 = constructQuery( MAVEN.ARTIFACT_ID, new UserInputSearchExpression( term ) );
 
-            return result;
-        }
-        catch ( BooleanQuery.TooManyClauses e )
-        {
-            if ( getLogger().isDebugEnabled() )
+            BooleanQuery bq = new BooleanQuery();
+
+            bq.add( q1, BooleanClause.Occur.SHOULD );
+
+            bq.add( q2, BooleanClause.Occur.SHOULD );
+
+            final FlatSearchRequest req = new FlatSearchRequest( bq, ArtifactInfo.REPOSITORY_VERSION_COMPARATOR );
+            req.getContexts().addAll( involvedContexts );
+
+            // if ( from != null )
+            // {
+            // req.setStart( from );
+            // }
+
+            // MINDEXER-14: no hit limit anymore. But to make change least obtrusive, we set hitLimit as count 1st, and
+            // if
+            // user set count, it will override it anyway
+            if ( hitLimit != null )
             {
-                getLogger().debug( "Too many clauses exception caught:", e );
+                req.setCount( hitLimit );
             }
 
-            // XXX: a hack, I am sending too many results by setting the totalHits value to -1!
-            return new FlatSearchResponse( req.getQuery(), -1, new HashSet<ArtifactInfo>() );
-        }
-        catch ( IOException e )
-        {
-            getLogger().error( "Got I/O exception while searching for query \"" + term + "\"", e );
+            if ( count != null )
+            {
+                req.setCount( count );
+            }
 
-            return new FlatSearchResponse( req.getQuery(), 0, new HashSet<ArtifactInfo>() );
+            // if ( hitLimit != null )
+            // {
+            // req._setResultHitLimit( hitLimit );
+            // }
+
+            try
+            {
+                FlatSearchResponse result = getIndexer().searchFlat( req );
+
+                postprocessResults( result.getResults() );
+
+                return result;
+            }
+            catch ( BooleanQuery.TooManyClauses e )
+            {
+                if ( getLogger().isDebugEnabled() )
+                {
+                    getLogger().debug( "Too many clauses exception caught:", e );
+                }
+
+                // XXX: a hack, I am sending too many results by setting the totalHits value to -1!
+                return new FlatSearchResponse( req.getQuery(), -1, new HashSet<ArtifactInfo>() );
+            }
+            catch ( IOException e )
+            {
+                getLogger().error( "Got I/O exception while searching for query \"" + term + "\"", e );
+
+                return new FlatSearchResponse( req.getQuery(), 0, new HashSet<ArtifactInfo>() );
+            }
+        }
+        finally
+        {
+            unlockInvolvedContexts( involvedContexts );
         }
     }
 
@@ -1653,78 +1824,70 @@ public class DefaultIndexerManager
                                                        Integer hitLimit )
         throws NoSuchRepositoryException
     {
-        IndexingContext context = null;
-
-        if ( repositoryId != null )
-        {
-            context = getRepositoryIndexContext( repositoryId );
-        }
-
-        if ( term.endsWith( ".class" ) )
-        {
-            term = term.substring( 0, term.length() - 6 );
-        }
-
-        Query q = nexusIndexer.constructQuery( MAVEN.CLASSNAMES, term, SearchType.SCORED );
-
-        FlatSearchRequest req = null;
-
-        if ( repositoryId == null )
-        {
-            req = new FlatSearchRequest( q, ArtifactInfo.REPOSITORY_VERSION_COMPARATOR );
-        }
-        else
-        {
-            req = new FlatSearchRequest( q, ArtifactInfo.REPOSITORY_VERSION_COMPARATOR );
-
-            req.getContexts().add( context );
-        }
-
-        // if ( from != null )
-        // {
-        // req.setStart( from );
-        // }
-
-        // MINDEXER-14: no hit limit anymore. But to make change least obtrusive, we set hitLimit as count 1st, and if
-        // user set count, it will override it anyway
-        if ( hitLimit != null )
-        {
-            req.setCount( hitLimit );
-        }
-
-        if ( count != null )
-        {
-            req.setCount( count );
-        }
-
-        // if ( hitLimit != null )
-        // {
-        // req._setResultHitLimit( hitLimit );
-        // }
-
+        final List<NexusIndexingContext> involvedContexts = getInvolvedContexts( repositoryId );
+        lockInvolvedContexts( involvedContexts );
         try
         {
-            FlatSearchResponse result = nexusIndexer.searchFlat( req );
-
-            postprocessResults( result.getResults() );
-
-            return result;
-        }
-        catch ( BooleanQuery.TooManyClauses e )
-        {
-            if ( getLogger().isDebugEnabled() )
+            if ( term.endsWith( ".class" ) )
             {
-                getLogger().debug( "Too many clauses exception caught:", e );
+                term = term.substring( 0, term.length() - 6 );
             }
 
-            // XXX: a hack, I am sending too many results by setting the totalHits value to -1!
-            return new FlatSearchResponse( req.getQuery(), -1, new HashSet<ArtifactInfo>() );
-        }
-        catch ( IOException e )
-        {
-            getLogger().error( "Got I/O exception while searching for query \"" + term + "\"", e );
+            final Query q = constructQuery( MAVEN.CLASSNAMES, new UserInputSearchExpression( term ) );
+            final FlatSearchRequest req = new FlatSearchRequest( q, ArtifactInfo.REPOSITORY_VERSION_COMPARATOR );
+            req.getContexts().addAll( involvedContexts );
 
-            return new FlatSearchResponse( req.getQuery(), 0, new HashSet<ArtifactInfo>() );
+            // if ( from != null )
+            // {
+            // req.setStart( from );
+            // }
+
+            // MINDEXER-14: no hit limit anymore. But to make change least obtrusive, we set hitLimit as count 1st, and
+            // if
+            // user set count, it will override it anyway
+            if ( hitLimit != null )
+            {
+                req.setCount( hitLimit );
+            }
+
+            if ( count != null )
+            {
+                req.setCount( count );
+            }
+
+            // if ( hitLimit != null )
+            // {
+            // req._setResultHitLimit( hitLimit );
+            // }
+
+            try
+            {
+                FlatSearchResponse result = getIndexer().searchFlat( req );
+
+                postprocessResults( result.getResults() );
+
+                return result;
+            }
+            catch ( BooleanQuery.TooManyClauses e )
+            {
+                if ( getLogger().isDebugEnabled() )
+                {
+                    getLogger().debug( "Too many clauses exception caught:", e );
+                }
+
+                // XXX: a hack, I am sending too many results by setting the totalHits value to -1!
+                return new FlatSearchResponse( req.getQuery(), -1, new HashSet<ArtifactInfo>() );
+            }
+            catch ( IOException e )
+            {
+                getLogger().error( "Got I/O exception while searching for query \"" + term + "\"", e );
+
+                return new FlatSearchResponse( req.getQuery(), 0, new HashSet<ArtifactInfo>() );
+            }
+        }
+        finally
+        {
+            unlockInvolvedContexts( involvedContexts );
         }
     }
 
@@ -1733,102 +1896,96 @@ public class DefaultIndexerManager
                                                   String repositoryId, Integer from, Integer count, Integer hitLimit )
         throws NoSuchRepositoryException
     {
-        if ( gTerm == null && aTerm == null && vTerm == null )
-        {
-            return new FlatSearchResponse( null, -1, new HashSet<ArtifactInfo>() );
-        }
-
-        IndexingContext context = null;
-
-        if ( repositoryId != null )
-        {
-            context = getRepositoryIndexContext( repositoryId );
-        }
-        BooleanQuery bq = new BooleanQuery();
-
-        if ( gTerm != null )
-        {
-            bq.add( constructQuery( MAVEN.GROUP_ID, gTerm, SearchType.SCORED ), BooleanClause.Occur.MUST );
-        }
-
-        if ( aTerm != null )
-        {
-            bq.add( constructQuery( MAVEN.ARTIFACT_ID, aTerm, SearchType.SCORED ), BooleanClause.Occur.MUST );
-        }
-
-        if ( vTerm != null )
-        {
-            bq.add( constructQuery( MAVEN.VERSION, vTerm, SearchType.SCORED ), BooleanClause.Occur.MUST );
-        }
-
-        if ( pTerm != null )
-        {
-            bq.add( constructQuery( MAVEN.PACKAGING, pTerm, SearchType.SCORED ), BooleanClause.Occur.MUST );
-        }
-
-        if ( cTerm != null )
-        {
-            bq.add( constructQuery( MAVEN.CLASSIFIER, cTerm, SearchType.SCORED ), BooleanClause.Occur.MUST );
-        }
-
-        FlatSearchRequest req = null;
-
-        if ( repositoryId == null )
-        {
-            req = new FlatSearchRequest( bq, ArtifactInfo.REPOSITORY_VERSION_COMPARATOR );
-        }
-        else
-        {
-            req = new FlatSearchRequest( bq, ArtifactInfo.REPOSITORY_VERSION_COMPARATOR );
-
-            req.getContexts().add( context );
-        }
-
-        // if ( from != null )
-        // {
-        // req.setStart( from );
-        // }
-
-        // MINDEXER-14: no hit limit anymore. But to make change least obtrusive, we set hitLimit as count 1st, and if
-        // user set count, it will override it anyway
-        if ( hitLimit != null )
-        {
-            req.setCount( hitLimit );
-        }
-
-        if ( count != null )
-        {
-            req.setCount( count );
-        }
-
-        // if ( hitLimit != null )
-        // {
-        // req._setResultHitLimit( hitLimit );
-        // }
-
+        final List<NexusIndexingContext> involvedContexts = getInvolvedContexts( repositoryId );
+        lockInvolvedContexts( involvedContexts );
         try
         {
-            FlatSearchResponse result = nexusIndexer.searchFlat( req );
-
-            postprocessResults( result.getResults() );
-
-            return result;
-        }
-        catch ( BooleanQuery.TooManyClauses e )
-        {
-            if ( getLogger().isDebugEnabled() )
+            if ( gTerm == null && aTerm == null && vTerm == null )
             {
-                getLogger().debug( "Too many clauses exception caught:", e );
+                return new FlatSearchResponse( null, -1, new HashSet<ArtifactInfo>() );
             }
 
-            // XXX: a hack, I am sending too many results by setting the totalHits value to -1!
-            return new FlatSearchResponse( req.getQuery(), -1, new HashSet<ArtifactInfo>() );
-        }
-        catch ( IOException e )
-        {
-            getLogger().error( "Got I/O exception while searching for query \"" + bq.toString() + "\"", e );
+            BooleanQuery bq = new BooleanQuery();
 
-            return new FlatSearchResponse( req.getQuery(), 0, new HashSet<ArtifactInfo>() );
+            if ( gTerm != null )
+            {
+                bq.add( constructQuery( MAVEN.GROUP_ID, gTerm, SearchType.SCORED ), BooleanClause.Occur.MUST );
+            }
+
+            if ( aTerm != null )
+            {
+                bq.add( constructQuery( MAVEN.ARTIFACT_ID, aTerm, SearchType.SCORED ), BooleanClause.Occur.MUST );
+            }
+
+            if ( vTerm != null )
+            {
+                bq.add( constructQuery( MAVEN.VERSION, vTerm, SearchType.SCORED ), BooleanClause.Occur.MUST );
+            }
+
+            if ( pTerm != null )
+            {
+                bq.add( constructQuery( MAVEN.PACKAGING, pTerm, SearchType.SCORED ), BooleanClause.Occur.MUST );
+            }
+
+            if ( cTerm != null )
+            {
+                bq.add( constructQuery( MAVEN.CLASSIFIER, cTerm, SearchType.SCORED ), BooleanClause.Occur.MUST );
+            }
+
+            final FlatSearchRequest req = new FlatSearchRequest( bq, ArtifactInfo.REPOSITORY_VERSION_COMPARATOR );
+            req.getContexts().addAll( involvedContexts );
+
+            // if ( from != null )
+            // {
+            // req.setStart( from );
+            // }
+
+            // MINDEXER-14: no hit limit anymore. But to make change least obtrusive, we set hitLimit as count 1st, and
+            // if
+            // user set count, it will override it anyway
+            if ( hitLimit != null )
+            {
+                req.setCount( hitLimit );
+            }
+
+            if ( count != null )
+            {
+                req.setCount( count );
+            }
+
+            // if ( hitLimit != null )
+            // {
+            // req._setResultHitLimit( hitLimit );
+            // }
+
+            try
+            {
+                FlatSearchResponse result = getIndexer().searchFlat( req );
+
+                postprocessResults( result.getResults() );
+
+                return result;
+            }
+            catch ( BooleanQuery.TooManyClauses e )
+            {
+                if ( getLogger().isDebugEnabled() )
+                {
+                    getLogger().debug( "Too many clauses exception caught:", e );
+                }
+
+                // XXX: a hack, I am sending too many results by setting the totalHits value to -1!
+                return new FlatSearchResponse( req.getQuery(), -1, new HashSet<ArtifactInfo>() );
+            }
+            catch ( IOException e )
+            {
+                getLogger().error( "Got I/O exception while searching for query \"" + bq.toString() + "\"", e );
+
+                return new FlatSearchResponse( req.getQuery(), 0, new HashSet<ArtifactInfo>() );
+            }
+        }
+        finally
+        {
+            unlockInvolvedContexts( involvedContexts );
         }
     }
 
@@ -1957,39 +2114,39 @@ public class DefaultIndexerManager
                                                        List<ArtifactInfoFilter> filters )
         throws NoSuchRepositoryException
     {
-        IteratorSearchRequest req = createRequest( query, from, count, hitLimit, uniqueRGA, filters );
-
-        if ( repositoryId != null )
-        {
-            IndexingContext context = getRepositoryIndexContext( repositoryId );
-
-            if ( context != null )
-            {
-                req.getContexts().add( context );
-            }
-        }
-
+        final List<NexusIndexingContext> involvedContexts = getInvolvedContexts( repositoryId );
+        lockInvolvedContexts( involvedContexts );
         try
         {
-            IteratorSearchResponse result = nexusIndexer.searchIterator( req );
+            final IteratorSearchRequest req = createRequest( query, from, count, hitLimit, uniqueRGA, filters );
+            req.getContexts().addAll( involvedContexts );
 
-            return result;
-        }
-        catch ( BooleanQuery.TooManyClauses e )
-        {
-            if ( getLogger().isDebugEnabled() )
+            try
             {
-                getLogger().debug( "Too many clauses exception caught:", e );
+                IteratorSearchResponse result = getIndexer().searchIterator( req );
+
+                return result;
             }
+            catch ( BooleanQuery.TooManyClauses e )
+            {
+                if ( getLogger().isDebugEnabled() )
+                {
+                    getLogger().debug( "Too many clauses exception caught:", e );
+                }
 
-            // XXX: a hack, I am sending too many results by setting the totalHits value to -1!
-            return IteratorSearchResponse.TOO_MANY_HITS_ITERATOR_SEARCH_RESPONSE;
+                // XXX: a hack, I am sending too many results by setting the totalHits value to -1!
+                return IteratorSearchResponse.TOO_MANY_HITS_ITERATOR_SEARCH_RESPONSE;
+            }
+            catch ( IOException e )
+            {
+                getLogger().error( "Got I/O exception while searching for query \"" + query.toString() + "\"", e );
+
+                return IteratorSearchResponse.EMPTY_ITERATOR_SEARCH_RESPONSE;
+            }
         }
-        catch ( IOException e )
+        finally
         {
-            getLogger().error( "Got I/O exception while searching for query \"" + query.toString() + "\"", e );
-
-            return IteratorSearchResponse.EMPTY_ITERATOR_SEARCH_RESPONSE;
+            unlockInvolvedContexts( involvedContexts );
         }
     }
 
@@ -1998,78 +2155,78 @@ public class DefaultIndexerManager
                                                           SearchType searchType, List<ArtifactInfoFilter> filters )
         throws NoSuchRepositoryException
     {
-        IndexingContext context = null;
-
-        if ( repositoryId != null )
-        {
-            context = getRepositoryIndexContext( repositoryId );
-        }
-
-        Query q1 = constructQuery( MAVEN.GROUP_ID, term, searchType );
-
-        q1.setBoost( 2.0f );
-
-        Query q2 = constructQuery( MAVEN.ARTIFACT_ID, term, searchType );
-
-        q2.setBoost( 2.0f );
-
-        BooleanQuery bq = new BooleanQuery();
-
-        bq.add( q1, BooleanClause.Occur.SHOULD );
-
-        bq.add( q2, BooleanClause.Occur.SHOULD );
-
-        // switch for "extended" keywords
-        // if ( false )
-        // {
-        // Query q3 = constructQuery( MAVEN.VERSION, term, searchType );
-        //
-        // Query q4 = constructQuery( MAVEN.CLASSIFIER, term, searchType );
-        //
-        // Query q5 = constructQuery( MAVEN.NAME, term, searchType );
-        //
-        // Query q6 = constructQuery( MAVEN.DESCRIPTION, term, searchType );
-        //
-        // bq.add( q3, BooleanClause.Occur.SHOULD );
-        //
-        // bq.add( q4, BooleanClause.Occur.SHOULD );
-        //
-        // bq.add( q5, BooleanClause.Occur.SHOULD );
-        //
-        // bq.add( q6, BooleanClause.Occur.SHOULD );
-        // }
-
-        IteratorSearchRequest req = createRequest( bq, from, count, hitLimit, uniqueRGA, filters );
-
-        req.getMatchHighlightRequests().add( new MatchHighlightRequest( MAVEN.GROUP_ID, q1, MatchHighlightMode.HTML ) );
-        req.getMatchHighlightRequests().add( new MatchHighlightRequest( MAVEN.ARTIFACT_ID, q2, MatchHighlightMode.HTML ) );
-
-        if ( repositoryId != null )
-        {
-            req.getContexts().add( context );
-        }
-
+        final List<NexusIndexingContext> involvedContexts = getInvolvedContexts( repositoryId );
+        lockInvolvedContexts( involvedContexts );
         try
         {
-            IteratorSearchResponse result = nexusIndexer.searchIterator( req );
+            Query q1 = constructQuery( MAVEN.GROUP_ID, term, searchType );
 
-            return result;
-        }
-        catch ( BooleanQuery.TooManyClauses e )
-        {
-            if ( getLogger().isDebugEnabled() )
+            q1.setBoost( 2.0f );
+
+            Query q2 = constructQuery( MAVEN.ARTIFACT_ID, term, searchType );
+
+            q2.setBoost( 2.0f );
+
+            BooleanQuery bq = new BooleanQuery();
+
+            bq.add( q1, BooleanClause.Occur.SHOULD );
+
+            bq.add( q2, BooleanClause.Occur.SHOULD );
+
+            // switch for "extended" keywords
+            // if ( false )
+            // {
+            // Query q3 = constructQuery( MAVEN.VERSION, term, searchType );
+            //
+            // Query q4 = constructQuery( MAVEN.CLASSIFIER, term, searchType );
+            //
+            // Query q5 = constructQuery( MAVEN.NAME, term, searchType );
+            //
+            // Query q6 = constructQuery( MAVEN.DESCRIPTION, term, searchType );
+            //
+            // bq.add( q3, BooleanClause.Occur.SHOULD );
+            //
+            // bq.add( q4, BooleanClause.Occur.SHOULD );
+            //
+            // bq.add( q5, BooleanClause.Occur.SHOULD );
+            //
+            // bq.add( q6, BooleanClause.Occur.SHOULD );
+            // }
+
+            final IteratorSearchRequest req = createRequest( bq, from, count, hitLimit, uniqueRGA, filters );
+            req.getContexts().addAll( involvedContexts );
+
+            req.getMatchHighlightRequests().add(
+                new MatchHighlightRequest( MAVEN.GROUP_ID, q1, MatchHighlightMode.HTML ) );
+            req.getMatchHighlightRequests().add(
+                new MatchHighlightRequest( MAVEN.ARTIFACT_ID, q2, MatchHighlightMode.HTML ) );
+
+            try
             {
-                getLogger().debug( "Too many clauses exception caught:", e );
+                IteratorSearchResponse result = getIndexer().searchIterator( req );
+
+                return result;
             }
+            catch ( BooleanQuery.TooManyClauses e )
+            {
+                if ( getLogger().isDebugEnabled() )
+                {
+                    getLogger().debug( "Too many clauses exception caught:", e );
+                }
 
-            // XXX: a hack, I am sending too many results by setting the totalHits value to -1!
-            return IteratorSearchResponse.TOO_MANY_HITS_ITERATOR_SEARCH_RESPONSE;
+                // XXX: a hack, I am sending too many results by setting the totalHits value to -1!
+                return IteratorSearchResponse.TOO_MANY_HITS_ITERATOR_SEARCH_RESPONSE;
+            }
+            catch ( IOException e )
+            {
+                getLogger().error( "Got I/O exception while searching for query \"" + bq.toString() + "\"", e );
+
+                return IteratorSearchResponse.empty( bq );
+            }
         }
-        catch ( IOException e )
+        finally
         {
-            getLogger().error( "Got I/O exception while searching for query \"" + bq.toString() + "\"", e );
-
-            return IteratorSearchResponse.EMPTY_ITERATOR_SEARCH_RESPONSE;
+            unlockInvolvedContexts( involvedContexts );
         }
     }
 
@@ -2078,50 +2235,49 @@ public class DefaultIndexerManager
                                                                List<ArtifactInfoFilter> filters )
         throws NoSuchRepositoryException
     {
-        IndexingContext context = null;
-
-        if ( repositoryId != null )
-        {
-            context = getRepositoryIndexContext( repositoryId );
-        }
-
-        if ( term.endsWith( ".class" ) )
-        {
-            term = term.substring( 0, term.length() - 6 );
-        }
-
-        Query q = constructQuery( MAVEN.CLASSNAMES, term, searchType );
-
-        IteratorSearchRequest req = createRequest( q, from, count, hitLimit, false, filters );
-
-        req.getMatchHighlightRequests().add( new MatchHighlightRequest( MAVEN.CLASSNAMES, q, MatchHighlightMode.HTML ) );
-
-        if ( repositoryId != null )
-        {
-            req.getContexts().add( context );
-        }
-
+        final List<NexusIndexingContext> involvedContexts = getInvolvedContexts( repositoryId );
+        lockInvolvedContexts( involvedContexts );
         try
         {
-            IteratorSearchResponse result = nexusIndexer.searchIterator( req );
-
-            return result;
-        }
-        catch ( BooleanQuery.TooManyClauses e )
-        {
-            if ( getLogger().isDebugEnabled() )
+            if ( term.endsWith( ".class" ) )
             {
-                getLogger().debug( "Too many clauses exception caught:", e );
+                term = term.substring( 0, term.length() - 6 );
             }
 
-            // XXX: a hack, I am sending too many results by setting the totalHits value to -1!
-            return IteratorSearchResponse.TOO_MANY_HITS_ITERATOR_SEARCH_RESPONSE;
-        }
-        catch ( IOException e )
-        {
-            getLogger().error( "Got I/O exception while searching for query \"" + q.toString() + "\"", e );
+            Query q = constructQuery( MAVEN.CLASSNAMES, term, searchType );
 
-            return IteratorSearchResponse.EMPTY_ITERATOR_SEARCH_RESPONSE;
+            final IteratorSearchRequest req = createRequest( q, from, count, hitLimit, false, filters );
+            req.getContexts().addAll( involvedContexts );
+
+            req.getMatchHighlightRequests().add(
+                new MatchHighlightRequest( MAVEN.CLASSNAMES, q, MatchHighlightMode.HTML ) );
+
+            try
+            {
+                IteratorSearchResponse result = getIndexer().searchIterator( req );
+
+                return result;
+            }
+            catch ( BooleanQuery.TooManyClauses e )
+            {
+                if ( getLogger().isDebugEnabled() )
+                {
+                    getLogger().debug( "Too many clauses exception caught:", e );
+                }
+
+                // XXX: a hack, I am sending too many results by setting the totalHits value to -1!
+                return IteratorSearchResponse.TOO_MANY_HITS_ITERATOR_SEARCH_RESPONSE;
+            }
+            catch ( IOException e )
+            {
+                getLogger().error( "Got I/O exception while searching for query \"" + q.toString() + "\"", e );
+
+                return IteratorSearchResponse.EMPTY_ITERATOR_SEARCH_RESPONSE;
+            }
+        }
+        finally
+        {
+            unlockInvolvedContexts( involvedContexts );
         }
     }
 
@@ -2131,91 +2287,89 @@ public class DefaultIndexerManager
                                                           SearchType searchType, List<ArtifactInfoFilter> filters )
         throws NoSuchRepositoryException
     {
-        if ( gTerm == null && aTerm == null && vTerm == null )
-        {
-            return IteratorSearchResponse.TOO_MANY_HITS_ITERATOR_SEARCH_RESPONSE;
-        }
-
-        IndexingContext context = null;
-
-        if ( repositoryId != null )
-        {
-            context = getRepositoryIndexContext( repositoryId );
-        }
-
-        BooleanQuery bq = new BooleanQuery();
-
-        if ( gTerm != null )
-        {
-            bq.add( constructQuery( MAVEN.GROUP_ID, gTerm, searchType ), BooleanClause.Occur.MUST );
-        }
-
-        if ( aTerm != null )
-        {
-            bq.add( constructQuery( MAVEN.ARTIFACT_ID, aTerm, searchType ), BooleanClause.Occur.MUST );
-        }
-
-        if ( vTerm != null )
-        {
-            bq.add( constructQuery( MAVEN.VERSION, vTerm, searchType ), BooleanClause.Occur.MUST );
-        }
-
-        if ( pTerm != null )
-        {
-            bq.add( constructQuery( MAVEN.PACKAGING, pTerm, searchType ), BooleanClause.Occur.MUST );
-        }
-
-        // we can do this, since we enforce (above) that one of GAV is not empty, so we already have queries added
-        // to bq
-        if ( cTerm != null )
-        {
-            if ( Field.NOT_PRESENT.equalsIgnoreCase( cTerm ) )
-            {
-                // bq.add( createQuery( MAVEN.CLASSIFIER, Field.NOT_PRESENT, SearchType.KEYWORD ),
-                // BooleanClause.Occur.MUST_NOT );
-                // This above should work too! -- TODO: fixit!
-                filters.add( 0, new ArtifactInfoFilter()
-                {
-                    public boolean accepts( IndexingContext ctx, ArtifactInfo ai )
-                    {
-                        return StringUtils.isBlank( ai.classifier );
-                    }
-                } );
-            }
-            else
-            {
-                bq.add( constructQuery( MAVEN.CLASSIFIER, cTerm, searchType ), BooleanClause.Occur.MUST );
-            }
-        }
-
-        IteratorSearchRequest req = createRequest( bq, from, count, hitLimit, uniqueRGA, filters );
-
-        if ( repositoryId != null )
-        {
-            req.getContexts().add( context );
-        }
-
+        final List<NexusIndexingContext> involvedContexts = getInvolvedContexts( repositoryId );
+        lockInvolvedContexts( involvedContexts );
         try
         {
-            IteratorSearchResponse result = nexusIndexer.searchIterator( req );
-
-            return result;
-        }
-        catch ( BooleanQuery.TooManyClauses e )
-        {
-            if ( getLogger().isDebugEnabled() )
+            if ( gTerm == null && aTerm == null && vTerm == null )
             {
-                getLogger().debug( "Too many clauses exception caught:", e );
+                return IteratorSearchResponse.TOO_MANY_HITS_ITERATOR_SEARCH_RESPONSE;
             }
 
-            // XXX: a hack, I am sending too many results by setting the totalHits value to -1!
-            return IteratorSearchResponse.TOO_MANY_HITS_ITERATOR_SEARCH_RESPONSE;
-        }
-        catch ( IOException e )
-        {
-            getLogger().error( "Got I/O exception while searching for query \"" + bq.toString() + "\"", e );
+            BooleanQuery bq = new BooleanQuery();
 
-            return IteratorSearchResponse.EMPTY_ITERATOR_SEARCH_RESPONSE;
+            if ( gTerm != null )
+            {
+                bq.add( constructQuery( MAVEN.GROUP_ID, gTerm, searchType ), BooleanClause.Occur.MUST );
+            }
+
+            if ( aTerm != null )
+            {
+                bq.add( constructQuery( MAVEN.ARTIFACT_ID, aTerm, searchType ), BooleanClause.Occur.MUST );
+            }
+
+            if ( vTerm != null )
+            {
+                bq.add( constructQuery( MAVEN.VERSION, vTerm, searchType ), BooleanClause.Occur.MUST );
+            }
+
+            if ( pTerm != null )
+            {
+                bq.add( constructQuery( MAVEN.PACKAGING, pTerm, searchType ), BooleanClause.Occur.MUST );
+            }
+
+            // we can do this, since we enforce (above) that one of GAV is not empty, so we already have queries added
+            // to bq
+            if ( cTerm != null )
+            {
+                if ( Field.NOT_PRESENT.equalsIgnoreCase( cTerm ) )
+                {
+                    // bq.add( createQuery( MAVEN.CLASSIFIER, Field.NOT_PRESENT, SearchType.KEYWORD ),
+                    // BooleanClause.Occur.MUST_NOT );
+                    // This above should work too! -- TODO: fixit!
+                    filters.add( 0, new ArtifactInfoFilter()
+                    {
+                        public boolean accepts( IndexingContext ctx, ArtifactInfo ai )
+                        {
+                            return StringUtils.isBlank( ai.classifier );
+                        }
+                    } );
+                }
+                else
+                {
+                    bq.add( constructQuery( MAVEN.CLASSIFIER, cTerm, searchType ), BooleanClause.Occur.MUST );
+                }
+            }
+
+            final IteratorSearchRequest req = createRequest( bq, from, count, hitLimit, uniqueRGA, filters );
+            req.getContexts().addAll( involvedContexts );
+
+            try
+            {
+                IteratorSearchResponse result = getIndexer().searchIterator( req );
+
+                return result;
+            }
+            catch ( BooleanQuery.TooManyClauses e )
+            {
+                if ( getLogger().isDebugEnabled() )
+                {
+                    getLogger().debug( "Too many clauses exception caught:", e );
+                }
+
+                // XXX: a hack, I am sending too many results by setting the totalHits value to -1!
+                return IteratorSearchResponse.TOO_MANY_HITS_ITERATOR_SEARCH_RESPONSE;
+            }
+            catch ( IOException e )
+            {
+                getLogger().error( "Got I/O exception while searching for query \"" + bq.toString() + "\"", e );
+
+                return IteratorSearchResponse.EMPTY_ITERATOR_SEARCH_RESPONSE;
+            }
+        }
+        finally
+        {
+            unlockInvolvedContexts( involvedContexts );
         }
     }
 
@@ -2224,55 +2378,53 @@ public class DefaultIndexerManager
                                                                       List<ArtifactInfoFilter> filters )
         throws NoSuchRepositoryException
     {
-        if ( sha1Checksum == null || sha1Checksum.length() > 40 )
-        {
-            return IteratorSearchResponse.TOO_MANY_HITS_ITERATOR_SEARCH_RESPONSE;
-        }
-
-        IndexingContext context = null;
-
-        if ( repositoryId != null )
-        {
-            context = getRepositoryIndexContext( repositoryId );
-        }
-
-        SearchType searchType = sha1Checksum.length() == 40 ? SearchType.EXACT : SearchType.SCORED;
-
-        BooleanQuery bq = new BooleanQuery();
-
-        if ( sha1Checksum != null )
-        {
-            bq.add( constructQuery( MAVEN.SHA1, sha1Checksum, searchType ), BooleanClause.Occur.MUST );
-        }
-
-        IteratorSearchRequest req = createRequest( bq, from, count, hitLimit, false, filters );
-
-        if ( repositoryId != null )
-        {
-            req.getContexts().add( context );
-        }
-
+        final List<NexusIndexingContext> involvedContexts = getInvolvedContexts( repositoryId );
+        lockInvolvedContexts( involvedContexts );
         try
         {
-            IteratorSearchResponse result = nexusIndexer.searchIterator( req );
-
-            return result;
-        }
-        catch ( BooleanQuery.TooManyClauses e )
-        {
-            if ( getLogger().isDebugEnabled() )
+            if ( sha1Checksum == null || sha1Checksum.length() > 40 )
             {
-                getLogger().debug( "Too many clauses exception caught:", e );
+                return IteratorSearchResponse.TOO_MANY_HITS_ITERATOR_SEARCH_RESPONSE;
             }
 
-            // XXX: a hack, I am sending too many results by setting the totalHits value to -1!
-            return IteratorSearchResponse.TOO_MANY_HITS_ITERATOR_SEARCH_RESPONSE;
-        }
-        catch ( IOException e )
-        {
-            getLogger().error( "Got I/O exception while searching for query \"" + bq.toString() + "\"", e );
+            SearchType searchType = sha1Checksum.length() == 40 ? SearchType.EXACT : SearchType.SCORED;
 
-            return IteratorSearchResponse.EMPTY_ITERATOR_SEARCH_RESPONSE;
+            BooleanQuery bq = new BooleanQuery();
+
+            if ( sha1Checksum != null )
+            {
+                bq.add( constructQuery( MAVEN.SHA1, sha1Checksum, searchType ), BooleanClause.Occur.MUST );
+            }
+
+            final IteratorSearchRequest req = createRequest( bq, from, count, hitLimit, false, filters );
+            req.getContexts().addAll( involvedContexts );
+
+            try
+            {
+                IteratorSearchResponse result = getIndexer().searchIterator( req );
+
+                return result;
+            }
+            catch ( BooleanQuery.TooManyClauses e )
+            {
+                if ( getLogger().isDebugEnabled() )
+                {
+                    getLogger().debug( "Too many clauses exception caught:", e );
+                }
+
+                // XXX: a hack, I am sending too many results by setting the totalHits value to -1!
+                return IteratorSearchResponse.TOO_MANY_HITS_ITERATOR_SEARCH_RESPONSE;
+            }
+            catch ( IOException e )
+            {
+                getLogger().error( "Got I/O exception while searching for query \"" + bq.toString() + "\"", e );
+
+                return IteratorSearchResponse.empty( bq );
+            }
+        }
+        finally
+        {
+            unlockInvolvedContexts( involvedContexts );
         }
     }
 
@@ -2284,13 +2436,13 @@ public class DefaultIndexerManager
     public Query constructQuery( Field field, String query, SearchType type )
         throws IllegalArgumentException
     {
-        return nexusIndexer.constructQuery( field, query, type );
+        return constructQuery( field, new SearchTypedStringSearchExpression( query, type ) );
     }
 
     public Query constructQuery( Field field, SearchExpression expression )
         throws IllegalArgumentException
     {
-        return nexusIndexer.constructQuery( field, expression );
+        return getIndexer().constructQuery( field, expression );
     }
 
     // ----------------------------------------------------------------------------
@@ -2307,11 +2459,26 @@ public class DefaultIndexerManager
                                final ArtifactInfoFilter artifactInfoFilter, final String repositoryId )
         throws NoSuchRepositoryException, IOException
     {
-        IndexingContext ctx = getRepositoryIndexContext( repositoryId );
+        final NexusIndexingContext ctx = getRepositoryIndexContext( repositoryId );
+        if ( ctx == null || isAlreadyBeingIndexed( ctx ) )
+        {
+            // null node is expected in cases when there is tree view asked for non existent repo
+            // this way we assure that "there os only one or none", otherwise
+            // way below tree view would produce us "merged tree" of all contexts
+            // using unprotected contexts
+            return null;
+        }
 
-        TreeViewRequest request = new TreeViewRequest( factory, path, hints, artifactInfoFilter, ctx );
-
-        return indexTreeView.listNodes( request );
+        lockInvolvedContexts( Collections.singletonList( ctx ) );
+        try
+        {
+            final TreeViewRequest request = new TreeViewRequest( factory, path, hints, artifactInfoFilter, ctx );
+            return indexTreeView.listNodes( request );
+        }
+        finally
+        {
+            unlockInvolvedContexts( Collections.singletonList( ctx ) );
+        }
     }
 
     // ----------------------------------------------------------------------------
@@ -2323,88 +2490,31 @@ public class DefaultIndexerManager
         return repoId + CTX_SUFIX;
     }
 
-    /**
-     * Creates a temporary empty indexing context, based on passed in basecontext.
-     * 
-     * @param baseContext
-     * @return
-     * @throws IOException
-     */
-    protected IndexingContext getTempContext( IndexingContext baseContext )
-        throws IOException
-    {
-        File indexDir = baseContext.getIndexDirectoryFile();
-
-        File dir = null;
-
-        if ( indexDir != null )
-        {
-            dir = indexDir.getParentFile();
-        }
-
-        File tmpFile = File.createTempFile( baseContext.getId() + "-tmp", "", dir );
-
-        File tmpDir = new File( tmpFile.getParentFile(), tmpFile.getName() + ".dir" );
-
-        if ( !tmpDir.mkdirs() )
-        {
-            throw new IOException( "Cannot create temporary directory: " + tmpDir );
-        }
-
-        FileUtils.forceDelete( tmpFile );
-
-        IndexingContext tmpContext = null;
-
-        FSDirectory directory = FSDirectory.open( tmpDir );
-
-        try
-        {
-            tmpContext = new DefaultIndexingContext( baseContext.getId() + "-tmp", //
-                baseContext.getRepositoryId(), //
-                baseContext.getRepository(), //
-                directory, //
-                baseContext.getRepositoryUrl(), //
-                baseContext.getIndexUpdateUrl(), //
-                baseContext.getIndexCreators(), //
-                true );
-        }
-        catch ( UnsupportedExistingLuceneIndexException e )
-        {
-            getLogger().error( e.getMessage(), e );
-
-            IOException eek = new IOException( e.getMessage(), e );
-
-            throw eek;
-        }
-
-        return tmpContext;
-    }
-
     // Lock management
 
-    protected synchronized ReadWriteLock getLock( String repositoryId )
-    {
-        if ( !locks.containsKey( repositoryId ) )
-        {
-            locks.put( repositoryId, new ReentrantReadWriteLock() );
-        }
+    /**
+     * Map of contexts being currently indexed. Access (both, R and W) should be made in synchronized way.
+     */
+    private final IdentityHashMap<NexusIndexingContext, Thread> indexedContexts =
+        new IdentityHashMap<NexusIndexingContext, Thread>( 50 );
 
-        return locks.get( repositoryId );
+    protected synchronized void markAlreadyBeingIndexed( final NexusIndexingContext context )
+    {
+        // TODO: is this all needed? Isn't simply the fact that context is exclusively locked mean that it is reindexed?
+        // Reindex/Update are the only methods acquiring exclusive lock!
+        indexedContexts.put( context, Thread.currentThread() );
     }
 
-    protected boolean isAlreadyBeingIndexed( String repositoryId )
+    protected synchronized void unmarkAlreadyBeingIndexed( final NexusIndexingContext context )
     {
-        Lock lock = getLock( repositoryId ).readLock();
+        // TODO: is this all needed? Isn't simply the fact that context is exclusively locked mean that it is reindexed?
+        // Reindex/Update are the only methods acquiring exclusive lock!
+        indexedContexts.remove( context );
+    }
 
-        boolean locked = lock.tryLock();
-
-        if ( locked )
-        {
-            lock.unlock();
-        }
-
-        // if I can't get a read lock means someone else has the write lock (index tasks do write lock)
-        return !locked;
+    protected synchronized boolean isAlreadyBeingIndexed( final NexusIndexingContext context )
+    {
+        return indexedContexts.containsKey( context ) && indexedContexts.get( context ) != Thread.currentThread();
     }
 
     private void logAlreadyBeingIndexed( final String repositoryId, final String processName )
@@ -2413,5 +2523,4 @@ public class DefaultIndexerManager
             String.format( "Repository '%s' is already in the process of being re-indexed. Skipping %s'.",
                 repositoryId, processName ) );
     }
-
 }
