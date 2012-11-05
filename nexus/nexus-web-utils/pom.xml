@@ -43,11 +43,6 @@
     </dependency>
 
     <dependency>
-      <groupId>org.sonatype.plexus</groupId>
-      <artifactId>plexus-restlet-bridge</artifactId>
-    </dependency>
-
-    <dependency>
       <groupId>org.sonatype.security</groupId>
       <artifactId>security-web</artifactId>
     </dependency>

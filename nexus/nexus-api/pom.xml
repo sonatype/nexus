@@ -66,6 +66,14 @@
       <artifactId>base-configuration</artifactId>
     </dependency>
 
+    <!--
+    Some plugins depend on this, which was coming from the Restlet integration, but with that in a plugin, we have to include it here to get it back into NX core.
+    -->
+    <dependency>
+      <groupId>commons-io</groupId>
+      <artifactId>commons-io</artifactId>
+    </dependency>
+
     <dependency>
       <groupId>org.sonatype.sisu</groupId>
       <artifactId>sisu-locks</artifactId>

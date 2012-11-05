@@ -13,7 +13,6 @@
 package org.sonatype.nexus.plugins.rest;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.util.Enumeration;
@@ -119,9 +118,7 @@ public abstract class AbstractDocumentationNexusResourceBundle
     public abstract String getPluginId();
 
     /**
-     * Deprecated, but left in place because old plugins still rely on this.
-     *
-     * @deprecated use getPathPrefix() method.
+     * @deprecated Use {@link #getPathPrefix()} instead.
      */
     @Deprecated
     protected String getUrlSnippet()
@@ -136,9 +133,10 @@ public abstract class AbstractDocumentationNexusResourceBundle
     }
 
     protected ZipFile getZipFile( final Class<?> clazz )
-        throws IOException, UnsupportedEncodingException
+        throws IOException
     {
         URL baseClass = clazz.getClassLoader().getResource( clazz.getName().replace( '.', '/' ) + ".class" );
+        assert baseClass != null;
         assert baseClass.getProtocol().equals( "jar" );
 
         String jarPath = baseClass.getPath().substring( 5, baseClass.getPath().indexOf( "!" ) );
