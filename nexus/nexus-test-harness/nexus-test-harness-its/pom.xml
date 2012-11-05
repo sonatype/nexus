@@ -28,6 +28,7 @@
 
   <properties>
     <cargo.version>1.3.0</cargo.version>
+    <sonar.jacoco.itReportPath>${project.build.directory}/jacoco-it.exec</sonar.jacoco.itReportPath>
   </properties>
 
   <build>
@@ -188,6 +189,9 @@
           <value>true</value>
         </property>
       </activation>
+
+
+
       <build>
         <plugins>
           <plugin>
@@ -353,12 +357,19 @@
               The main side-effect is that the testsuite will take a little longer to execute given it has to fork a JVM 650+ times.
               -->
               <forkMode>always</forkMode>
-              <argLine>-XX:PermSize=220m -XX:MaxPermSize=220m -Xmx600M -XX:+HeapDumpOnOutOfMemoryError</argLine>
               <excludes>
                 <exclude>**Suite*</exclude>
                 <exclude>**/*$*.*</exclude>
               </excludes>
             </configuration>
+            <executions>
+              <execution>
+                <id>default</id>
+                <configuration>
+                  <argLine>${jacoco.itArgLine} -XX:PermSize=220m -XX:MaxPermSize=220m -Xmx600M -XX:+HeapDumpOnOutOfMemoryError</argLine>
+                </configuration>
+              </execution>
+            </executions>
           </plugin>
         </plugins>
       </build>

@@ -115,10 +115,15 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <!-- workaround for a bug in apache LDAP server which leaks ~1M of heap during each restart -->
-          <argLine>-Xmx256M</argLine>
-        </configuration>
+        <executions>
+          <execution>
+            <id>default</id>
+            <configuration>
+              <!-- mem workaround for a bug in apache LDAP server which leaks ~1M of heap during each restart -->
+              <argLine>${jacoco.argLine} -Xmx256M</argLine>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
 
       <plugin>
