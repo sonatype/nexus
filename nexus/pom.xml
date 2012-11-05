@@ -1171,6 +1171,14 @@
 
       <dependency>
         <groupId>org.sonatype.nexus</groupId>
+        <artifactId>nexus-oss-bundle-template</artifactId>
+        <version>${project.version}</version>
+        <classifier>bundle</classifier>
+        <type>zip</type>
+      </dependency>
+
+      <dependency>
+        <groupId>org.sonatype.nexus</groupId>
         <artifactId>nexus-plugin-api</artifactId>
         <version>${project.version}</version>
       </dependency>
@@ -1777,6 +1785,7 @@
     <module>nexus-launcher</module>
     <module>nexus-client-core</module>
     <module>nexus-clients</module>
+    <module>nexus-oss-bundle-template</module>
     <module>nexus-oss-webapp</module>
     <module>nexus-stories</module>
     <module>nexus-test</module>

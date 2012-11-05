@@ -26,109 +26,53 @@
 
   <fileSets>
     <fileSet>
-      <directory>src/main/resources/content</directory>
+      <directory>${project.build.directory}/dependency/bundle/nexus-oss-bundle-template-${project.version}</directory>
+      <excludes>
+        <exclude>**/nexus</exclude>
+        <exclude>**/*.bat</exclude>
+        <exclude>**/*.exe</exclude>
+        <exclude>**/wrapper</exclude>
+        <exclude>**/wrapper-*.jar</exclude>
+      </excludes>
       <outputDirectory>${project.build.finalName}</outputDirectory>
       <fileMode>0644</fileMode>
       <directoryMode>0755</directoryMode>
-      <excludes>
-        <exclude>**/sonatype-work/**</exclude>
-        <exclude>**/nexus</exclude>
-        <exclude>**/*.bat</exclude>
-        <exclude>**/wrapper*</exclude>
-      </excludes>
     </fileSet>
 
-    <!-- chmod +x all JSW wrapper bits -->
     <fileSet>
-      <directory>src/main/resources/content</directory>
-      <outputDirectory>${project.build.finalName}</outputDirectory>
-      <fileMode>0755</fileMode>
-      <directoryMode>0755</directoryMode>
-      <includes>
-        <include>**/wrapper*</include>
-      </includes>
-    </fileSet>
-
-    <!-- chmod +x unix scripts -->
-    <fileSet>
-      <directory>src/main/resources/content</directory>
-      <outputDirectory>${project.build.finalName}</outputDirectory>
-      <fileMode>0755</fileMode>
-      <directoryMode>0755</directoryMode>
-      <lineEnding>unix</lineEnding>
+      <directory>${project.build.directory}/dependency/bundle/nexus-oss-bundle-template-${project.version}</directory>
       <includes>
         <include>**/nexus</include>
+        <include>**/*.bat</include>
+        <include>**/*.exe</include>
+        <include>**/wrapper</include>
+        <include>**/wrapper-*.jar</include>
       </includes>
-    </fileSet>
-
-    <!-- batch files -->
-    <fileSet>
-      <directory>src/main/resources/content</directory>
       <outputDirectory>${project.build.finalName}</outputDirectory>
       <fileMode>0755</fileMode>
       <directoryMode>0755</directoryMode>
-      <lineEnding>dos</lineEnding>
-      <includes>
-        <include>**/*.bat</include>
-      </includes>
     </fileSet>
 
-    <!-- sonatype-work directory -->
     <fileSet>
-      <directory>src/main/resources/sonatype-work</directory>
+      <directory>${project.build.directory}/dependency/bundle/sonatype-work</directory>
       <outputDirectory>sonatype-work</outputDirectory>
       <fileMode>0644</fileMode>
       <directoryMode>0755</directoryMode>
-      <excludes>
-        <exclude>**/.placeholder</exclude>
-      </excludes>
+    </fileSet>
+
+    <fileSet>
+      <directory>${project.build.directory}/dependency/war/WEB-INF/optional-plugins</directory>
+      <outputDirectory>${project.build.finalName}/nexus/WEB-INF/optional-plugins</outputDirectory>
+      <fileMode>0644</fileMode>
+      <directoryMode>0755</directoryMode>
+    </fileSet>
+
+    <fileSet>
+      <directory>${project.build.directory}/dependency/war/WEB-INF/plugin-repository</directory>
+      <outputDirectory>${project.build.finalName}/nexus/WEB-INF/plugin-repository</outputDirectory>
+      <fileMode>0644</fileMode>
+      <directoryMode>0755</directoryMode>
     </fileSet>
   </fileSets>
-
-  <dependencySets>
-    <dependencySet>
-      <outputDirectory>${project.build.finalName}/nexus</outputDirectory>
-      <useTransitiveDependencies>false</useTransitiveDependencies>
-      <useProjectArtifact>false</useProjectArtifact>
-      <useStrictFiltering>true</useStrictFiltering>
-      <fileMode>0644</fileMode>
-      <directoryMode>0755</directoryMode>
-      <includes>
-        <include>*:nexus-webapp:war</include>
-      </includes>
-      <unpack>true</unpack>
-      <unpackOptions>
-        <excludes>
-          <exclude>META-INF/**</exclude>
-          <exclude>WEB-INF/lib/appcontext*.jar</exclude>
-          <exclude>WEB-INF/lib/slf4j-api*.jar</exclude>
-          <exclude>WEB-INF/lib/logback-core*.jar</exclude>
-          <exclude>WEB-INF/lib/logback-classic*.jar</exclude>
-          <exclude>WEB-INF/lib/nexus-logging-extras-appender*.jar</exclude>
-          <exclude>WEB-INF/classes/logback.xml</exclude>
-        </excludes>
-      </unpackOptions>
-    </dependencySet>
-
-    <dependencySet>
-      <outputDirectory>${project.build.finalName}/lib</outputDirectory>
-      <useTransitiveDependencies>false</useTransitiveDependencies>
-      <useProjectArtifact>false</useProjectArtifact>
-      <useStrictFiltering>true</useStrictFiltering>
-      <fileMode>0644</fileMode>
-      <directoryMode>0755</directoryMode>
-      <includes>
-        <include>org.sonatype.nexus:nexus-bootstrap</include>
-        <include>org.sonatype.nexus:nexus-logging-extras-appender</include>
-        <include>org.eclipse.jetty.orbit:javax.servlet</include>
-        <include>org.eclipse.jetty:*</include>
-        <include>org.codehaus.plexus:*</include>
-        <include>org.sonatype.sisu:*</include>
-        <include>org.sonatype.appcontext:*</include>
-        <include>org.slf4j:*</include>
-        <include>ch.qos.logback:*</include>
-      </includes>
-    </dependencySet>
-  </dependencySets>
 
 </assembly>

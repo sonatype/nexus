@@ -24,26 +24,102 @@
     <version>2.3-SNAPSHOT</version>
   </parent>
 
-  <!--
-  FIXME: Rename to nexus-bundle-template
-  -->
-  <artifactId>nexus-oss-webapp</artifactId>
-  <name>Nexus : Distros : Nexus OSS Bundle</name>
+  <artifactId>nexus-oss-bundle-template</artifactId>
   <packaging>pom</packaging>
 
   <dependencies>
     <dependency>
       <groupId>org.sonatype.nexus</groupId>
-      <artifactId>nexus-oss-bundle-template</artifactId>
-      <classifier>bundle</classifier>
-      <type>zip</type>
-      <scope>provided</scope>
+      <artifactId>nexus-webapp</artifactId>
+      <type>war</type>
+    </dependency>
+
+    <!-- The "runtime bundle" -->
+    <dependency>
+      <groupId>org.sonatype.nexus</groupId>
+      <artifactId>nexus-bootstrap</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.sonatype.appcontext</groupId>
+      <artifactId>appcontext</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.sonatype.sisu</groupId>
+      <artifactId>sisu-jetty8</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.codehaus.plexus</groupId>
+      <artifactId>plexus-interpolation</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
     </dependency>
     <dependency>
       <groupId>org.sonatype.nexus</groupId>
-      <artifactId>nexus-webapp</artifactId>
-      <type>war</type>
-      <scope>provided</scope>
+      <artifactId>nexus-logging-extras-appender</artifactId>
+    </dependency>
+
+    <!-- Jetty -->
+    <dependency>
+      <groupId>org.eclipse.jetty.orbit</groupId>
+      <artifactId>javax.servlet</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-continuation</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-http</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-io</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-security</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-server</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-servlet</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-util</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-xml</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-webapp</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-deploy</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-rewrite</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-jmx</artifactId>
     </dependency>
   </dependencies>
 
@@ -66,47 +142,6 @@
                   <filtering>true</filtering>
                 </resource>
               </resources>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-dependency-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>unpack-nexus-webapp</id>
-            <phase>package</phase>
-            <goals>
-              <goal>unpack</goal>
-            </goals>
-            <configuration>
-              <artifactItems>
-                <artifactItem>
-                  <groupId>org.sonatype.nexus</groupId>
-                  <artifactId>nexus-webapp</artifactId>
-                  <type>war</type>
-                  <outputDirectory>${project.build.directory}/dependency/war</outputDirectory>
-                </artifactItem>
-              </artifactItems>
-            </configuration>
-          </execution>
-          <execution>
-            <id>unpack-nexus-oss-webapp</id>
-            <phase>package</phase>
-            <goals>
-              <goal>unpack</goal>
-            </goals>
-            <configuration>
-              <artifactItems>
-                <artifactItem>
-                  <groupId>org.sonatype.nexus</groupId>
-                  <artifactId>nexus-oss-bundle-template</artifactId>
-                  <classifier>bundle</classifier>
-                  <type>zip</type>
-                  <outputDirectory>${project.build.directory}/dependency/bundle</outputDirectory>
-                </artifactItem>
-              </artifactItems>
             </configuration>
           </execution>
         </executions>
@@ -160,7 +195,7 @@
                   <artifactItems>
                     <artifactItem>
                       <groupId>org.sonatype.nexus</groupId>
-                      <artifactId>nexus-oss-webapp</artifactId>
+                      <artifactId>nexus-oss-bundle-template</artifactId>
                       <classifier>bundle</classifier>
                       <type>zip</type>
                       <outputDirectory>${project.build.directory}/tattletale/dist</outputDirectory>
