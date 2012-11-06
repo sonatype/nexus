@@ -1799,10 +1799,11 @@
   <profiles>
 
     <profile>
-      <id>jacoco</id>
+      <id>sonar</id>
       <properties>
         <sonar.jacoco.reportPath>${project.build.directory}/jacoco.exec</sonar.jacoco.reportPath>
         <sonar.jacoco.itReportPath>${project.build.directory}/jacoco-it.exec</sonar.jacoco.itReportPath>
+        <sonar.dynamicAnalysis>reuseReports</sonar.dynamicAnalysis>
       </properties>
       <build>
         <plugins>
@@ -1843,7 +1844,7 @@
                   <goal>prepare-agent</goal>
                 </goals>
                 <configuration>
-                  <destFile>${project.build.directory}/jacoco-it.exec</destFile>
+                  <destFile>${sonar.jacoco.itReportPath}</destFile>
                   <propertyName>jacoco.itArgLine</propertyName>
                 </configuration>
               </execution>
@@ -1854,7 +1855,7 @@
                   <goal>report</goal>
                 </goals>
                 <configuration>
-                  <dataFile>${project.build.directory}/jacoco-it.exec</dataFile>
+                  <dataFile>${sonar.jacoco.itReportPath}</dataFile>
                   <skip>true</skip>
                 </configuration>
               </execution>
