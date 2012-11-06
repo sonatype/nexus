@@ -1439,7 +1439,7 @@
             <!-- force use of property -->
             <redirectTestOutputToFile>${maven.test.redirectTestOutputToFile}</redirectTestOutputToFile>
             <forkMode>once</forkMode>
-            <argLine>${jacoco.itArgLine}</argLine>
+            <argLine>${jacoco.itArgLine} -XX:+PrintCommandLineFlags</argLine>
             <!--
             FIXME: Some tests do not root properly, should be update to use TestSupport util.resolve* helpers; leave default for now
             https://issues.sonatype.org/browse/NEXUS-5345

@@ -366,7 +366,7 @@
               <execution>
                 <id>default</id>
                 <configuration>
-                  <argLine>${jacoco.itArgLine} -XX:PermSize=220m -XX:MaxPermSize=220m -Xmx600M -XX:+HeapDumpOnOutOfMemoryError</argLine>
+                  <argLine>${jacoco.itArgLine} -XX:+PrintCommandLineFlags -XX:PermSize=220m -XX:MaxPermSize=220m -Xmx600M -XX:+HeapDumpOnOutOfMemoryError</argLine>
                 </configuration>
               </execution>
             </executions>
