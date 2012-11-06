@@ -153,7 +153,7 @@
                 <id>default</id>
                 <configuration>
                   <!-- mem workaround for a bug in apache LDAP server which leaks ~1M of heap during each restart -->
-                  <argLine>${jacoco.itArgLine} -Xmx256M</argLine>
+                  <argLine>${jacoco.itArgLine} -XX:MaxPermSize=160m -Xmx300M -XX:+HeapDumpOnOutOfMemoryError</argLine>
                   <!-- LDAP NEEDS tests to be forked or they get broken, do not remove this! -->
                   <forkMode>always</forkMode>
                 </configuration>
