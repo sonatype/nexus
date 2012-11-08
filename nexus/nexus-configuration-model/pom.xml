@@ -27,9 +27,14 @@
   <name>Nexus : Configuration Model</name>
 
   <dependencies>
+
     <dependency>
-      <groupId>org.sonatype.nexus</groupId>
-      <artifactId>nexus-api</artifactId>
+      <groupId>org.codehaus.plexus</groupId>
+      <artifactId>plexus-utils</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.sonatype.configuration</groupId>
+      <artifactId>base-configuration</artifactId>
     </dependency>
 
     <!-- Testing -->
