@@ -195,7 +195,10 @@ public class NexusTypeVisitorTest
 
         final Map<Component, DeferredClass<?>> components = new HashMap<Component, DeferredClass<?>>();
         new ClassSpaceScanner( space ).accept( new NexusTypeVisitor( new TestListener( components ) ) );
-        Assert.assertEquals( 11, components.size() );
+        // Assert.assertEquals( 11, components.size() );
+
+        // After Squash we have 21
+        Assert.assertEquals( 21, components.size() );
 
         // non-extension so no automatic hinting...
         Assert.assertEquals( BeanA.class,
