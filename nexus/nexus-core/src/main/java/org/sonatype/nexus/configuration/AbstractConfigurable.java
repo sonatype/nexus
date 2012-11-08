@@ -12,6 +12,7 @@
  */
 package org.sonatype.nexus.configuration;
 
+
 import org.codehaus.plexus.component.annotations.Requirement;
 import org.codehaus.plexus.personality.plexus.lifecycle.phase.Disposable;
 import org.codehaus.plexus.personality.plexus.lifecycle.phase.Initializable;
@@ -20,7 +21,6 @@ import org.sonatype.configuration.ConfigurationException;
 import org.sonatype.nexus.configuration.application.ApplicationConfiguration;
 import org.sonatype.sisu.goodies.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
-
 /**
  * Abstract class to implement configurable components to "click" them in into generic configuration environment.
  * <p/>
