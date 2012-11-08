@@ -68,13 +68,7 @@
   <dependencies>
     <dependency>
       <groupId>org.sonatype.nexus</groupId>
-      <artifactId>nexus-api</artifactId>
-      <scope>provided</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.sonatype.nexus</groupId>
-      <artifactId>nexus-proxy</artifactId>
+      <artifactId>nexus-core</artifactId>
       <scope>provided</scope>
     </dependency>
 
@@ -126,14 +120,7 @@
 
     <dependency>
       <groupId>org.sonatype.nexus</groupId>
-      <artifactId>nexus-app</artifactId>
-      <classifier>tests</classifier>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.sonatype.nexus</groupId>
-      <artifactId>nexus-proxy</artifactId>
+      <artifactId>nexus-core</artifactId>
       <classifier>tests</classifier>
       <scope>test</scope>
     </dependency>

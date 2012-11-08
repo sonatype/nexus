@@ -986,8 +986,14 @@
       </dependency>
       <dependency>
         <groupId>org.sonatype.nexus</groupId>
-        <artifactId>nexus-utils</artifactId>
+        <artifactId>nexus-core</artifactId>
         <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.sonatype.nexus</groupId>
+        <artifactId>nexus-core</artifactId>
+        <version>${project.version}</version>
+        <classifier>tests</classifier>
       </dependency>
       <dependency>
         <groupId>org.sonatype.nexus</groupId>
@@ -1011,11 +1017,6 @@
       </dependency>
       <dependency>
         <groupId>org.sonatype.nexus</groupId>
-        <artifactId>nexus-api</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.sonatype.nexus</groupId>
         <artifactId>nexus-oss-edition</artifactId>
         <version>${project.version}</version>
       </dependency>
@@ -1023,33 +1024,6 @@
         <groupId>org.sonatype.nexus</groupId>
         <artifactId>nexus-configuration-model</artifactId>
         <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.sonatype.nexus</groupId>
-        <artifactId>nexus-configuration</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.sonatype.nexus</groupId>
-        <artifactId>nexus-proxy</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.sonatype.nexus</groupId>
-        <artifactId>nexus-proxy</artifactId>
-        <version>${project.version}</version>
-        <classifier>tests</classifier>
-      </dependency>
-      <dependency>
-        <groupId>org.sonatype.nexus</groupId>
-        <artifactId>nexus-app</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.sonatype.nexus</groupId>
-        <artifactId>nexus-app</artifactId>
-        <version>${project.version}</version>
-        <classifier>tests</classifier>
       </dependency>
       <dependency>
         <groupId>org.sonatype.nexus.client</groupId>
@@ -1153,11 +1127,6 @@
       <dependency>
         <groupId>org.sonatype.nexus</groupId>
         <artifactId>nexus-plugin-api</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.sonatype.nexus</groupId>
-        <artifactId>nexus-plugin-manager</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
@@ -1743,20 +1712,15 @@
 
   <modules>
     <module>nexus-bootstrap</module>
+    <module>nexus-configuration-model</module>
+    <module>nexus-core</module>
+    <module>nexus-compat</module>
+    <module>nexus-oss-edition</module>
     <module>nexus-plugin-api</module>
-    <module>nexus-plugin-manager</module>
     <module>nexus-plugin-test-api</module>
-    <module>nexus-utils</module>
     <module>nexus-web-utils</module>
     <module>nexus-logging-extras</module>
     <module>nexus-logging-extras-appender</module>
-    <module>nexus-compat</module>
-    <module>nexus-api</module>
-    <module>nexus-oss-edition</module>
-    <module>nexus-configuration-model</module>
-    <module>nexus-configuration</module>
-    <module>nexus-proxy</module>
-    <module>nexus-app</module>
     <module>nexus-rest-api-model</module>
     <module>nexus-rest-api</module>
     <module>nexus-core-plugins</module>
