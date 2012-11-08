@@ -27,9 +27,15 @@
 
   <dependencies>
 
+      <!-- Logging -->
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>jcl-over-slf4j</artifactId>
+      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
@@ -41,6 +47,11 @@
       <groupId>org.sonatype.nexus</groupId>
       <artifactId>nexus-configuration-model</artifactId>
     </dependency>
+    <dependency>
+      <groupId>org.sonatype.nexus</groupId>
+      <artifactId>nexus-compat</artifactId>
+    </dependency>
+    
     <dependency>
       <groupId>com.thoughtworks.xstream</groupId>
       <artifactId>xstream</artifactId>
@@ -125,24 +136,18 @@
       <groupId>org.sonatype.sisu</groupId>
       <artifactId>sisu-inject-plexus</artifactId>
     </dependency>
-
     <dependency>
       <groupId>org.sonatype.sisu.inject</groupId>
       <artifactId>guice-multibindings</artifactId>
     </dependency>
-
     <dependency>
       <groupId>org.sonatype.sisu.inject</groupId>
       <artifactId>guice-assistedinject</artifactId>
     </dependency>
 
     <dependency>
-      <groupId>org.sonatype.plexus.appevents</groupId>
-      <artifactId>plexus-app-events-api</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.sonatype.plexus.appevents</groupId>
-      <artifactId>simple-event-multicaster</artifactId>
+      <groupId>org.sonatype.sisu</groupId>
+      <artifactId>sisu-velocity</artifactId>
     </dependency>
     <dependency>
       <groupId>org.sonatype.sisu</groupId>
@@ -173,7 +178,10 @@
       <groupId>org.sonatype.sisu</groupId>
       <artifactId>sisu-mailer</artifactId>
     </dependency>
-
+    <dependency>
+      <groupId>org.sonatype.sisu.goodies</groupId>
+      <artifactId>goodies-eventbus</artifactId>
+    </dependency>
     <dependency>
       <groupId>org.sonatype.sisu.pr</groupId>
       <artifactId>sisu-problem-reporter</artifactId>
