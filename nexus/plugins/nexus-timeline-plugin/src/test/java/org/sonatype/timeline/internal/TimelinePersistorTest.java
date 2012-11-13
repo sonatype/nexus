@@ -13,6 +13,7 @@
 package org.sonatype.timeline.internal;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -213,5 +214,27 @@ public class TimelinePersistorTest
         TimelineRecord record = new TimelineRecord( System.currentTimeMillis(), "type", "subType", null );
 
         persistor.persist( record );
+    }
+
+    public void testLongRecords()
+        throws IOException
+    {
+        TimelineRecord record = createTimelineRecord();
+        record.getData().put("foo.1", "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb");
+        record.getData().put("foo.2", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+        record.getData().put("foo.3", "rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr");
+
+        persistor.persist( record );
+
+        AsList cb = new AsList();
+        persistor.readAll( cb );
+        List<TimelineRecord> results = cb.getRecords();
+
+        assertEquals( 1, results.size() );
+        assertEquals( record.getTimestamp(), results.get( 0 ).getTimestamp() );
+        assertEquals( record.getType(), results.get( 0 ).getType() );
+        assertEquals( record.getSubType(), results.get( 0 ).getSubType() );
+        assertEquals( record.getData(), results.get( 0 ).getData() );
+        
     }
 }

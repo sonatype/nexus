@@ -36,11 +36,12 @@ import org.sonatype.timeline.TimelineCallback;
 import org.sonatype.timeline.TimelineConfiguration;
 import org.sonatype.timeline.TimelineRecord;
 import org.sonatype.timeline.proto.TimeLineRecordProtos;
+
 import com.google.common.annotations.VisibleForTesting;
 
 /**
  * The class doing persitence of timeline records using Protobuf.
- *
+ * 
  * @author juven
  * @author cstamas
  */
@@ -62,9 +63,9 @@ public class DefaultTimelinePersistor
 
     private static final String V2_DATA_FILE_NAME_DATE_FORMAT = "yyyy-MM-dd.HH-mm-ssZ";
 
-    private static final Pattern V2_DATA_FILE_NAME_PATTERN = Pattern.compile( "^" + V2_DATA_FILE_NAME_PREFIX.replace(
-        ".", "\\." ) + "(\\d{4}-\\d{2}-\\d{2}\\.\\d{2}-\\d{2}-\\d{2}[+-]\\d{4})" + V2_DATA_FILE_NAME_SUFFIX.replace(
-        ".", "\\." ) + "$" );
+    private static final Pattern V2_DATA_FILE_NAME_PATTERN = Pattern.compile( "^"
+        + V2_DATA_FILE_NAME_PREFIX.replace( ".", "\\." ) + "(\\d{4}-\\d{2}-\\d{2}\\.\\d{2}-\\d{2}-\\d{2}[+-]\\d{4})"
+        + V2_DATA_FILE_NAME_SUFFIX.replace( ".", "\\." ) + "$" );
 
     private int rollingIntervalMillis;
 
@@ -78,9 +79,9 @@ public class DefaultTimelinePersistor
     // Public API
 
     /**
-     * Protected by DefaultTimeline, as is called from start(), that is exclusive access, so no other
-     * call might fall in.
-     *
+     * Protected by DefaultTimeline, as is called from start(), that is exclusive access, so no other call might fall
+     * in.
+     * 
      * @param configuration
      */
     protected synchronized void setConfiguration( final TimelineConfiguration configuration )
@@ -95,7 +96,7 @@ public class DefaultTimelinePersistor
 
     /**
      * Persistor writes to file, so we must ensure write request are coming in one by one.
-     *
+     * 
      * @param records
      * @throws IOException
      */
@@ -110,7 +111,7 @@ public class DefaultTimelinePersistor
             {
                 out = new FileOutputStream( getDataFile(), true );
                 byte[] bytes = toProto( record ).toByteArray();
-                out.write( bytes.length );
+                writeInt( out, bytes.length );
                 out.write( bytes );
                 out.flush();
             }
@@ -122,8 +123,9 @@ public class DefaultTimelinePersistor
     }
 
     /**
-     * Only one method setting AND reading lastRolledTimestamp and lastRolledFile, called only from #persist that is already synced.
-     *
+     * Only one method setting AND reading lastRolledTimestamp and lastRolledFile, called only from #persist that is
+     * already synced.
+     * 
      * @return
      * @throws IOException
      */
@@ -148,9 +150,9 @@ public class DefaultTimelinePersistor
     }
 
     /**
-     * This method is called only from timeline's repair method, that gains exclusive access to indexer, but also
-     * it's own state (wrt start/stop), meaning the configuration, hence the single field will no be modified.
-     *
+     * This method is called only from timeline's repair method, that gains exclusive access to indexer, but also it's
+     * own state (wrt start/stop), meaning the configuration, hence the single field will no be modified.
+     * 
      * @param days
      * @param callback
      * @throws IOException
@@ -204,7 +206,7 @@ public class DefaultTimelinePersistor
         // days as wanted.
         final long oldestFileTimestampThreshold =
             Integer.MAX_VALUE == days ? 0
-                : ( getTimestampedFileNameTimestamp( files[0] ) - ( days * 24L * 60L * 60L * 1000L ) );
+                            : ( getTimestampedFileNameTimestamp( files[0] ) - ( days * 24L * 60L * 60L * 1000L ) );
 
         // "cut"/filter the files
         ArrayList<File> result = new ArrayList<File>();
@@ -251,7 +253,7 @@ public class DefaultTimelinePersistor
     /**
      * Reads a whole file into memory, and in case of any problem, it returns an empty collection, making this file to
      * be skipped.
-     *
+     * 
      * @param file
      * @return
      */
@@ -264,7 +266,7 @@ public class DefaultTimelinePersistor
             in = new FileInputStream( file );
             while ( in.available() > 0 )
             {
-                int length = in.read();
+                int length = readInt( in );
                 byte[] bytes = new byte[length];
                 in.read( bytes, 0, length );
                 result.add( fromProto( TimeLineRecordProtos.TimeLineRecord.parseFrom( bytes ) ) );
@@ -307,9 +309,7 @@ public class DefaultTimelinePersistor
     {
         final SimpleDateFormat dateFormat = new SimpleDateFormat( V2_DATA_FILE_NAME_DATE_FORMAT );
         final StringBuilder fileName = new StringBuilder();
-        fileName.append( V2_DATA_FILE_NAME_PREFIX ).append(
-            dateFormat.format( new Date( System.currentTimeMillis() ) ) ).append(
-            V2_DATA_FILE_NAME_SUFFIX );
+        fileName.append( V2_DATA_FILE_NAME_PREFIX ).append( dateFormat.format( new Date( System.currentTimeMillis() ) ) ).append( V2_DATA_FILE_NAME_SUFFIX );
         return fileName.toString();
     }
 
@@ -355,8 +355,7 @@ public class DefaultTimelinePersistor
         builder.setSubType( record.getSubType() );
         for ( Map.Entry<String, String> entry : record.getData().entrySet() )
         {
-            builder.addData( TimeLineRecordProtos.TimeLineRecord.Data.newBuilder().setKey( entry.getKey() ).setValue(
-                entry.getValue() ).build() );
+            builder.addData( TimeLineRecordProtos.TimeLineRecord.Data.newBuilder().setKey( entry.getKey() ).setValue( entry.getValue() ).build() );
         }
         return builder.build();
     }
@@ -391,5 +390,20 @@ public class DefaultTimelinePersistor
                 }
             }
         }
+    }
+
+    private void writeInt( OutputStream os, int value )
+        throws IOException
+    {
+        os.write( value );
+        os.write( value / 256 );
+    }
+
+    private int readInt( InputStream is )
+        throws IOException
+    {
+        int result = is.read();
+        result += is.read() * 256;
+        return result;
     }
 }
