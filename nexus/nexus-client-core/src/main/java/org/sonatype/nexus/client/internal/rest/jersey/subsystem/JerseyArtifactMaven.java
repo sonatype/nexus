@@ -12,16 +12,23 @@
  */
 package org.sonatype.nexus.client.internal.rest.jersey.subsystem;
 
+import static javax.ws.rs.core.MediaType.MULTIPART_FORM_DATA_TYPE;
+
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 
 import org.sonatype.nexus.client.core.spi.SubsystemSupport;
 import org.sonatype.nexus.client.core.subsystem.artifact.ArtifactMaven;
+import org.sonatype.nexus.client.core.subsystem.artifact.DeleteRequest;
 import org.sonatype.nexus.client.core.subsystem.artifact.ResolveRequest;
 import org.sonatype.nexus.client.core.subsystem.artifact.ResolveResponse;
+import org.sonatype.nexus.client.core.subsystem.artifact.UploadRequest;
+import org.sonatype.nexus.client.core.subsystem.repository.Repositories;
 import org.sonatype.nexus.client.rest.jersey.JerseyNexusClient;
 import org.sonatype.nexus.rest.model.ArtifactResolveResource;
 import org.sonatype.nexus.rest.model.ArtifactResolveResourceResponse;
 import com.sun.jersey.core.util.MultivaluedMapImpl;
+import com.sun.jersey.multipart.Boundary;
 
 /**
  * @since 2.1
@@ -31,10 +38,13 @@ public class JerseyArtifactMaven
     implements ArtifactMaven
 {
 
-    public JerseyArtifactMaven( final JerseyNexusClient nexusClient )
+    private final Repositories repositories;
+
+    public JerseyArtifactMaven( final JerseyNexusClient nexusClient,
+                                final Repositories repositories )
     {
         super( nexusClient );
-        // no extra config needed, this is a core service actually
+        this.repositories = repositories;
     }
 
     @Override
@@ -68,4 +78,23 @@ public class JerseyArtifactMaven
                                     data.getSha1(),
                                     data.getRepositoryPath() );
     }
+
+    @Override
+    public void upload( final UploadRequest req )
+    {
+        getNexusClient().serviceResource( "artifact/maven/content" )
+            .type( Boundary.addBoundary( MULTIPART_FORM_DATA_TYPE ) )
+            .accept( MediaType.TEXT_HTML )
+            .post( req.createUploadEntity() );
+    }
+
+    @Override
+    public void delete( final DeleteRequest req )
+    {
+        final String urlToDelete = repositories.get( req.repositoryId() ).contentUri()
+            + req.repositoryPath();
+
+        getNexusClient().getClient().resource( urlToDelete ).delete();
+    }
+
 }
