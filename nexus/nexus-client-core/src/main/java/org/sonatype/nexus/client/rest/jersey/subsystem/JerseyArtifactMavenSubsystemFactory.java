@@ -12,6 +12,9 @@
  */
 package org.sonatype.nexus.client.rest.jersey.subsystem;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
+import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 
@@ -23,6 +26,8 @@ import org.sonatype.nexus.client.internal.rest.jersey.subsystem.JerseyArtifactMa
 import org.sonatype.nexus.client.rest.jersey.JerseyNexusClient;
 
 /**
+ * Jersey based {@link ArtifactMaven} subsystem factory.
+ *
  * @since 2.1
  */
 @Named
@@ -30,6 +35,14 @@ import org.sonatype.nexus.client.rest.jersey.JerseyNexusClient;
 public class JerseyArtifactMavenSubsystemFactory
     implements SubsystemFactory<ArtifactMaven, JerseyNexusClient>
 {
+
+    private final JerseyRepositoriesFactory jerseyRepositoriesSubsystemFactory;
+
+    @Inject
+    public JerseyArtifactMavenSubsystemFactory( final JerseyRepositoriesFactory jerseyRepositoriesSubsystemFactory )
+    {
+        this.jerseyRepositoriesSubsystemFactory = checkNotNull( jerseyRepositoriesSubsystemFactory );
+    }
 
     @Override
     public Condition availableWhen()
@@ -46,6 +59,7 @@ public class JerseyArtifactMavenSubsystemFactory
     @Override
     public ArtifactMaven create( final JerseyNexusClient nexusClient )
     {
-        return new JerseyArtifactMaven( nexusClient );
+        return new JerseyArtifactMaven( nexusClient, jerseyRepositoriesSubsystemFactory.create( nexusClient ) );
     }
+
 }

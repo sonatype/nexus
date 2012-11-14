@@ -26,4 +26,18 @@ public interface ArtifactMaven
      */
     ResolveResponse resolve( ResolveRequest req );
 
+    /**
+     * Uploads a file to a Nexus repository.
+     *
+     * @since 2.3
+     */
+    void upload( UploadRequest req );
+
+    /**
+     * Deletes a given artifact from a Nexus repository.
+     *
+     * @since 2.3
+     */
+    void delete( DeleteRequest req );
+
 }
