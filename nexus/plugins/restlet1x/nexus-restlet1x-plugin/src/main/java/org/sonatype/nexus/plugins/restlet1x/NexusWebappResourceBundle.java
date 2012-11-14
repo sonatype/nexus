@@ -48,9 +48,9 @@ public class NexusWebappResourceBundle
 
         List<StaticResource> result = new ArrayList<StaticResource>();
 
-        result.add( new ExternalStaticResource( new File( "nexus/js/sonatype-all.js" ),
+        result.add( new DefaultStaticResource( this.getClass().getResource( "/js/sonatype-all.js" ),
                                                "js/" + prefix + "/sonatype-all.js", "text/javascript" ) );
-        result.add( new ExternalStaticResource( new File( "nexus/style/sonatype-all.css" ),
+        result.add( new DefaultStaticResource( this.getClass().getResource( "nexus/style/sonatype-all.css" ),
                                                "style/" + prefix + "/sonatype-all.css", "text/css" ) );
 
         return result;

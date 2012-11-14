@@ -7,11 +7,6 @@ define('ext/ux/browsebutton',['extjs'], function(Ext){
 /*global Ext*/
 Ext.namespace('Ext.ux.form');
 
-// @author 4Him
-if(typeof Ext.isIE8 !== 'boolean') { // Ext 2.x (at least 2.1) doesn't know IE8. Let's tell him about it...
-    Ext.isIE8 = Ext.isIE && navigator.userAgent.toLowerCase().indexOf("msie 8")>-1;
-}
-
 /**
  * @class Ext.ux.form.BrowseButton
  * @extends Ext.Button
