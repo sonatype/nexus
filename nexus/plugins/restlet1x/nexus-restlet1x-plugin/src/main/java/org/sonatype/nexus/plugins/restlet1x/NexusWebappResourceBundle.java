@@ -12,14 +12,18 @@
  */
 package org.sonatype.nexus.plugins.restlet1x;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 import javax.inject.Inject;
 import javax.inject.Named;
 
+import com.google.common.io.ByteStreams;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,6 +39,8 @@ public class NexusWebappResourceBundle
 
     private final BuildNumberService buildNumberService;
 
+    private static final Logger logger = LoggerFactory.getLogger( NexusWebappResourceBundle.class );
+
     @Inject
     public NexusWebappResourceBundle( final BuildNumberService buildNumberService )
     {
@@ -48,11 +54,49 @@ public class NexusWebappResourceBundle
 
         List<StaticResource> result = new ArrayList<StaticResource>();
 
-        result.add( new DefaultStaticResource( this.getClass().getResource( "/js/sonatype-all.js" ),
-                                               "js/" + prefix + "/sonatype-all.js", "text/javascript" ) );
-        result.add( new DefaultStaticResource( this.getClass().getResource( "nexus/style/sonatype-all.css" ),
-                                               "style/" + prefix + "/sonatype-all.css", "text/css" ) );
+        try
+        {
+            result.add( new CachingClasspathResource( this.getClass().getResource( "/js/sonatype-all.js" ),
+                                                   "js/" + prefix + "/sonatype-all.js", "text/javascript" ).cache() );
+            result.add( new CachingClasspathResource( this.getClass().getResource( "/style/sonatype-all.css" ),
+                                                      "style/" + prefix + "/sonatype-all.css", "text/css" ).cache() );
 
+        }
+        catch ( IOException e )
+        {
+            logger.error( "Could not read from classpath", e );
+        }
         return result;
     }
+
+    public static class CachingClasspathResource
+        extends DefaultStaticResource
+    {
+
+        private byte[] content;
+
+        public CachingClasspathResource( URL url, String path, String contentType )
+        {
+            super( url, path, contentType );
+        }
+
+        @Override
+        public InputStream getInputStream()
+            throws IOException
+        {
+            if ( content == null )
+            {
+                cache();
+            }
+            return new ByteArrayInputStream( content );
+        }
+
+        private CachingClasspathResource cache()
+            throws IOException
+        {
+            content = ByteStreams.toByteArray( super.getInputStream() );
+            return this;
+        }
+    }
+
 }
