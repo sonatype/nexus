@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -364,6 +365,54 @@ public class DefaultIndexerManager
         finally
         {
             lock.unlock();
+        }
+    }
+
+    Collection<IndexingContext> getIndexingContexts( List<String> repositoryIds )
+    {
+        LinkedHashMap<String, IndexingContext> contexts = new LinkedHashMap<String, IndexingContext>();
+        Set<String> visited = new HashSet<String>();
+        for ( String repositoryId : repositoryIds )
+        {
+            try
+            {
+                Repository repository = repositoryRegistry.getRepository( repositoryId );
+                if ( repository != null )
+                {
+                    addIndexingContexts( contexts, repository, visited );
+                }
+            }
+            catch ( NoSuchRepositoryException e )
+            {
+                // logging as debug, as this might be due concurrency, simultaneous search request and a config
+                // change request that IndexerManager will handle, and this is still the "old" lazy context provider
+                // not the new one?
+                logger.debug( "Lazy context provider unable to lookup member by ID!", e );
+            }
+        }
+        return contexts.values();
+    }
+
+    private void addIndexingContexts( final LinkedHashMap<String, IndexingContext> repositories,
+                                      final Repository repository, Set<String> visited )
+    {
+        if ( visited.add( repository.getId() ) )
+        {
+            if ( repository.getRepositoryKind().isFacetAvailable( GroupRepository.class ) )
+            {
+                for ( Repository member : ( (GroupRepository) repository ).getMemberRepositories() )
+                {
+                    addIndexingContexts( repositories, member, visited );
+                }
+            }
+            else
+            {
+                IndexingContext context = getRepositoryIndexContext( repository );
+                if ( context != null )
+                {
+                    repositories.put( context.getId(), context );
+                }
+            }
         }
     }
 
