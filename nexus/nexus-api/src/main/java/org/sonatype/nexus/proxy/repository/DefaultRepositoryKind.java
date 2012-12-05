@@ -26,22 +26,33 @@ public class DefaultRepositoryKind
     public DefaultRepositoryKind( Class<?> mainFacet, Collection<Class<?>> facets )
     {
         this.mainFacet = mainFacet;
-
         this.facets = new HashSet<Class<?>>();
-
         this.facets.add( mainFacet );
-
         if ( facets != null )
         {
             this.facets.addAll( facets );
         }
     }
 
+    @Override
     public Class<?> getMainFacet()
     {
         return mainFacet;
     }
 
+    @Override
+    public boolean addFacet( Class<?> f )
+    {
+        return facets.add( f );
+    }
+
+    @Override
+    public boolean removeFacet( Class<?> f )
+    {
+        return facets.remove( f );
+    }
+
+    @Override
     public boolean isFacetAvailable( Class<?> f )
     {
         for ( Class<?> facet : facets )

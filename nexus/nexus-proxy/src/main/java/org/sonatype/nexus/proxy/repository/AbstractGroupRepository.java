@@ -23,6 +23,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 
 import org.codehaus.plexus.component.annotations.Requirement;
+import org.sonatype.configuration.ConfigurationException;
 import org.sonatype.nexus.configuration.ConfigurationPrepareForSaveEvent;
 import org.sonatype.nexus.proxy.AccessDeniedException;
 import org.sonatype.nexus.proxy.IllegalOperationException;
@@ -36,6 +37,8 @@ import org.sonatype.nexus.proxy.StorageException;
 import org.sonatype.nexus.proxy.access.AccessManager;
 import org.sonatype.nexus.proxy.events.RepositoryEventEvictUnusedItems;
 import org.sonatype.nexus.proxy.events.RepositoryGroupMembersChangedEvent;
+import org.sonatype.nexus.proxy.events.RepositoryItemBatchEventAddedToGroup;
+import org.sonatype.nexus.proxy.events.RepositoryItemBatchEventRemovedFromGroup;
 import org.sonatype.nexus.proxy.events.RepositoryRegistryEventRemove;
 import org.sonatype.nexus.proxy.item.DefaultStorageCollectionItem;
 import org.sonatype.nexus.proxy.item.RepositoryItemUid;
@@ -49,7 +52,12 @@ import org.sonatype.nexus.proxy.repository.charger.GroupItemRetrieveCallable;
 import org.sonatype.nexus.proxy.repository.charger.ItemRetrieveCallable;
 import org.sonatype.nexus.proxy.repository.threads.ThreadPoolManager;
 import org.sonatype.nexus.proxy.utils.RepositoryStringUtils;
+import org.sonatype.nexus.proxy.walker.DefaultStoreWalkerFilter;
+import org.sonatype.nexus.proxy.walker.DefaultWalkerContext;
+import org.sonatype.nexus.proxy.walker.FlatArtifactListRepositoryWalkerProcessor;
+import org.sonatype.nexus.proxy.walker.WalkerContext;
 import org.sonatype.nexus.util.SystemPropertiesHelper;
+import org.sonatype.plexus.appevents.Event;
 import org.sonatype.sisu.charger.CallableExecutor;
 import org.sonatype.sisu.charger.internal.AllArrivedChargeStrategy;
 import org.sonatype.sisu.charger.internal.FirstArrivedInOrderChargeStrategy;
@@ -65,9 +73,13 @@ public abstract class AbstractGroupRepository
     extends AbstractRepository
     implements GroupRepository, CallableExecutor
 {
-    /** Secret switch that allows disabling use of Charger if needed */
+
+    /**
+     * Secret switch that allows disabling use of Charger if needed
+     */
     private final boolean USE_CHARGER_FOR_GROUP_REQUESTS = SystemPropertiesHelper.getBoolean( getClass().getName()
-        + ".useParallelGroupRequests", false );
+                                                                                                  + ".useParallelGroupRequests",
+                                                                                              false );
 
     @Requirement
     private RepositoryRegistry repoRegistry;
@@ -80,6 +92,8 @@ public abstract class AbstractGroupRepository
 
     @Requirement
     private ThreadPoolManager poolManager;
+
+    private final ArrayList<Repository> removedRepositories = new ArrayList<Repository>(  );
 
     @Override
     protected AbstractGroupRepositoryConfiguration getExternalConfiguration( boolean forWrite )
@@ -94,14 +108,16 @@ public abstract class AbstractGroupRepository
 
         if ( extConfig != null && extConfig.getMemberRepositoryIds().contains( evt.getRepository().getId() ) )
         {
-            removeMemberRepositoryId( evt.getRepository().getId() );
+            removeMemberRepository( evt.getRepository() );
         }
     }
 
-    @Subscribe
     @Override
-    public void onEvent( final ConfigurationPrepareForSaveEvent evt )
+    public void prepareForSave()
+        throws ConfigurationException
     {
+        super.prepareForSave();
+
         boolean membersChanged = false;
         List<String> currentMemberIds = Collections.emptyList();
         List<String> newMemberIds = Collections.emptyList();
@@ -128,13 +144,74 @@ public abstract class AbstractGroupRepository
             }
         }
 
-        super.onEvent( evt );
-
         if ( membersChanged )
         {
             // fire another event
-            eventBus().post( new RepositoryGroupMembersChangedEvent( this, currentMemberIds, newMemberIds ) );
+            onMemberChangeFire( currentMemberIds, newMemberIds );
         }
+    }
+
+    private void onMemberChangeFire( final List<String> currentMemberIds, final List<String> newMemberIds )
+    {
+        final List<Event<?>> eventsToFire = new ArrayList<Event<?>>();
+
+        // fire event as before: about the member changes
+        final RepositoryGroupMembersChangedEvent membersChangedEvent =
+            new RepositoryGroupMembersChangedEvent( this, currentMemberIds, newMemberIds );
+        eventsToFire.add( membersChangedEvent );
+
+        for ( Repository removedRepository : removedRepositories )
+        {
+            if ( removedRepository.getRepositoryKind().isFacetAvailable( TransientRepository.class ) )
+            {
+                final RepositoryItemBatchEventRemovedFromGroup removedFromGroupEvent =
+                    new RepositoryItemBatchEventRemovedFromGroup( this, removedRepository, enumerateRepositoryContents( removedRepository ) );
+                eventsToFire.add( removedFromGroupEvent );
+            }
+        }
+
+        for ( String addedRepositoryId : membersChangedEvent.getAddedRepositoryIds() )
+        {
+            try
+            {
+                final Repository repository = repoRegistry.getRepository( addedRepositoryId );
+                if ( repository.getRepositoryKind().isFacetAvailable( TransientRepository.class ) )
+                {
+                    final RepositoryItemBatchEventAddedToGroup addedToGroupEvent =
+                        new RepositoryItemBatchEventAddedToGroup( this, repository, enumerateRepositoryContents( repository ) );
+                    eventsToFire.add( addedToGroupEvent );
+                }
+            }
+            catch ( NoSuchRepositoryException e )
+            {
+                // ?
+            }
+        }
+
+        // fire them
+        for ( Event<?> evt : eventsToFire )
+        {
+            eventBus().post( evt );
+        }
+        this.removedRepositories.clear();
+    }
+
+    /**
+     * Method that crawls the repository and gathers items in it, builds up a list of paths
+     * that are contained in repository.
+     *
+     * @param repository
+     * @return
+     */
+    protected List<String> enumerateRepositoryContents( final Repository repository )
+    {
+        final FlatArtifactListRepositoryWalkerProcessor processor = new FlatArtifactListRepositoryWalkerProcessor();
+        final WalkerContext context =
+            new DefaultWalkerContext( repository, new ResourceStoreRequest( RepositoryItemUid.PATH_ROOT ),
+                                      new DefaultStoreWalkerFilter() );
+        context.getProcessors().add( processor );
+        getWalker().walk( context );
+        return processor.getPaths();
     }
 
     @Override
@@ -165,7 +242,7 @@ public abstract class AbstractGroupRepository
 
         getLogger().info(
             String.format( "Evicting unused items from group repository %s from path \"%s\"",
-                RepositoryStringUtils.getHumanizedNameString( this ), request.getRequestPath() ) );
+                           RepositoryStringUtils.getHumanizedNameString( this ), request.getRequestPath() ) );
 
         HashSet<String> result = new HashSet<String>();
 
@@ -257,7 +334,7 @@ public abstract class AbstractGroupRepository
     }
 
     private static void addItems( HashSet<String> names, ArrayList<StorageItem> result,
-                                  Collection<StorageItem> listItems )
+        Collection<StorageItem> listItems )
     {
         for ( StorageItem item : listItems )
         {
@@ -327,7 +404,8 @@ public abstract class AbstractGroupRepository
                     {
                         List<StorageItem> items =
                             chargerHolder.getCharger().submit( callables,
-                                new FirstArrivedInOrderChargeStrategy<StorageItem>(), this ).getResult();
+                                                               new FirstArrivedInOrderChargeStrategy<StorageItem>(),
+                                                               this ).getResult();
 
                         if ( items.size() > 0 )
                         {
@@ -478,9 +556,22 @@ public abstract class AbstractGroupRepository
         }
     }
 
-    public void removeMemberRepositoryId( String repositoryId )
+    public void removeMemberRepositoryId( final String repositoryId )
     {
-        getExternalConfiguration( true ).removeMemberRepositoryId( repositoryId );
+        try
+        {
+            removeMemberRepository( repoRegistry.getRepository( repositoryId ) );
+        }
+        catch ( NoSuchRepositoryException e )
+        {
+            // keep silent as before
+        }
+    }
+
+    private void removeMemberRepository( final Repository repository )
+    {
+        getExternalConfiguration( true ).removeMemberRepositoryId( repository.getId() );
+        this.removedRepositories.add( repository );
     }
 
     public List<Repository> getMemberRepositories()
@@ -566,7 +657,7 @@ public abstract class AbstractGroupRepository
                 try
                 {
                     return chargerHolder.getCharger().submit( callables, new AllArrivedChargeStrategy<StorageItem>(),
-                        this ).getResult();
+                                                              this ).getResult();
                 }
                 catch ( RejectedExecutionException e )
                 {

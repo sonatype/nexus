@@ -12,18 +12,20 @@
  */
 package org.sonatype.nexus.proxy.repository;
 
+import java.util.List;
+
+import org.sonatype.nexus.plugins.RepositoryType;
+
 /**
- * Main interface for detecting the repository kind.
+ * A transient repository marker interface. A transient repository is a repository that is known that have "transient"
+ * nature. They are usually programtically (by a plugin) added and removed, and they are not intended to have long
+ * lifespan (as opposed to "normal" user configured repositories). An example of such are Staging repositories.
  *
  * @author cstamas
+ * @since 2.3
  */
-public interface RepositoryKind
+public interface TransientRepository
+    extends Repository
 {
-    Class<?> getMainFacet();
 
-    boolean addFacet( Class<?> f );
-
-    boolean removeFacet( Class<?> f );
-
-    boolean isFacetAvailable( Class<?> f );
 }

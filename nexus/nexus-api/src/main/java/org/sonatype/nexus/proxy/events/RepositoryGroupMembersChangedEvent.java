@@ -211,4 +211,14 @@ public class RepositoryGroupMembersChangedEvent
     {
         return Collections.unmodifiableList( reorderedRepositoryIds );
     }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "{" +
+            "repositoryId=" + getRepository().getId() +
+            ", addedMembers=" + getAddedRepositoryIds() +
+            ", removedMembers=" + getRemovedRepositoryIds() +
+            ", reorderedMembers=" + getReorderedRepositoryIds() +
+            '}';
+    }
 }

@@ -18,38 +18,25 @@ import java.util.HashSet;
 public class MutableProxyRepositoryKind
     implements RepositoryKind
 {
+
     private final ProxyRepository repository;
 
-    private RepositoryKind hostedKind;
+    private final RepositoryKind hostedKind;
 
-    private RepositoryKind proxyKind;
+    private final RepositoryKind proxyKind;
 
-    private HashSet<Class<?>> sharedFacets;
+    private final HashSet<Class<?>> facets;
 
-    public MutableProxyRepositoryKind( ProxyRepository repository )
-    {
-        this( repository, null );
-    }
-
-    public MutableProxyRepositoryKind( ProxyRepository repository, Collection<Class<?>> sharedFacets )
-    {
-        this( repository, sharedFacets, null, null );
-    }
-
-    public MutableProxyRepositoryKind( ProxyRepository repository, Collection<Class<?>> sharedFacets,
-        RepositoryKind hostedKind, RepositoryKind proxyKind )
+    public MutableProxyRepositoryKind( final ProxyRepository repository, final Collection<Class<?>> sharedFacets,
+        final RepositoryKind hostedKind, final RepositoryKind proxyKind )
     {
         this.repository = repository;
-
         this.hostedKind = hostedKind;
-
         this.proxyKind = proxyKind;
-
-        this.sharedFacets = new HashSet<Class<?>>();
-
+        this.facets = new HashSet<Class<?>>();
         if ( sharedFacets != null )
         {
-            this.sharedFacets.addAll( sharedFacets );
+            facets.addAll( sharedFacets );
         }
     }
 
@@ -58,19 +45,9 @@ public class MutableProxyRepositoryKind
         return proxyKind;
     }
 
-    public void setProxyKind( RepositoryKind proxyKind )
-    {
-        this.proxyKind = proxyKind;
-    }
-
     public RepositoryKind getHostedKind()
     {
         return hostedKind;
-    }
-
-    public void setHostedKind( RepositoryKind hostedKind )
-    {
-        this.hostedKind = hostedKind;
     }
 
     private boolean isProxy()
@@ -90,11 +67,25 @@ public class MutableProxyRepositoryKind
         }
     }
 
+    @Override
     public Class<?> getMainFacet()
     {
         return getActualRepositoryKind().getMainFacet();
     }
 
+    @Override
+    public boolean addFacet( Class<?> f )
+    {
+        return facets.add( f );
+    }
+
+    @Override
+    public boolean removeFacet( Class<?> f )
+    {
+        return facets.remove( f );
+    }
+
+    @Override
     public boolean isFacetAvailable( Class<?> f )
     {
         if ( getActualRepositoryKind().isFacetAvailable( f ) )
@@ -102,7 +93,7 @@ public class MutableProxyRepositoryKind
             return true;
         }
 
-        for ( Class<?> facet : sharedFacets )
+        for ( Class<?> facet : facets )
         {
             if ( f.isAssignableFrom( facet ) )
             {
