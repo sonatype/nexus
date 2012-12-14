@@ -175,7 +175,7 @@ public class HttpClientRemoteStorage
             InputStream is;
             try
             {
-                is = new InterruptableInputStream( method, httpResponse.getEntity().getContent() );
+                is = new InterruptableInputStream( repository, method, httpResponse.getEntity().getContent() );
 
                 String mimeType = ContentType.getOrDefault( httpResponse.getEntity() ).getMimeType();
                 if ( mimeType == null )
@@ -262,7 +262,7 @@ public class HttpClientRemoteStorage
         try
         {
             entity =
-                new InputStreamEntity( new InterruptableInputStream( fileItem.getInputStream() ), fileItem.getLength() );
+                new InputStreamEntity( new InterruptableInputStream( repository, fileItem.getInputStream() ), fileItem.getLength() );
         }
         catch ( IOException e )
         {

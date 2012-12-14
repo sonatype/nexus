@@ -16,7 +16,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InterruptedIOException;
 
+import org.apache.http.ConnectionClosedException;
 import org.apache.http.client.methods.AbortableHttpRequest;
+import org.sonatype.nexus.proxy.RemoteStorageEofException;
+import org.sonatype.nexus.proxy.repository.ProxyRepository;
 
 /**
  * Best-effort interruptable InputStream wrapper. The wrapper checks for Thread.isInterrupred before delegating to the
@@ -26,20 +29,22 @@ import org.apache.http.client.methods.AbortableHttpRequest;
 class InterruptableInputStream
     extends InputStream
 {
+    private final ProxyRepository proxyRepository;
 
     private final InputStream stream;
 
     private AbortableHttpRequest request;
 
-    public InterruptableInputStream( final AbortableHttpRequest request, final InputStream stream )
+    public InterruptableInputStream( final ProxyRepository proxyRepository, final AbortableHttpRequest request, final InputStream stream )
     {
+        this.proxyRepository = proxyRepository;
         this.request = request;
         this.stream = stream;
     }
 
-    public InterruptableInputStream( final InputStream stream )
+    public InterruptableInputStream( final ProxyRepository proxyRepository, final InputStream stream )
     {
-        this( null, stream );
+        this( proxyRepository, null, stream );
     }
 
     private void abortIfInterrupted()
@@ -60,7 +65,14 @@ class InterruptableInputStream
         throws IOException
     {
         abortIfInterrupted();
-        return stream.read();
+        try
+        {
+            return stream.read();
+        }
+        catch ( ConnectionClosedException e )
+        {
+            throw new RemoteStorageEofException( proxyRepository, e );
+        }
     }
 
     @Override
@@ -68,7 +80,14 @@ class InterruptableInputStream
         throws IOException
     {
         abortIfInterrupted();
-        return stream.read( b );
+        try
+        {
+            return stream.read( b );
+        }
+        catch ( ConnectionClosedException e )
+        {
+            throw new RemoteStorageEofException( proxyRepository, e );
+        }
     }
 
     @Override
@@ -76,7 +95,14 @@ class InterruptableInputStream
         throws IOException
     {
         abortIfInterrupted();
-        return stream.read( b, off, len );
+        try
+        {
+            return stream.read( b, off, len );
+        }
+        catch ( ConnectionClosedException e )
+        {
+            throw new RemoteStorageEofException( proxyRepository, e );
+        }
     }
 
     @Override
