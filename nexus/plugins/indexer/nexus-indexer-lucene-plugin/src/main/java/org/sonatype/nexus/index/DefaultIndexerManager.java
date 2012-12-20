@@ -30,10 +30,11 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import javax.annotation.Nullable;
@@ -316,7 +317,13 @@ public class DefaultIndexerManager
      * Note that locks are only added to the map, never removed. This introduces a minor memory leak for each deleted
      * repository id, but makes synchronization logic much easier.
      */
-    private final Map<String, ReentrantLock> reindexLocks = new HashMap<String, ReentrantLock>();
+    private final Map<String, ForceableReentrantLock> reindexLocks = new HashMap<String, ForceableReentrantLock>();
+
+    /**
+     * Threads attempting to delete repository indexing contexts. Used as a marker to index requests for repositories
+     * that are being deleted.
+     */
+    private final ConcurrentMap<String, Thread> deleteThreads = new ConcurrentHashMap<String, Thread>();
 
     private File workingDirectory;
 
@@ -428,12 +435,14 @@ public class DefaultIndexerManager
     private void addRepositoryIndexContext( final Repository repository, IndexingContext oldContext )
         throws IOException
     {
+        logger.debug( "Adding indexing context for repository {}", repository.getId() );
+
         if ( oldContext != null )
         {
-            // this is really an error, the oldContext is expected to be null here
-            mavenIndexer.removeIndexingContext( oldContext, true );
-            logger.warn( "Removed old/stale indexing context {} for repository {}", oldContext.getId(),
-                         repository.getId() );
+            // this is an error, oldContext can have filesystem locks or long-running threads
+            logger.error( "Old/stale indexing context {} for repository {}. Operation cancaled.", oldContext.getId(),
+                          repository.getId() );
+            return;
         }
 
         IndexingContext ctx = null;
@@ -486,24 +495,65 @@ public class DefaultIndexerManager
     public void removeRepositoryIndexContext( final Repository repository, final boolean deleteFiles )
         throws IOException
     {
-        exclusiveSingle( repository, new Runnable()
+        Thread otherThread = deleteThreads.putIfAbsent( repository.getId(), Thread.currentThread() );
+        if ( otherThread != null )
         {
-            @Override
-            public void run( final IndexingContext context )
-                throws IOException
-            {
-                if ( context != null )
-                {
-                    mavenIndexer.removeIndexingContext( context, deleteFiles );
+            logger.debug( "Indexing context for repository {} is being deleted by thread {}", repository.getId(),
+                          otherThread.getName() );
+            return;
+        }
 
-                    logger.debug( "Removed indexing context {} for repository {}", context.getId(), repository.getId() );
-                }
-                else
+        try
+        {
+            final boolean[] removed = new boolean[1];
+            final ForceableReentrantLock lock = getReindexLock( repository );
+            if ( lock.tryForceLock( lockTimeoutSeconds, TimeUnit.SECONDS ) )
+            {
+                try
                 {
-                    logger.debug( "Could not remove <null> indexing context for repository {}", repository.getId() );
+                    exclusiveSingle( repository, new Runnable()
+                    {
+                        @Override
+                        public void run( final IndexingContext context )
+                            throws IOException
+                        {
+                            removeRepositoryIndexingContext( repository, deleteFiles, context );
+                            removed[0] = true;
+                        }
+                    } );
+                }
+                finally
+                {
+                    lock.unlock();
                 }
             }
-        } );
+            if ( !removed[0] )
+            {
+                throw new IOException( "Could not remove indexing context for repository " + repository.getId() );
+            }
+        }
+        finally
+        {
+            deleteThreads.remove( repository.getId() );
+        }
+    }
+
+    private void removeRepositoryIndexingContext( final Repository repository, final boolean deleteFiles,
+                                                     final IndexingContext context )
+        throws IOException
+    {
+        if ( context != null )
+        {
+            logger.debug( "Removing indexing context for repository {} deleteFiles={}", repository.getId(), deleteFiles );
+
+            mavenIndexer.removeIndexingContext( context, deleteFiles );
+
+            logger.debug( "Removed indexing context {} for repository {}", context.getId(), repository.getId() );
+        }
+        else
+        {
+            logger.debug( "Could not remove <null> indexing context for repository {}", repository.getId() );
+        }
     }
 
     public void updateRepositoryIndexContext( final String repositoryId )
@@ -535,6 +585,8 @@ public class DefaultIndexerManager
             public void run( IndexingContext context )
                 throws IOException
             {
+                logger.debug( "Updating indexing context for repository {}", repository.getId() );
+
                 File repoRoot = getRepositoryLocalStorageAsFile( repository );
 
                 // remove context, if it already existed (ctx != null) and any of the following is true:
@@ -564,6 +616,8 @@ public class DefaultIndexerManager
                         logger.debug( "Could not add indexing context for repository {}", repositoryId, e );
                     }
                 }
+
+                logger.debug( "Updated indexing context for repository {}", repository.getId() );
             }
         } );
     }
@@ -846,9 +900,11 @@ public class DefaultIndexerManager
     // Reindexing related
     // ----------------------------------------------------------------------------
 
-    public void reindexAllRepositories( final String path, final boolean fullReindex )
+    public void reindexAllRepositories( final String fromPath, final boolean fullReindex )
         throws IOException
     {
+        logger.debug( "Reindexing all repositories fromPath={} fullReindex={}", fromPath, fullReindex );
+
         final List<Repository> reposes = repositoryRegistry.getRepositories();
         final ArrayList<IOException> exceptions = new ArrayList<IOException>();
         for ( Repository repository : reposes )
@@ -856,7 +912,7 @@ public class DefaultIndexerManager
             try
             {
                 // going directly to single-shot, we are iterating over all reposes anyway
-                reindexRepository( repository, path, fullReindex );
+                reindexRepository( repository, fromPath, fullReindex );
             }
             catch ( IOException e )
             {
@@ -945,11 +1001,14 @@ public class DefaultIndexerManager
             return;
         }
 
-        Lock reindexLock = getReindexLock( repository );
+        ForceableReentrantLock reindexLock = getReindexLock( repository );
         if ( reindexLock.tryLock() )
         {
             try
             {
+                logger.debug( "Reindexing repository {} fromPath={} fullReindex={}", repository.getId(), fromPath,
+                              fullReindex );
+
                 Runnable runnable = new Runnable()
                 {
                     @Override
@@ -989,6 +1048,7 @@ public class DefaultIndexerManager
                     // scans directly into "real" ctx
                     sharedSingle( repository, runnable );
                 }
+
                 logger.debug( "Reindexed repository {}", repository.getId() );
             }
             finally
@@ -1010,6 +1070,8 @@ public class DefaultIndexerManager
     public void downloadAllIndex()
         throws IOException
     {
+        logger.debug( "Downloading remote indexes for all repositories" );
+
         final List<ProxyRepository> reposes = repositoryRegistry.getRepositoriesWithFacet( ProxyRepository.class );
         final ArrayList<IOException> exceptions = new ArrayList<IOException>();
         for ( ProxyRepository repository : reposes )
@@ -1075,7 +1137,7 @@ public class DefaultIndexerManager
             return;
         }
 
-        Lock reindexLock = getReindexLock( repository );
+        ForceableReentrantLock reindexLock = getReindexLock( repository );
         if ( reindexLock.tryLock() )
         {
             try
@@ -1295,6 +1357,8 @@ public class DefaultIndexerManager
     public void publishAllIndex()
         throws IOException
     {
+        logger.debug( "Publishing indexes for all repositories" );
+
         final List<Repository> reposes = repositoryRegistry.getRepositories();
         final ArrayList<IOException> exceptions = new ArrayList<IOException>();
         // just publish all, since we use merged context, no need for double pass
@@ -1360,7 +1424,7 @@ public class DefaultIndexerManager
             return;
         }
 
-        Lock reindexLock = getReindexLock( repository );
+        ForceableReentrantLock reindexLock = getReindexLock( repository );
         if ( reindexLock.tryLock() )
         {
             try
@@ -1390,6 +1454,8 @@ public class DefaultIndexerManager
     private void publishRepositoryIndex( final Repository repository, IndexingContext context )
         throws IOException
     {
+        logger.debug( "Publishing index for repository {}", repository.getId() );
+
         File targetDir = null;
 
         try
@@ -1423,6 +1489,8 @@ public class DefaultIndexerManager
                     storeIndexItem( repository, file, context );
                 }
             }
+
+            logger.debug( "Published index for repository {}", repository.getId() );
         }
         finally
         {
@@ -1531,6 +1599,8 @@ public class DefaultIndexerManager
     public void optimizeAllRepositoriesIndex()
         throws IOException
     {
+        logger.debug( "Optimizing indexes for all repositories" );
+
         final List<Repository> repos = repositoryRegistry.getRepositories();
         final ArrayList<IOException> exceptions = new ArrayList<IOException>();
         for ( Repository repository : repos )
@@ -1606,9 +1676,11 @@ public class DefaultIndexerManager
             {
                 TaskUtil.checkInterruption();
 
-                logger.debug( "Optimizing local index context for repository: " + repository.getId() );
+                logger.debug( "Optimizing index for repository {} ", repository.getId() );
 
                 context.optimize();
+
+                logger.debug( "Optimized index for repository {} ", repository.getId() );
             }
         } );
     }
@@ -2478,6 +2550,16 @@ public class DefaultIndexerManager
      */
     private Lock getRepositoryLock( Repository repository, boolean exclusive )
     {
+        final String lockName = exclusive ? "exclusive" : "shared";
+
+        Thread deleteThread = deleteThreads.get( repository.getId() );
+        if ( deleteThread != null && deleteThread != Thread.currentThread() )
+        {
+            logger.debug( "Could not acquire {} lock on repository {}. The repository is being deleted by thread {}.",
+                          lockName, repository.getId(), deleteThread.getName() );
+            return null;
+        }
+
         ReadWriteLock rwlock;
         synchronized ( repositoryLocks )
         {
@@ -2488,6 +2570,7 @@ public class DefaultIndexerManager
                 repositoryLocks.put( repository.getId(), rwlock );
             }
         }
+
         try
         {
             Lock lock = exclusive ? rwlock.writeLock() : rwlock.readLock();
@@ -2495,13 +2578,27 @@ public class DefaultIndexerManager
             {
                 return lock;
             }
+            if ( logger.isDebugEnabled() )
+            {
+                logger.warn( "Could not acquire {} lock on repository {} in {} seconds. " //
+                    + "Consider increasing value of ''nexus.indexer.locktimeout'' parameter. " //
+                    + "The operation has been aborted.", //
+                             lockName, repository.getId(), lockTimeoutSeconds, new Exception( ARTIFICIAL_EXCEPTION ) );
+            }
+            else
+            {
+                logger.warn( "Could not acquire {} lock on repository {} in {} seconds. " //
+                    + "Consider increasing value of ''nexus.indexer.locktimeout'' parameter. " //
+                    + "Enable debug log to recieve more information.", //
+                             lockName, repository.getId(), lockTimeoutSeconds );
+            }
         }
         catch ( InterruptedException e )
         {
             // TODO consider throwing IOException instead
+            logger.debug( "Interrupted {} lock request on repository {}", lockName, repository.getId(),
+                          new Exception( ARTIFICIAL_EXCEPTION ) );
         }
-        logger.error( "Could not acquire {} lock on repository {}", exclusive ? "exclusive" : "shared",
-                      repository.getId(), new Exception( ARTIFICIAL_EXCEPTION ) );
         return null;
     }
 
@@ -2509,14 +2606,14 @@ public class DefaultIndexerManager
      * Returns "reindex" reentrant lock that corresponds to the repository. The lock is used to protect access to
      * repository gz index download and publishing areas and to the repository local storage.
      */
-    private ReentrantLock getReindexLock( final Repository repository )
+    private ForceableReentrantLock getReindexLock( final Repository repository )
     {
         synchronized ( reindexLocks )
         {
-            ReentrantLock lock = reindexLocks.get( repository.getId() );
+            ForceableReentrantLock lock = reindexLocks.get( repository.getId() );
             if ( lock == null )
             {
-                lock = new ReentrantLock();
+                lock = new ForceableReentrantLock();
                 reindexLocks.put( repository.getId(), lock );
             }
             return lock;

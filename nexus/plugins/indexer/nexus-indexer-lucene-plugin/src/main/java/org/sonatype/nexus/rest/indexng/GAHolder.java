@@ -13,37 +13,37 @@
 package org.sonatype.nexus.rest.indexng;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
 import org.apache.maven.index.artifact.VersionUtils;
-import org.sonatype.aether.version.Version;
 import org.sonatype.nexus.rest.model.NexusNGArtifact;
 
 class GAHolder
 {
-    private final SortedMap<Version, NexusNGArtifact> versionHits = new TreeMap<Version, NexusNGArtifact>();
+    private final SortedMap<StringVersion, NexusNGArtifact> versionHits = new TreeMap<StringVersion, NexusNGArtifact>( Collections.reverseOrder() );
 
     private NexusNGArtifact latestSnapshot = null;
 
-    private Version latestSnapshotVersion = null;
+    private StringVersion latestSnapshotVersion = null;
 
     private NexusNGArtifact latestRelease = null;
 
-    private Version latestReleaseVersion = null;
+    private StringVersion latestReleaseVersion = null;
 
-    public NexusNGArtifact getVersionHit( Version version )
+    public NexusNGArtifact getVersionHit( StringVersion version )
     {
         return versionHits.get( version );
     }
 
-    public void putVersionHit( Version version, NexusNGArtifact versionHit )
+    public void putVersionHit( StringVersion version, NexusNGArtifact versionHit )
     {
         versionHits.put( version, versionHit );
 
         if ( VersionUtils.isSnapshot( versionHit.getVersion() ) )
         {
-            if ( latestSnapshotVersion == null || latestSnapshotVersion.compareTo( version ) > 0 )
+            if ( latestSnapshotVersion == null || latestSnapshotVersion.compareTo( version ) < 0 )
             {
                 latestSnapshot = versionHit;
                 latestSnapshotVersion = version;
@@ -51,7 +51,7 @@ class GAHolder
         }
         else
         {
-            if ( latestReleaseVersion == null || latestReleaseVersion.compareTo( version ) > 0 )
+            if ( latestReleaseVersion == null || latestReleaseVersion.compareTo( version ) < 0 )
             {
                 latestRelease = versionHit;
                 latestReleaseVersion = version;

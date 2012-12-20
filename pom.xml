@@ -19,14 +19,14 @@
   <parent>
     <groupId>org.sonatype.forge</groupId>
     <artifactId>forge-parent</artifactId>
-    <version>27</version>
+    <version>30</version>
     <relativePath />
   </parent>
 
   <groupId>org.sonatype.nexus</groupId>
   <artifactId>nexus</artifactId>
   <packaging>pom</packaging>
-  <version>2.3-SNAPSHOT</version>
+  <version>2.4-SNAPSHOT</version>
 
   <inceptionYear>2007</inceptionYear>
   <url>http://nexus.sonatype.org/</url>
@@ -174,15 +174,14 @@
     <slf4j.version>1.7.2</slf4j.version>
     <logback.version>1.0.7</logback.version>
     <aether.version>1.13.1</aether.version>
-    <commons-beanutils.version>1.7.0</commons-beanutils.version>
     <enunciate.version>1.26.1</enunciate.version>
     <jetty.version>8.1.8.v20121106</jetty.version>
     <maven.version>3.0.4</maven.version>
-    <plexus-security.version>3.0.1-SNAPSHOT</plexus-security.version>
+    <plexus-security.version>3.0.1</plexus-security.version>
     <restlet.version>1.1.6-SONATYPE-5348-V8</restlet.version>
     <shiro.version>1.2.1</shiro.version>
     <jackson.version>1.9.10</jackson.version>
-    <goodies.version>1.5</goodies.version>
+    <goodies.version>1.5.1</goodies.version>
 
     <!-- HACK: Workaround for issue with IDEA loading nexus-plugins -->
     <nexus-plugin.type>nexus-plugin</nexus-plugin.type>
@@ -363,7 +362,7 @@
       <dependency>
         <groupId>org.sonatype.sisu</groupId>
         <artifactId>sisu-jetty8</artifactId>
-        <version>1.4.1</version>
+        <version>1.4.2</version>
       </dependency>
 
       <dependency>
@@ -554,22 +553,21 @@
         </exclusions>
       </dependency>
 
+      <!--
+      Use our custom build of commons-beanutils 1.8.3 which excludes the commons-collections classes.
+      For more details see:
+      https://issues.sonatype.org/browse/NEXUS-5336
+      -->
       <dependency>
         <groupId>commons-beanutils</groupId>
         <artifactId>commons-beanutils-core</artifactId>
-        <version>${commons-beanutils.version}</version>
+        <version>1.8.3-SONATYPE</version>
         <exclusions>
           <exclusion>
             <groupId>commons-logging</groupId>
             <artifactId>commons-logging</artifactId>
           </exclusion>
         </exclusions>
-      </dependency>
-
-      <dependency>
-        <groupId>commons-beanutils</groupId>
-        <artifactId>commons-beanutils-bean-collections</artifactId>
-        <version>${commons-beanutils.version}</version>
       </dependency>
 
       <dependency>
@@ -882,7 +880,7 @@
       <dependency>
         <groupId>org.sonatype.sisu.litmus</groupId>
         <artifactId>litmus-testsupport</artifactId>
-        <version>1.5.1</version>
+        <version>1.5.2</version>
       </dependency>
 
       <!--
@@ -1208,14 +1206,6 @@
       <plugins>
 
         <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-jar-plugin</artifactId>
-          <configuration>
-            <skipIfEmpty>false</skipIfEmpty>
-          </configuration>
-        </plugin>
-
-        <plugin>
           <groupId>org.jboss.tattletale</groupId>
           <artifactId>tattletale-maven</artifactId>
           <version>1.1.2.Final</version>
@@ -1332,15 +1322,12 @@
         <plugin>
           <artifactId>maven-surefire-plugin</artifactId>
           <configuration>
-            <failIfNoTests>false</failIfNoTests>
-            <forkMode>once</forkMode>
             <!--
             FIXME: Some tests do not root properly, should be update to use TestSupport util.resolve* helpers; leave default for now
             https://issues.sonatype.org/browse/NEXUS-5345
             -->
             <!--<workingDirectory>${project.build.directory}</workingDirectory>-->
-            <systemPropertyVariables>
-              <java.awt.headless>true</java.awt.headless>
+            <systemPropertyVariables combine.children="append">
               <!-- start junit benchmarks config -->
               <jub.consumers>H2,CONSOLE</jub.consumers>
               <jub.db.file>.benchmarks</jub.db.file>
@@ -1358,7 +1345,6 @@
         <plugin>
           <artifactId>maven-failsafe-plugin</artifactId>
           <configuration>
-            <failIfNoTests>false</failIfNoTests>
             <forkMode>once</forkMode>
             <!--
             FIXME: Some tests do not root properly, should be update to use TestSupport util.resolve* helpers; leave default for now
@@ -1368,8 +1354,7 @@
             <excludes combine.children="append">
               <exclude>**/Abstract*</exclude>
             </excludes>
-            <systemPropertyVariables>
-              <java.awt.headless>true</java.awt.headless>
+            <systemPropertyVariables combine.children="append">
               <!-- logging configuration properties, see logback*.xml files -->
               <test.log.level>${test.log.level}</test.log.level>
               <it.test.log.level>${it.test.log.level}</it.test.log.level>
