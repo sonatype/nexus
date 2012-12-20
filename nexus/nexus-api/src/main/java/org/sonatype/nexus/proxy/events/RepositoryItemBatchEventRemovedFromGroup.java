@@ -14,25 +14,43 @@ package org.sonatype.nexus.proxy.events;
 
 import java.util.Collection;
 
+import org.sonatype.nexus.proxy.repository.GroupRepository;
 import org.sonatype.nexus.proxy.repository.Repository;
 
 /**
- * Event fired when a removal of a batch of items is to be announced.
- * 
+ * Event fired by a group repository when some member repository is removed from a group, and hence, contributed items
+ * by removed member are not anymore accessible.
+ *
  * @author cstamas
  * @since 2.3
  */
-public abstract class RepositoryItemBatchEventRemoved
+public class RepositoryItemBatchEventRemovedFromGroup
     extends RepositoryItemBatchEvent
 {
+
+    private final Repository contributor;
+
     /**
      * Constructor.
-     * 
-     * @param repository
+     *
+     * @param group
+     * @param contributor
      * @param itemPaths
      */
-    public RepositoryItemBatchEventRemoved( final Repository repository, final Collection<String> itemPaths )
+    public RepositoryItemBatchEventRemovedFromGroup( final GroupRepository group, final Repository contributor,
+        final Collection<String> itemPaths )
     {
-        super( repository, itemPaths );
+        super( group, itemPaths );
+        this.contributor = contributor;
+    }
+
+    /**
+     * Returns the member repository that contributed items to group.
+     *
+     * @return
+     */
+    public Repository getContributor()
+    {
+        return contributor;
     }
 }
