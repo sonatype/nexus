@@ -24,7 +24,6 @@ import java.util.concurrent.RejectedExecutionException;
 
 import org.codehaus.plexus.component.annotations.Requirement;
 import org.sonatype.configuration.ConfigurationException;
-import org.sonatype.nexus.configuration.ConfigurationPrepareForSaveEvent;
 import org.sonatype.nexus.proxy.AccessDeniedException;
 import org.sonatype.nexus.proxy.IllegalOperationException;
 import org.sonatype.nexus.proxy.ItemNotFoundException;
@@ -61,7 +60,7 @@ import org.sonatype.plexus.appevents.Event;
 import org.sonatype.sisu.charger.CallableExecutor;
 import org.sonatype.sisu.charger.internal.AllArrivedChargeStrategy;
 import org.sonatype.sisu.charger.internal.FirstArrivedInOrderChargeStrategy;
-import org.sonatype.sisu.goodies.eventbus.EventBus;
+
 import com.google.common.eventbus.Subscribe;
 
 /**
@@ -162,29 +161,37 @@ public abstract class AbstractGroupRepository
 
         for ( Repository removedRepository : removedRepositories )
         {
+            List<String> itemPaths = null;
             if ( removedRepository.getRepositoryKind().isFacetAvailable( TransientRepository.class ) )
             {
-                final RepositoryItemBatchEventRemovedFromGroup removedFromGroupEvent =
-                    new RepositoryItemBatchEventRemovedFromGroup( this, removedRepository, enumerateRepositoryContents( removedRepository ) );
-                eventsToFire.add( removedFromGroupEvent );
+                itemPaths = enumerateRepositoryContents( removedRepository );
             }
+            final RepositoryItemBatchEventRemovedFromGroup removedFromGroupEvent =
+                new RepositoryItemBatchEventRemovedFromGroup( this, removedRepository,
+                    itemPaths );
+            eventsToFire.add( removedFromGroupEvent );
         }
 
         for ( String addedRepositoryId : membersChangedEvent.getAddedRepositoryIds() )
         {
             try
             {
-                final Repository repository = repoRegistry.getRepository( addedRepositoryId );
-                if ( repository.getRepositoryKind().isFacetAvailable( TransientRepository.class ) )
+                final Repository addedRepository = repoRegistry.getRepository( addedRepositoryId );
+                List<String> itemPaths = null;
+                if ( addedRepository.getRepositoryKind().isFacetAvailable( TransientRepository.class ) )
                 {
-                    final RepositoryItemBatchEventAddedToGroup addedToGroupEvent =
-                        new RepositoryItemBatchEventAddedToGroup( this, repository, enumerateRepositoryContents( repository ) );
-                    eventsToFire.add( addedToGroupEvent );
+                    itemPaths = enumerateRepositoryContents( addedRepository );
                 }
+                final RepositoryItemBatchEventAddedToGroup addedToGroupEvent =
+                    new RepositoryItemBatchEventAddedToGroup( this, addedRepository,
+                        itemPaths );
+                eventsToFire.add( addedToGroupEvent );
             }
             catch ( NoSuchRepositoryException e )
             {
                 // ?
+                // could happen only if some config concurrency problem is in place
+                // member are being added, hence, it should be created first (and be in registry)
             }
         }
 

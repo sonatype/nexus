@@ -16,7 +16,6 @@ import java.util.Collection;
 
 import org.sonatype.nexus.proxy.repository.GroupRepository;
 import org.sonatype.nexus.proxy.repository.Repository;
-import org.sonatype.nexus.scheduling.RepositoryTaskActivityDescriptor;
 
 /**
  * Event fired by a group repository when some member repository is added to a group, and hence, contributes items
@@ -48,7 +47,7 @@ public class RepositoryItemBatchEventAddedToGroup
     /**
      * Returns the member repository that contributed items to group.
      *
-     * @return
+     * @return the contributor.
      */
     public Repository getContributor()
     {

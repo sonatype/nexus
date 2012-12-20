@@ -43,13 +43,20 @@ public abstract class RepositoryItemBatchEvent
     public RepositoryItemBatchEvent( final Repository repository, final Collection<String> itemPaths )
     {
         super( repository );
-        this.itemPaths = Collections.unmodifiableList( new ArrayList<String>( itemPaths ) );
+        if ( itemPaths != null )
+        {
+            this.itemPaths = Collections.unmodifiableList( new ArrayList<String>( itemPaths ) );
+        }
+        else
+        {
+            this.itemPaths = null;
+        }
     }
 
     /**
-     * Gets the involved item.
+     * Gets the involved item. Returns {@code null} if unknown for some reason.
      * 
-     * @return list of items in this batch.
+     * @return list of items in this batch or {@code null} if unknown.
      */
     public List<String> getItemPaths()
     {

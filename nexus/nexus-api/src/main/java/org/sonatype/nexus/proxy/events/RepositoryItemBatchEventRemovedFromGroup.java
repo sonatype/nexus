@@ -25,7 +25,7 @@ import org.sonatype.nexus.proxy.repository.Repository;
  * @since 2.3
  */
 public class RepositoryItemBatchEventRemovedFromGroup
-    extends RepositoryItemBatchEvent
+    extends RepositoryItemBatchEventRemoved
 {
 
     private final Repository contributor;
@@ -47,7 +47,7 @@ public class RepositoryItemBatchEventRemovedFromGroup
     /**
      * Returns the member repository that contributed items to group.
      *
-     * @return
+     * @return the contributor.
      */
     public Repository getContributor()
     {

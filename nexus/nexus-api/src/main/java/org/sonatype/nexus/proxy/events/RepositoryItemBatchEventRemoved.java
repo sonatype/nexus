@@ -22,7 +22,7 @@ import org.sonatype.nexus.proxy.repository.Repository;
  * @author cstamas
  * @since 2.3
  */
-public class RepositoryItemBatchEventRemoved
+public abstract class RepositoryItemBatchEventRemoved
     extends RepositoryItemBatchEvent
 {
     /**
