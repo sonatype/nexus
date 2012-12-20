@@ -19,7 +19,7 @@ import org.sonatype.nexus.proxy.repository.Repository;
 
 /**
  * Event fired by a group repository when some member repository is added to a group, and hence, contributes items
- * in a batch, makes it accessible over the given group.
+ * in a batch, makes all of the content added accessible over the given group.
  *
  * @author cstamas
  * @since 2.3
