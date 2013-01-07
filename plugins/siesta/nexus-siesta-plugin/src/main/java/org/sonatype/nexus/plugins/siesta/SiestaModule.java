@@ -35,6 +35,17 @@ public class SiestaModule
 {
     @Override
     protected void configure() {
+        /*
+         * We need to import some components from nexus-restlet1x-plugin for SecurityWebFilter, but its use is
+         * hidden behind guice-servlet muck. We therefore bind it explicitly here so it will get seen by Sisu.
+         *
+         * Note: it would have been preferable to use "requireBinding(SecurityWebFilter.class)" to import the
+         * SecurityWebFilter instance from nexus-restlet1x-plugin, but guice-servlet only wants to see filters
+         * bound directly as singletons in this Injector (odd limitation). An alternative would have been to
+         * requireBinding's for SecuritySystem and FilterChainResolver, which are the filter's dependencies.
+         */
+        bind( SecurityWebFilter.class );
+
         install(new org.sonatype.sisu.siesta.server.internal.SiestaModule());
         install(new SiestaJerseyModule());
         install(new SiestaJacksonModule());
