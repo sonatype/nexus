@@ -12,6 +12,7 @@
  */
 package org.sonatype.nexus.plugins.siesta.test;
 
+import org.apache.shiro.authz.annotation.RequiresAuthentication;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sonatype.nexus.configuration.application.ApplicationConfiguration;
@@ -56,6 +57,7 @@ public class TestResource
 
     @GET
     @Produces({APPLICATION_XML, APPLICATION_JSON})
+    @RequiresAuthentication
     public UserXO get() {
         log.info("GET");
 

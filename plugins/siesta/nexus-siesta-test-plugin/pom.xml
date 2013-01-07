@@ -49,6 +49,19 @@
       <version>${project.version}</version>
       <scope>provided</scope>
     </dependency>
+
+    <dependency>
+      <groupId>org.apache.shiro</groupId>
+      <artifactId>shiro-aspectj</artifactId>
+      <version>${shiro.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.apache.shiro</groupId>
+          <artifactId>shiro-core</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
   </dependencies>
 
   <build>
@@ -94,5 +107,68 @@
       </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <profile>
+      <!--
+      NOTE: Enabling ancillary aspectj weaving in a profile so that it can be disabled if needed.
+      NOTE: The cobertura plugin seems to have issue here, so we need to flip it off when running sonar reports.
+      -->
+      <id>weave</id>
+
+      <activation>
+        <property>
+          <name>!skip-weave</name>
+        </property>
+      </activation>
+
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>aspectj-maven-plugin</artifactId>
+            <version>1.4</version>
+            <dependencies>
+              <dependency>
+                <groupId>org.aspectj</groupId>
+                <artifactId>aspectjtools</artifactId>
+                <version>1.6.12</version>
+              </dependency>
+            </dependencies>
+            <executions>
+              <execution>
+                <goals>
+                  <goal>compile</goal>
+                  <goal>test-compile</goal>
+                </goals>
+                <configuration>
+                  <!--<Xlint>ignore</Xlint>-->
+                  <!--<XaddSerialVersionUID>true</XaddSerialVersionUID>-->
+                  <showWeaveInfo>true</showWeaveInfo>
+                  <source>1.6</source>
+                  <target>1.6</target>
+                  <aspectLibraries>
+                    <aspectLibrary>
+                      <groupId>org.apache.shiro</groupId>
+                      <artifactId>shiro-aspectj</artifactId>
+                    </aspectLibrary>
+                  </aspectLibraries>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-jar-plugin</artifactId>
+            <configuration>
+              <excludes>
+                <exclude>**/builddef.lst</exclude>
+              </excludes>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 
 </project>

@@ -14,6 +14,8 @@ package org.sonatype.nexus.plugins.siesta;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.servlet.ServletModule;
+import org.sonatype.nexus.web.NexusGuiceFilter;
+import org.sonatype.security.web.guice.SecurityWebFilter;
 import org.sonatype.sisu.siesta.jackson.SiestaJacksonModule;
 import org.sonatype.sisu.siesta.server.internal.ComponentDiscoveryApplication;
 import org.sonatype.sisu.siesta.server.internal.SiestaServlet;
@@ -47,6 +49,8 @@ public class SiestaModule
                 // FIXME: Resolve how we want to expose this, might want to add some structure here if we every want/plan/need-to support changing this again
                 // FIXME: Maybe /service/<api>/ where <api> is siesta or local (for legacy)?  Since that part will never likely be used for what it was originally intended (a remoting/hostname mechanism IIUC).
                 serve("/rest/*").with(SiestaServlet.class);
+
+                filter("/rest/*").through( SecurityWebFilter.class );
             }
         });
     }
