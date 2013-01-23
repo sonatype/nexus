@@ -49,6 +49,7 @@ define('nexus/config',['extjs', 'nexus/messagebox', 'sonatype/init'], function(E
     return {
       isDebug : window.location.search === '?debug',
       host : host,
+      contextPath : contextPath,
       servicePath : servicePath,
       resourcePath : resourcePath,
       extPath : resourcePath + '/ext-3.4.0',

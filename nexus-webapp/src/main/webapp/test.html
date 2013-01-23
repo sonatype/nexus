@@ -1,0 +1,38 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+    <title>TEST</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+
+    <!--<link rel="stylesheet" href="ext-3.4.0/resources/css/ext-all.css" type="text/css" media="screen" charset="utf-8">-->
+    <!--<link rel="stylesheet" href="ext-3.4.0/resources/css/xtheme-gray.css" type="text/css" media="screen" charset="utf-8">-->
+    <!--<link rel="stylesheet" href="style/${build.timestamp}/sonatype-all.css" type="text/css" media="screen" title="no title" charset="utf-8">-->
+
+    <script type="text/javascript">
+        var require = {
+            baseUrl: 'js'
+            //urlArgs: "cache=2.4-SNAPSHOT"
+        };
+    </script>
+
+    <script src="js/lib/require-2.1.1.js" type="text/javascript" charset="utf-8"></script>
+
+    <script src="ext-3.4.0/adapter/ext/ext-base.js" type="text/javascript" charset="utf-8"></script>
+    <script src="ext-3.4.0/ext-all.js" type="text/javascript" charset="utf-8"></script>
+    <!--<script src="js/${build.timestamp}/sonatype-all.js" type="text/javascript" charset="utf-8"></script>-->
+
+    <script type="text/javascript" charset="utf-8">
+        requirejs(['require', 'extjs', 'ext/define', 'ext/string'], function() {
+            requirejs(['test/Bar'], function() {
+                var tmp = new test.Bar();
+            });
+        });
+    </script>
+</head>
+<body>
+
+TEST
+
+</body>
+</html>
