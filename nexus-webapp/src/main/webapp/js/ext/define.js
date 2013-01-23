@@ -29,11 +29,11 @@ define('ext/define', ['extjs', 'ext/string', 'nexus/log'], function () {
     /**
      * Define a new class.
      *
+     * @static
+     *
      * @param {String} className        The name of the class to define.
      * @param {Object} data             Configuration for the class.
      * @param {Function} [createdFn]    Function to execute when class has been defined.
-     * @return {Function}               A reference to the defined class.
-     * @static
      *
      * @cfg {String} extend             Super-class name.
      * @cfg {*} statics                 Static members.
@@ -205,7 +205,7 @@ define('ext/define', ['extjs', 'ext/string', 'nexus/log'], function () {
 
             return type;
         });
-    }
+    };
 
     // FIXME: Port over extjs-4 Ext.create() bits so we can have sane[r] object creation
 
