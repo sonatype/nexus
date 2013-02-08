@@ -122,10 +122,11 @@ public class RemoteBrowserResource
             remotePath = storageItem.getRequestPath().substring( 1 );
         }
 
+        HttpClient client = null;
         try
         {
             ProxyRepository proxyRepository = getUnprotectedRepositoryRegistry().getRepositoryWithFacet( id, ProxyRepository.class );
-            HttpClient client = httpClientProvider.createHttpClient(proxyRepository.getRemoteStorageContext());
+            client = httpClientProvider.createHttpClient(proxyRepository.getRemoteStorageContext());
 
             MavenRepositoryReader mr = new MavenRepositoryReader( client, queryStringBuilder );
             MavenRepositoryReaderResponse data = new MavenRepositoryReaderResponse();
@@ -141,6 +142,13 @@ public class RemoteBrowserResource
         {
             this.logger.warn( "Could not find repository: " + id, e );
             throw new ResourceException( Status.CLIENT_ERROR_BAD_REQUEST, "Could not find repository: " + id, e );
+        }
+        finally
+        {
+            if ( client != null )
+            {
+                httpClientProvider.releaseHttpClient( client );
+            }
         }
     }
 
