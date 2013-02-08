@@ -50,12 +50,14 @@ import org.sonatype.nexus.proxy.RemoteAuthenticationNeededException;
 import org.sonatype.nexus.proxy.RemoteStorageException;
 import org.sonatype.nexus.proxy.RemoteStorageTransportOverloadedException;
 import org.sonatype.nexus.proxy.ResourceStoreRequest;
+import org.sonatype.nexus.proxy.events.RepositoryRegistryEventRemove;
 import org.sonatype.nexus.proxy.item.AbstractStorageItem;
 import org.sonatype.nexus.proxy.item.DefaultStorageFileItem;
 import org.sonatype.nexus.proxy.item.PreparedContentLocator;
 import org.sonatype.nexus.proxy.item.StorageFileItem;
 import org.sonatype.nexus.proxy.item.StorageItem;
 import org.sonatype.nexus.proxy.repository.ProxyRepository;
+import org.sonatype.nexus.proxy.repository.Repository;
 import org.sonatype.nexus.proxy.storage.UnsupportedStorageOperationException;
 import org.sonatype.nexus.proxy.storage.remote.AbstractHTTPRemoteRepositoryStorage;
 import org.sonatype.nexus.proxy.storage.remote.DefaultRemoteStorageContext.BooleanFlagHolder;
@@ -64,9 +66,12 @@ import org.sonatype.nexus.proxy.storage.remote.RemoteRepositoryStorage;
 import org.sonatype.nexus.proxy.storage.remote.RemoteStorageContext;
 import org.sonatype.nexus.proxy.storage.remote.http.QueryStringBuilder;
 import org.sonatype.nexus.proxy.utils.UserAgentBuilder;
+import org.sonatype.sisu.goodies.eventbus.EventBus;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Stopwatch;
+import com.google.common.eventbus.AllowConcurrentEvents;
+import com.google.common.eventbus.Subscribe;
 
 /**
  * Apache HTTP client (4) {@link RemoteRepositoryStorage} implementation.
@@ -99,7 +104,7 @@ public class HttpClientRemoteStorage
     /**
      * Context key of HTTP client.
      */
-    private static final String CTX_KEY_CLIENT = PROVIDER_STRING + ".client";
+    public static final String CTX_KEY_CLIENT = PROVIDER_STRING + ".client";
 
     /**
      * Context key of a flag present in case that remote server is an Amazon S3.
@@ -127,11 +132,14 @@ public class HttpClientRemoteStorage
     @Inject
     HttpClientRemoteStorage( final UserAgentBuilder userAgentBuilder,
                              final ApplicationStatusSource applicationStatusSource, final MimeSupport mimeSupport,
-                             final QueryStringBuilder queryStringBuilder, final HttpClientManager httpClientManager )
+                             final QueryStringBuilder queryStringBuilder, final HttpClientManager httpClientManager,
+                             final EventBus eventBus)
     {
-        super( userAgentBuilder, applicationStatusSource, mimeSupport );
+        super( userAgentBuilder, applicationStatusSource, mimeSupport, eventBus );
         this.queryStringBuilder = queryStringBuilder;
         this.httpClientManager = httpClientManager;
+
+        eventBus.register( this );
     }
 
     // ----------------------------------------------------------------------
@@ -397,10 +405,11 @@ public class HttpClientRemoteStorage
     protected void updateContext( final ProxyRepository repository, final RemoteStorageContext ctx )
         throws RemoteStorageException
     {
+        httpClientManager.release( repository, ctx );
+
         // reset current http client, if exists
         ctx.removeContextObject( CTX_KEY_CLIENT );
         ctx.removeContextObject( CTX_KEY_S3_FLAG );
-        httpClientManager.release( repository, ctx );
 
         try
         {
@@ -413,6 +422,18 @@ public class HttpClientRemoteStorage
         catch ( IllegalStateException e )
         {
             throw new RemoteStorageException( "Could not create HTTPClient4x instance!", e );
+        }
+    }
+
+    @Subscribe
+    @AllowConcurrentEvents
+    public void on( final RepositoryRegistryEventRemove event )
+    {
+        final Repository repository = event.getRepository();
+        if ( repository.getRepositoryKind().isFacetAvailable( ProxyRepository.class ) )
+        {
+            final ProxyRepository proxy = repository.adaptToFacet( ProxyRepository.class );
+            httpClientManager.release( proxy, proxy.getRemoteStorageContext() );
         }
     }
 

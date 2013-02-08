@@ -16,6 +16,7 @@ import java.lang.management.ManagementFactory;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import javax.management.MBeanServer;
+import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 
 import org.apache.http.client.HttpClient;
@@ -38,8 +39,6 @@ public class PoolingClientConnectionManagerMBeanInstaller
 
     private static final String JMX_DOMAIN = "org.sonatype.nexus.httpclient";
 
-    private ObjectName jmxName;
-
     /**
      * Registers the connection manager to JMX.
      *
@@ -47,51 +46,46 @@ public class PoolingClientConnectionManagerMBeanInstaller
      */
     public synchronized void register( final PoolingClientConnectionManager connectionManager )
     {
-        if ( jmxName == null )
+        try
         {
-            try
-            {
-                jmxName =
-                    ObjectName.getInstance( JMX_DOMAIN, "name", PoolingClientConnectionManager.class.getSimpleName() );
+            final ObjectName jmxName = getObjectName( connectionManager );
 
-                final MBeanServer server = ManagementFactory.getPlatformMBeanServer();
-                server.registerMBean( new PoolingClientConnectionManagerMBeanImpl( connectionManager ), jmxName );
-            }
-            catch ( final Exception e )
-            {
-                LOGGER.warn( "Failed to register mbean {} due to {}:{}",
-                     jmxName, e.getClass(), e.getMessage() );
-                jmxName = null;
-            }
+            final MBeanServer server = ManagementFactory.getPlatformMBeanServer();
+            server.registerMBean( new PoolingClientConnectionManagerMBeanImpl( connectionManager ), jmxName );
         }
-        else
+        catch ( final Exception e )
         {
-            LOGGER.warn( "Already registered mbean {}", jmxName );
+            LOGGER.warn( "Failed to register connection manager MBean due to {}:{}", e.getClass(), e.getMessage() );
         }
     }
 
     /**
      * Unregisters the connection manager from JMX.
+     *
+     * @since 2.4
      */
-    public synchronized void unregister()
+    public synchronized void unregister( final PoolingClientConnectionManager connectionManager )
     {
-        if ( jmxName != null )
+        try
         {
-            try
-            {
-                final MBeanServer server = ManagementFactory.getPlatformMBeanServer();
-                server.unregisterMBean( jmxName );
-            }
-            catch ( final Exception e )
-            {
-                LOGGER.warn( "Failed to unregister mbean {} due to {}:{}",
-                    jmxName, e.getClass(), e.getMessage() );
-            }
-            finally
-            {
-                jmxName = null;
-            }
+            final ObjectName jmxName = getObjectName( connectionManager );
+            final MBeanServer server = ManagementFactory.getPlatformMBeanServer();
+            server.unregisterMBean( jmxName );
         }
+        catch ( final Exception e )
+        {
+            LOGGER.warn( "Failed to unregister connection manager MBean due to {}:{}", e.getClass(), e.getMessage() );
+        }
+    }
+
+    private ObjectName getObjectName( final PoolingClientConnectionManager connectionManager )
+        throws MalformedObjectNameException
+    {
+        return ObjectName.getInstance(
+            JMX_DOMAIN,
+            "name",
+            PoolingClientConnectionManager.class.getSimpleName() + "@" + System.identityHashCode( connectionManager )
+        );
     }
 
 }

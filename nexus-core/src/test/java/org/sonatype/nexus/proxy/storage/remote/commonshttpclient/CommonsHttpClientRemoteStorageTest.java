@@ -28,6 +28,7 @@ import org.sonatype.nexus.proxy.ResourceStoreRequest;
 import org.sonatype.nexus.proxy.repository.ProxyRepository;
 import org.sonatype.nexus.proxy.storage.remote.RemoteItemNotFoundException;
 import org.sonatype.nexus.proxy.utils.UserAgentBuilder;
+import org.sonatype.sisu.goodies.eventbus.EventBus;
 import org.sonatype.sisu.litmus.testsupport.TestSupport;
 
 /**
@@ -54,7 +55,8 @@ public class CommonsHttpClientRemoteStorageTest
         final CommonsHttpClientRemoteStorage underTest = new CommonsHttpClientRemoteStorage(
             mock( UserAgentBuilder.class ),
             mock( ApplicationStatusSource.class ),
-            mock( MimeSupport.class )
+            mock( MimeSupport.class ),
+            mock( EventBus.class )
         )
         {
             @Override
@@ -89,7 +91,8 @@ public class CommonsHttpClientRemoteStorageTest
         final CommonsHttpClientRemoteStorage underTest = new CommonsHttpClientRemoteStorage(
             mock( UserAgentBuilder.class ),
             mock( ApplicationStatusSource.class ),
-            mock( MimeSupport.class )
+            mock( MimeSupport.class ),
+            mock( EventBus.class )
         )
         {
             @Override
@@ -124,7 +127,8 @@ public class CommonsHttpClientRemoteStorageTest
         final CommonsHttpClientRemoteStorage underTest = new CommonsHttpClientRemoteStorage(
             mock( UserAgentBuilder.class ),
             mock( ApplicationStatusSource.class ),
-            mock( MimeSupport.class )
+            mock( MimeSupport.class ),
+            mock( EventBus.class )
         )
         {
             @Override
@@ -158,7 +162,8 @@ public class CommonsHttpClientRemoteStorageTest
         final CommonsHttpClientRemoteStorage underTest = new CommonsHttpClientRemoteStorage(
             mock( UserAgentBuilder.class ),
             mock( ApplicationStatusSource.class ),
-            mock( MimeSupport.class )
+            mock( MimeSupport.class ),
+            mock( EventBus.class )
         )
         {
             @Override

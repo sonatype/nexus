@@ -19,12 +19,13 @@ import org.sonatype.nexus.proxy.storage.remote.RemoteStorageContext;
 
 /**
  * Component for creating pre-configured Apache HttpClient4x instances in Nexus.
- * 
+ *
  * @author cstamas
  * @since 2.2
  */
 public interface Hc4Provider
 {
+
     /**
      * Returns a new pre-configured instance of Apache HttpClient4x. This call will assemble a new instance of client
      * per every invocation. Created instances should be kept only during request execution, and should not be kept for
@@ -33,7 +34,7 @@ public interface Hc4Provider
      * you might end up with stale and non-working client (for example, global HTTP Proxy got changed between your
      * invocation of this method and when you want to perform HTTP request. Your instance would still try to talk to
      * HTTP proxy set in time when you created the instance).
-     * 
+     *
      * @return HttpClient4x pre-configured instance, that uses global {@link RemoteStorageContext} to be configured (see
      *         {@link ApplicationConfiguration#getGlobalRemoteStorageContext()}).
      */
@@ -46,9 +47,18 @@ public interface Hc4Provider
      * subsystem is Nexus Proxy repositories. The created {@link HttpClient} will use the shared
      * {@link ClientConnectionManager} managed by this component, so instances created with this method must not be
      * managed or shutdown!
-     * 
+     *
      * @param context to source connection parameters from.
      * @return HttpClient4x pre-configured instance, that uses passed {@link RemoteStorageContext} to be configured.
      */
     HttpClient createHttpClient( RemoteStorageContext context );
+
+    /**
+     * Releases http client related resources.
+     *
+     * @param httpClient http client
+     * @since 2.4
+     */
+    void releaseHttpClient( HttpClient httpClient );
+
 }

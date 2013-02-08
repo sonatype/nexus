@@ -12,45 +12,69 @@
  */
 package org.sonatype.nexus.apachehttpclient;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
+import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.http.conn.ClientConnectionManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Lists;
 
 /**
  * Low priority daemon thread responsible to evict connection manager pooled connections/
- * 
+ *
  * @author cstamas
  * @since 2.2
  */
 class EvictingThread
     extends Thread
 {
+
     private static final Logger LOGGER = LoggerFactory.getLogger( EvictingThread.class );
 
-    private final ClientConnectionManager clientConnectionManager;
+    private final Collection<ClientConnectionManager> clientConnectionManagers;
 
     private final long idleTimeMillis;
 
     private final long delay;
 
-    EvictingThread( final ClientConnectionManager clientConnectionManager, final long idleTimeMillis, final long delay )
+    EvictingThread( final long idleTimeMillis, final long delay )
     {
         super( "HC4x-EvictingThread" );
         Preconditions.checkArgument( idleTimeMillis > -1, "Keep alive period in milliseconds cannot be negative." );
-        this.clientConnectionManager = Preconditions.checkNotNull( clientConnectionManager );
+        clientConnectionManagers = Lists.newCopyOnWriteArrayList();
         this.idleTimeMillis = idleTimeMillis;
         this.delay = delay;
         setDaemon( true );
         setPriority( MIN_PRIORITY );
     }
 
-    EvictingThread( final ClientConnectionManager clientConnectionManager, final long idleTimeMillis )
+    EvictingThread( final long idleTimeMillis )
     {
-        this( clientConnectionManager, idleTimeMillis, 5000 );
+        this( idleTimeMillis, 5000 );
+    }
+
+    /**
+     * Registers a connection manager.
+     *
+     * @param clientConnectionManager to be registered
+     */
+    public void register( final ClientConnectionManager clientConnectionManager )
+    {
+        clientConnectionManagers.add( checkNotNull( clientConnectionManager ) );
+    }
+
+    /**
+     * Unregisters a connection manager.
+     *
+     * @param clientConnectionManager to be unregistered
+     */
+    public void unregister( final ClientConnectionManager clientConnectionManager )
+    {
+        clientConnectionManagers.remove( checkNotNull( clientConnectionManager ) );
     }
 
     @Override
@@ -64,21 +88,24 @@ class EvictingThread
                 synchronized ( this )
                 {
                     wait( delay );
-                    try
+                    for ( final ClientConnectionManager clientConnectionManager : clientConnectionManagers )
                     {
-                        clientConnectionManager.closeExpiredConnections();
-                    }
-                    catch ( final Exception e )
-                    {
-                        LOGGER.warn( "Failed to close expired connections", e );
-                    }
-                    try
-                    {
-                        clientConnectionManager.closeIdleConnections( idleTimeMillis, TimeUnit.MILLISECONDS );
-                    }
-                    catch ( final Exception e )
-                    {
-                        LOGGER.warn( "Failed to close expired connections", e );
+                        try
+                        {
+                            clientConnectionManager.closeExpiredConnections();
+                        }
+                        catch ( final Exception e )
+                        {
+                            LOGGER.warn( "Failed to close expired connections", e );
+                        }
+                        try
+                        {
+                            clientConnectionManager.closeIdleConnections( idleTimeMillis, TimeUnit.MILLISECONDS );
+                        }
+                        catch ( final Exception e )
+                        {
+                            LOGGER.warn( "Failed to close expired connections", e );
+                        }
                     }
                 }
             }
@@ -89,4 +116,5 @@ class EvictingThread
         }
         LOGGER.debug( "Stopped '{}'", getName(), delay );
     }
+
 }
