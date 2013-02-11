@@ -20,12 +20,10 @@ import org.sonatype.nexus.proxy.LocalStorageException;
 import org.sonatype.nexus.proxy.RemoteAccessException;
 import org.sonatype.nexus.proxy.RemoteStorageException;
 import org.sonatype.nexus.proxy.ResourceStoreRequest;
-import org.sonatype.nexus.proxy.access.Action;
 import org.sonatype.nexus.proxy.attributes.inspectors.DigestCalculatingInspector;
 import org.sonatype.nexus.proxy.item.AbstractStorageItem;
 import org.sonatype.nexus.proxy.item.DefaultStorageFileItem;
 import org.sonatype.nexus.proxy.item.RepositoryItemUid;
-import org.sonatype.nexus.proxy.item.RepositoryItemUidLock;
 import org.sonatype.nexus.proxy.repository.ItemContentValidator;
 import org.sonatype.nexus.proxy.repository.ProxyRepository;
 import org.sonatype.nexus.proxy.storage.UnsupportedStorageOperationException;
@@ -135,28 +133,17 @@ public class ChecksumContentValidator
 
         if ( hashItem != null )
         {
-            // lock item to make sure it can be cached and read without interferrence from concurrent threads
-            RepositoryItemUidLock hashLock = hashItem.getRepositoryItemUid().getLock();
-            hashLock.lock( Action.create );
+            // store checksum file locally
+            hashItem = (DefaultStorageFileItem) proxy.doCacheItem( hashItem );
+
+            // read checksum
             try
             {
-                // store checksum file locally
-                hashItem = (DefaultStorageFileItem) proxy.doCacheItem( hashItem );
-
-                // read checksum
-                try
-                {
-                    remoteHash = MUtils.readDigestFromFileItem( hashItem );
-                }
-                catch ( IOException e )
-                {
-                    getLogger().warn( "Cannot read hash string for remotely fetched StorageFileItem: " + uid.toString(),
-                                      e );
-                }
+                remoteHash = MUtils.readDigestFromFileItem( hashItem );
             }
-            finally
+            catch ( IOException e )
             {
-                hashLock.unlock();
+                getLogger().warn( "Cannot read hash string for remotely fetched StorageFileItem: " + uid.toString(), e );
             }
         }
 
