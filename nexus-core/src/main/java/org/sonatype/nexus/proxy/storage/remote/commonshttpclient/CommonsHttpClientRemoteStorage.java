@@ -61,6 +61,7 @@ import org.sonatype.nexus.proxy.storage.remote.RemoteItemNotFoundException;
 import org.sonatype.nexus.proxy.storage.remote.RemoteRepositoryStorage;
 import org.sonatype.nexus.proxy.storage.remote.RemoteStorageContext;
 import org.sonatype.nexus.proxy.utils.UserAgentBuilder;
+import org.sonatype.sisu.goodies.eventbus.EventBus;
 
 import com.google.common.base.Stopwatch;
 
@@ -95,9 +96,10 @@ public class CommonsHttpClientRemoteStorage
     @Inject
     protected CommonsHttpClientRemoteStorage( final UserAgentBuilder userAgentBuilder,
                                               final ApplicationStatusSource applicationStatusSource,
-                                              final MimeSupport mimeSupport )
+                                              final MimeSupport mimeSupport,
+                                              final EventBus eventBus )
     {
-        super( userAgentBuilder, applicationStatusSource, mimeSupport );
+        super( userAgentBuilder, applicationStatusSource, mimeSupport, eventBus );
     }
 
     // ===============================================================================

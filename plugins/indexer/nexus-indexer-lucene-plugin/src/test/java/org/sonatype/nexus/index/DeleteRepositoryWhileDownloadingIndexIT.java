@@ -32,6 +32,7 @@ import org.sonatype.nexus.proxy.storage.remote.AbstractRemoteRepositoryStorage;
 import org.sonatype.nexus.proxy.storage.remote.RemoteRepositoryStorage;
 import org.sonatype.nexus.proxy.storage.remote.RemoteStorageContext;
 import org.sonatype.nexus.proxy.utils.UserAgentBuilder;
+import org.sonatype.sisu.goodies.eventbus.EventBus;
 
 public class DeleteRepositoryWhileDownloadingIndexIT
     extends AbstractIndexerManagerTest
@@ -48,7 +49,7 @@ public class DeleteRepositoryWhileDownloadingIndexIT
             throws Exception
         {
             super( lookup( UserAgentBuilder.class ), lookup( ApplicationStatusSource.class ),
-                   lookup( MimeSupport.class ) );
+                   lookup( MimeSupport.class ), lookup( EventBus.class ) );
         }
 
         @Override

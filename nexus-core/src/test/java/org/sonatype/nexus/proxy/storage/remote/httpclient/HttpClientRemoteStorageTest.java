@@ -68,7 +68,8 @@ public class HttpClientRemoteStorageTest
     {
         final HttpClientRemoteStorage underTest =
             new HttpClientRemoteStorage( mock( UserAgentBuilder.class ), mock( ApplicationStatusSource.class ),
-                mock( MimeSupport.class ), mock( QueryStringBuilder.class ), mock( HttpClientManager.class ) );
+                mock( MimeSupport.class ), mock( QueryStringBuilder.class ), mock( HttpClientManager.class ),
+                mock( EventBus.class ) );
 
         thrown.expect( RemoteItemNotFoundException.class );
         thrown.expectMessage( "The remoteURL we got to looks like is a collection" );
@@ -86,7 +87,8 @@ public class HttpClientRemoteStorageTest
     {
         final HttpClientRemoteStorage underTest =
             new HttpClientRemoteStorage( mock( UserAgentBuilder.class ), mock( ApplicationStatusSource.class ),
-                mock( MimeSupport.class ), mock( QueryStringBuilder.class ), mock( HttpClientManager.class ) );
+                mock( MimeSupport.class ), mock( QueryStringBuilder.class ), mock( HttpClientManager.class ),
+                mock( EventBus.class ) );
 
         thrown.expect( RemoteItemNotFoundException.class );
         thrown.expectMessage( "The remoteURL we got to looks like is a collection" );
@@ -105,7 +107,8 @@ public class HttpClientRemoteStorageTest
     {
         final HttpClientRemoteStorage underTest =
             new HttpClientRemoteStorage( mock( UserAgentBuilder.class ), mock( ApplicationStatusSource.class ),
-                mock( MimeSupport.class ), mock( QueryStringBuilder.class ), mock( HttpClientManager.class ) );
+                mock( MimeSupport.class ), mock( QueryStringBuilder.class ), mock( HttpClientManager.class ),
+                mock( EventBus.class ) );
 
         thrown.expect( RemoteItemNotFoundException.class );
         thrown.expectMessage( "The remoteURL we got to looks like is a collection" );
@@ -124,7 +127,8 @@ public class HttpClientRemoteStorageTest
     {
         final HttpClientRemoteStorage underTest =
             new HttpClientRemoteStorage( mock( UserAgentBuilder.class ), mock( ApplicationStatusSource.class ),
-                mock( MimeSupport.class ), mock( QueryStringBuilder.class ), mock( HttpClientManager.class ) )
+                mock( MimeSupport.class ), mock( QueryStringBuilder.class ), mock( HttpClientManager.class ),
+                mock( EventBus.class ) )
             {
                 @Override
                 HttpResponse executeRequest( final ProxyRepository repository, final ResourceStoreRequest request,
@@ -180,7 +184,7 @@ public class HttpClientRemoteStorageTest
             final HttpClientRemoteStorage underTest =
                 new HttpClientRemoteStorage( mock( UserAgentBuilder.class ), mock( ApplicationStatusSource.class ),
                     mock( MimeSupport.class ), mock( QueryStringBuilder.class ), new HttpClientManagerImpl(
-                        hc4Provider, mock( UserAgentBuilder.class ) ) );
+                        hc4Provider, mock( UserAgentBuilder.class ) ), mock( EventBus.class ) );
 
             // a mock proxy repository with some mocks to make RRS work
             final RemoteStorageContext proxyContext = new DefaultRemoteStorageContext( globalRemoteStorageContext );

@@ -44,7 +44,8 @@ public class EvictingThreadTest
     {
         final ClientConnectionManager clientConnectionManager = mock( ClientConnectionManager.class );
 
-        final EvictingThread underTest = new EvictingThread( clientConnectionManager, 1000, 100 );
+        final EvictingThread underTest = new EvictingThread( 1000, 100 );
+        underTest.register( clientConnectionManager );
         underTest.start();
 
         Thread.sleep( 300 );
@@ -70,7 +71,8 @@ public class EvictingThreadTest
         doThrow( new RuntimeException( "closeIdleConnections" ) ).when( clientConnectionManager )
             .closeIdleConnections( 1000, TimeUnit.MILLISECONDS );
 
-        final EvictingThread underTest = new EvictingThread( clientConnectionManager, 1000, 100 );
+        final EvictingThread underTest = new EvictingThread( 1000, 100 );
+        underTest.register( clientConnectionManager );
         underTest.start();
 
         Thread.sleep( 300 );

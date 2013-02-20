@@ -35,7 +35,7 @@ import com.google.common.base.Preconditions;
 
 /**
  * Default implementation of {@link HttpClientManager}.
- * 
+ *
  * @author cstamas
  * @since 2.2
  */
@@ -51,7 +51,7 @@ public class HttpClientManagerImpl
 
     /**
      * Constructor.
-     * 
+     *
      * @param hc4Provider the {@link HttpClient} provider to be used with this manager.
      * @param userAgentBuilder the {@link UserAgentBuilder} component.
      */
@@ -78,7 +78,11 @@ public class HttpClientManagerImpl
     @Override
     public void release( final ProxyRepository proxyRepository, final RemoteStorageContext ctx )
     {
-        // nop for now
+        final HttpClient httpClient = (HttpClient) ctx.getContextObject( HttpClientRemoteStorage.CTX_KEY_CLIENT );
+        if ( httpClient != null )
+        {
+            hc4Provider.releaseHttpClient( httpClient );
+        }
     }
 
     // ==
@@ -86,7 +90,7 @@ public class HttpClientManagerImpl
     /**
      * Configures the fresh instance of HttpClient for given proxy repository specific needs. Right now it sets
      * appropriate redirect strategy only.
-     * 
+     *
      * @param proxyRepository
      * @param ctx
      */
@@ -107,7 +111,7 @@ public class HttpClientManagerImpl
      * URLs while the server is actually hosted at HTTPS (typical setup for Nexus, like RSO is). This is user
      * configuration error, as every outbound request will bound back as redirect. In general, Nexus always followed
      * redirects, but the example for before is just a typical example where redirects are actually bad.
-     * 
+     *
      * @param proxyRepository
      * @param ctx
      * @return the strategy to use.

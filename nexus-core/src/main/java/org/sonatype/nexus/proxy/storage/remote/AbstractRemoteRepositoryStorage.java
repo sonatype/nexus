@@ -29,6 +29,7 @@ import org.sonatype.nexus.proxy.item.RepositoryItemUid;
 import org.sonatype.nexus.proxy.repository.ProxyRepository;
 import org.sonatype.nexus.proxy.utils.RepositoryStringUtils;
 import org.sonatype.nexus.proxy.utils.UserAgentBuilder;
+import org.sonatype.sisu.goodies.eventbus.EventBus;
 
 /**
  * This class is a base abstract class for remote storage.
@@ -51,6 +52,8 @@ public abstract class AbstractRemoteRepositoryStorage
 
     private final UserAgentBuilder userAgentBuilder;
 
+    private final EventBus eventBus;
+
     /**
      * Since storage are shared, we are tracking the last changes from each of them.
      */
@@ -58,11 +61,13 @@ public abstract class AbstractRemoteRepositoryStorage
 
     protected AbstractRemoteRepositoryStorage( final UserAgentBuilder userAgentBuilder,
                                                final ApplicationStatusSource applicationStatusSource,
-                                               final MimeSupport mimeSupport )
+                                               final MimeSupport mimeSupport,
+                                               final EventBus eventBus )
     {
         this.userAgentBuilder = checkNotNull( userAgentBuilder );
         this.applicationStatusSource = checkNotNull( applicationStatusSource );
         this.mimeSupport = checkNotNull( mimeSupport );
+        this.eventBus = checkNotNull( eventBus) ;
         this.repositoryContexts = new HashMap<String, Integer>();
     }
 
@@ -152,6 +157,7 @@ public abstract class AbstractRemoteRepositoryStorage
                 updateContext( repository, ctx );
                 ctx.putContextObject( CONTEXT_UPDATED_KEY, Boolean.TRUE );
                 repositoryContexts.put( repository.getId(), ctx.getGeneration() );
+                eventBus.post( new RemoteStorageContextUpdatedEvent( this, repository ) );
             }
         }
         return ctx;

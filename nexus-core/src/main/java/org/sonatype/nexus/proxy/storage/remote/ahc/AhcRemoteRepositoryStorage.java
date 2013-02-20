@@ -39,6 +39,7 @@ import org.sonatype.nexus.proxy.storage.remote.DefaultRemoteStorageContext.Boole
 import org.sonatype.nexus.proxy.storage.remote.RemoteRepositoryStorage;
 import org.sonatype.nexus.proxy.storage.remote.RemoteStorageContext;
 import org.sonatype.nexus.proxy.utils.UserAgentBuilder;
+import org.sonatype.sisu.goodies.eventbus.EventBus;
 import com.ning.http.client.AsyncHttpClient;
 import com.ning.http.client.AsyncHttpClientConfig;
 import com.ning.http.client.BodyDeferringAsyncHandler.BodyDeferringInputStream;
@@ -73,9 +74,10 @@ public class AhcRemoteRepositoryStorage
     protected AhcRemoteRepositoryStorage( final UserAgentBuilder userAgentBuilder,
                                           final ApplicationStatusSource applicationStatusSource,
                                           final MimeSupport mimeSupport,
-                                          final AhcProvider ahcProvider )
+                                          final AhcProvider ahcProvider,
+                                          final EventBus eventBus )
     {
-        super( userAgentBuilder, applicationStatusSource, mimeSupport );
+        super( userAgentBuilder, applicationStatusSource, mimeSupport, eventBus );
         this.ahcProvider = checkNotNull( ahcProvider );
     }
 

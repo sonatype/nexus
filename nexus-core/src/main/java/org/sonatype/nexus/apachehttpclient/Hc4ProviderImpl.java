@@ -12,6 +12,8 @@
  */
 package org.sonatype.nexus.apachehttpclient;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -19,7 +21,6 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
-
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
@@ -31,6 +32,7 @@ import org.apache.http.auth.Credentials;
 import org.apache.http.auth.NTCredentials;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.auth.params.AuthPNames;
+import org.apache.http.client.HttpClient;
 import org.apache.http.client.params.AuthPolicy;
 import org.apache.http.client.params.ClientPNames;
 import org.apache.http.client.protocol.ResponseContentEncoding;
@@ -62,8 +64,6 @@ import org.sonatype.nexus.proxy.storage.remote.RemoteStorageContext;
 import org.sonatype.nexus.proxy.utils.UserAgentBuilder;
 import org.sonatype.nexus.util.SystemPropertiesHelper;
 import org.sonatype.sisu.goodies.eventbus.EventBus;
-
-import com.google.common.base.Preconditions;
 import com.google.common.eventbus.Subscribe;
 
 /**
@@ -89,7 +89,7 @@ public class Hc4ProviderImpl
     /**
      * Default pool max size: 200.
      */
-    private static final int CONNECTION_POOL_MAX_SIZE_DEFAULT = 200;
+    private static final int CONNECTION_POOL_MAX_SIZE_DEFAULT = 25;
 
     /**
      * Key for customizing connection pool size per route (usually per-repository, but not quite in case of Mirrors).
@@ -159,7 +159,7 @@ public class Hc4ProviderImpl
     private final PoolingClientConnectionManager sharedConnectionManager;
 
     /**
-     * Thread evicting idle open connections from {@link #sharedConnectionManager}.
+     * Thread evicting idle open connections.
      */
     private final EvictingThread evictingThread;
 
@@ -178,19 +178,18 @@ public class Hc4ProviderImpl
      */
     @Inject
     public Hc4ProviderImpl( final ApplicationConfiguration applicationConfiguration,
-        final UserAgentBuilder userAgentBuilder,
-        final EventBus eventBus,
-        final PoolingClientConnectionManagerMBeanInstaller jmxInstaller )
+                            final UserAgentBuilder userAgentBuilder,
+                            final EventBus eventBus,
+                            final PoolingClientConnectionManagerMBeanInstaller jmxInstaller )
     {
-        this.applicationConfiguration = Preconditions.checkNotNull( applicationConfiguration );
-        this.userAgentBuilder = Preconditions.checkNotNull( userAgentBuilder );
-        this.jmxInstaller = Preconditions.checkNotNull( jmxInstaller );
-        this.sharedConnectionManager = createClientConnectionManager();
-        this.evictingThread = new EvictingThread( sharedConnectionManager, getConnectionPoolIdleTime() );
+        this.applicationConfiguration = checkNotNull( applicationConfiguration );
+        this.userAgentBuilder = checkNotNull( userAgentBuilder );
+        this.jmxInstaller = checkNotNull( jmxInstaller );
+        this.evictingThread = new EvictingThread( getConnectionPoolIdleTime() );
         this.evictingThread.start();
-        this.eventBus = Preconditions.checkNotNull( eventBus );
+        this.sharedConnectionManager = createClientConnectionManager();
+        this.eventBus = checkNotNull( eventBus );
         this.eventBus.register( this );
-        this.jmxInstaller.register( sharedConnectionManager );
         getLogger().info(
             "{} started (connectionPoolMaxSize {}, connectionPoolSize {}, connectionPoolIdleTime {} ms, connectionPoolTimeout {} ms, keepAliveMaxDuration {} ms)",
             getClass().getSimpleName(), getConnectionPoolMaxSize(), getConnectionPoolSize(),
@@ -288,8 +287,9 @@ public class Hc4ProviderImpl
      */
     public synchronized void shutdown()
     {
+        evictingThread.unregister( sharedConnectionManager );
         evictingThread.interrupt();
-        jmxInstaller.unregister();
+        jmxInstaller.unregister( sharedConnectionManager );
         sharedConnectionManager.shutdown();
         eventBus.unregister( this );
         getLogger().info( "{} stopped.", getClass().getSimpleName() );
@@ -325,7 +325,9 @@ public class Hc4ProviderImpl
     @Override
     public DefaultHttpClient createHttpClient()
     {
-        final DefaultHttpClient result = createHttpClient( applicationConfiguration.getGlobalRemoteStorageContext() );
+        final DefaultHttpClient result = createHttpClient(
+            applicationConfiguration.getGlobalRemoteStorageContext(), sharedConnectionManager
+        );
         // connection manager will cap the max count of connections, but with this below
         // we get rid of pooling. Pooling is used in Proxy repositories only, as all other
         // components using the "shared" httpClient should not produce hiw rate of requests
@@ -338,7 +340,21 @@ public class Hc4ProviderImpl
     @Override
     public DefaultHttpClient createHttpClient( final RemoteStorageContext context )
     {
-        return createHttpClient( context, sharedConnectionManager );
+        return createHttpClient( context, createClientConnectionManager() );
+    }
+
+    @Override
+    public void releaseHttpClient( final HttpClient httpClient )
+    {
+        final ClientConnectionManager connectionManager = checkNotNull( httpClient ).getConnectionManager();
+
+        evictingThread.unregister( connectionManager );
+        if ( connectionManager instanceof PoolingClientConnectionManager )
+        {
+            jmxInstaller.unregister( (PoolingClientConnectionManager) connectionManager );
+        }
+
+        connectionManager.shutdown();
     }
 
     // ==
@@ -365,7 +381,7 @@ public class Hc4ProviderImpl
     }
 
     protected DefaultHttpClient createHttpClient( final RemoteStorageContext context,
-        final ClientConnectionManager clientConnectionManager )
+                                                  final ClientConnectionManager clientConnectionManager )
     {
         final DefaultHttpClient httpClient =
             new DefaultHttpClientImpl( clientConnectionManager, createHttpParams( context ) );
@@ -409,13 +425,16 @@ public class Hc4ProviderImpl
         connManager.setMaxTotal( maxConnectionCount );
         connManager.setDefaultMaxPerRoute( perRouteConnectionCount );
 
+        this.evictingThread.register( connManager );
+        this.jmxInstaller.register( connManager );
+
         return connManager;
     }
 
     // ==
 
     protected void configureAuthentication( final DefaultHttpClient httpClient, final RemoteAuthenticationSettings ras,
-        final HttpHost proxyHost )
+                                            final HttpHost proxyHost )
     {
         if ( ras != null )
         {

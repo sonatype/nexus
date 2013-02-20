@@ -24,6 +24,7 @@ import org.sonatype.nexus.proxy.item.RepositoryItemUid;
 import org.sonatype.nexus.proxy.repository.ProxyRepository;
 import org.sonatype.nexus.proxy.utils.RepositoryStringUtils;
 import org.sonatype.nexus.proxy.utils.UserAgentBuilder;
+import org.sonatype.sisu.goodies.eventbus.EventBus;
 
 /**
  * This class is a base abstract class for HTTP remote storage.
@@ -37,9 +38,10 @@ public abstract class AbstractHTTPRemoteRepositoryStorage
 
     protected AbstractHTTPRemoteRepositoryStorage( final UserAgentBuilder userAgentBuilder,
                                                    final ApplicationStatusSource applicationStatusSource,
-                                                   final MimeSupport mimeSupport )
+                                                   final MimeSupport mimeSupport,
+                                                   final EventBus eventBus )
     {
-        super( userAgentBuilder, applicationStatusSource, mimeSupport );
+        super( userAgentBuilder, applicationStatusSource, mimeSupport, eventBus );
     }
 
     @Override
