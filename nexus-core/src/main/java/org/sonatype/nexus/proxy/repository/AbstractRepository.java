@@ -1198,6 +1198,15 @@ public abstract class AbstractRepository
      * override it here. Default is "same as input", meaning an UID presented as {@code repoId:/foo/bar} would use Lock
      * instance keyed with {@code repoId:/foo/bar}. But to override this, and for example have UID
      * {@code repoId:/foo/bar.ext} use lock keyed with {@code repoId:/foo/bar.baz} you can override this here.
+     * <p>
+     * Note: all the input paths are expected to be "normalized ones": being absolute, using generic "/" character as
+     * path separator (since these are NOT File paths, but just hierarchical paths of strings). For example:
+     * {@link RepositoryItemUid#getPath()} returns paths like these. Hence, you HAVE TO return paths conforming
+     * the requirements above too.
+     * <p>
+     * Note: an extreme example of override for this method would be an implementation that always returns same
+     * string! That would mean, that all READ operations would be concurrent (since they use shared locks), but
+     * any WRITE operation would make repository LOCKED.
      * 
      * @param path
      * @return
