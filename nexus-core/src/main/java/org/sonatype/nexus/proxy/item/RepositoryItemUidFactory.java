@@ -43,6 +43,8 @@ public interface RepositoryItemUidFactory
      * 
      * @param uid
      * @return
+     * @deprecated In case of need use {@link Repository#createUidLock(String)} instead if needed, otherwise
+     *             {@link RepositoryItemUid#getLock()} is preferred to obtain the lock.
      */
     RepositoryItemUidLock createUidLock( RepositoryItemUid uid );
 
@@ -51,6 +53,26 @@ public interface RepositoryItemUidFactory
      * 
      * @param uid
      * @return
+     * @deprecated In case of need use {@link Repository#createUidAttributeLock(String)} instead if needed, otherwise
+     *             {@link RepositoryItemUid#getAttributeLock()} is preferred to obtain the lock.
      */
     RepositoryItemUidLock createUidAttributeLock( RepositoryItemUid uid );
+
+    /**
+     * Creates a shared UIDLock based on a key.
+     * 
+     * @param key
+     * @return lock instance, never {@code null}.
+     * @since 2.4
+     */
+    RepositoryItemUidLock createUidLock( String key );
+
+    /**
+     * Creates a shared attribute UIDLock based on a key.
+     * 
+     * @param key
+     * @return lock instance, never {@code null}.
+     * @since 2.4
+     */
+    RepositoryItemUidLock createUidAttributeLock( String key );
 }

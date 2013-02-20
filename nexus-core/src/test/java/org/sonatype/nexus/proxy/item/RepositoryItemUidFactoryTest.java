@@ -12,32 +12,30 @@
  */
 package org.sonatype.nexus.proxy.item;
 
-import static org.mockito.Mockito.doReturn;
-
 import org.junit.Assert;
 import org.junit.Test;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.sonatype.nexus.configuration.model.CRepository;
+import org.sonatype.nexus.configuration.model.DefaultCRepository;
 import org.sonatype.nexus.proxy.AbstractNexusTestEnvironment;
 import org.sonatype.nexus.proxy.access.Action;
+import org.sonatype.nexus.proxy.maven.maven2.M2Repository;
 import org.sonatype.nexus.proxy.repository.Repository;
+
 public class RepositoryItemUidFactoryTest
     extends AbstractNexusTestEnvironment
 {
-    @Mock
     protected RepositoryItemUidFactory factory;
 
-    @Mock
     protected Repository repository;
 
     public void setUp()
         throws Exception
     {
         super.setUp();
-
-        MockitoAnnotations.initMocks( this );
-        doReturn("repo1").when( repository ).getId();
-
+        repository = lookup( Repository.class, M2Repository.ID );
+        final CRepository config = new DefaultCRepository();
+        config.setId( "repo1" );
+        repository.configure( config );
         factory = lookup( RepositoryItemUidFactory.class );
     }
 

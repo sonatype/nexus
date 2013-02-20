@@ -29,6 +29,7 @@ import org.sonatype.nexus.proxy.access.Action;
 import org.sonatype.nexus.proxy.attributes.AttributesHandler;
 import org.sonatype.nexus.proxy.cache.PathCache;
 import org.sonatype.nexus.proxy.item.RepositoryItemUid;
+import org.sonatype.nexus.proxy.item.RepositoryItemUidLock;
 import org.sonatype.nexus.proxy.item.StorageCollectionItem;
 import org.sonatype.nexus.proxy.item.StorageItem;
 import org.sonatype.nexus.proxy.item.uid.RepositoryItemUidAttributeManager;
@@ -149,9 +150,34 @@ public interface Repository
     boolean hasAnyTargetsForRequest( ResourceStoreRequest request );
 
     /**
-     * Creates an UID within this Repository.
+     * Creates an UID within this Repository for given path.
+     * 
+     * @param path the path.
+     * @return the {@link RepositoryItemUid} instance, never {@code null}.
      */
     RepositoryItemUid createUid( String path );
+
+    /**
+     * Creates an UID lock within this Repository for given path.
+     * 
+     * @param uid the UID to create lock for, must not be {@code null}.
+     * @return the {@link RepositoryItemUidLock} instance, never {@code null}.
+     * @throws IllegalArgumentException if passed in UID does not belong to this repository.
+     * @since 2.4
+     */
+    RepositoryItemUidLock createUidLock( RepositoryItemUid uid )
+        throws IllegalArgumentException;
+
+    /**
+     * Creates an attribute UID lock within this Repository for given path.
+     * 
+     * @param uid the UID to create lock for, must not be {@code null}.
+     * @return the {@link RepositoryItemUidLock} instance, never {@code null}.
+     * @throws IllegalArgumentException if passed in UID does not belong to this repository.
+     * @since 2.4
+     */
+    RepositoryItemUidLock createUidAttributeLock( RepositoryItemUid uid )
+        throws IllegalArgumentException;
 
     /**
      * Returns the repository ItemUidAttributeManager.

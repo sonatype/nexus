@@ -12,6 +12,8 @@
  */
 package org.sonatype.nexus.proxy.repository;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collection;
@@ -99,14 +101,14 @@ import org.sonatype.nexus.scheduling.RepositoryTaskFilter;
  * </ul>
  * <p>
  * The subclasses only needs to implement the abstract method focusing on item retrieaval and other "basic" functions.
- *
+ * 
  * @author cstamas
  */
 public abstract class AbstractRepository
     extends ConfigurableRepository
     implements Repository
 {
-    private final Logger logger = LoggerFactory.getLogger(getClass());
+    private final Logger logger = LoggerFactory.getLogger( getClass() );
 
     @Requirement
     private ApplicationConfiguration applicationConfiguration;
@@ -279,7 +281,7 @@ public abstract class AbstractRepository
 
     /**
      * Gets the cache manager.
-     *
+     * 
      * @return the cache manager
      */
     protected CacheManager getCacheManager()
@@ -289,7 +291,7 @@ public abstract class AbstractRepository
 
     /**
      * Sets the cache manager.
-     *
+     * 
      * @param cacheManager the new cache manager
      */
     protected void setCacheManager( CacheManager cacheManager )
@@ -299,7 +301,7 @@ public abstract class AbstractRepository
 
     /**
      * Returns the repository Item Uid Factory.
-     *
+     * 
      * @return
      */
     protected RepositoryItemUidFactory getRepositoryItemUidFactory()
@@ -309,7 +311,7 @@ public abstract class AbstractRepository
 
     /**
      * Gets the not found cache.
-     *
+     * 
      * @return the not found cache
      */
     public PathCache getNotFoundCache()
@@ -325,7 +327,7 @@ public abstract class AbstractRepository
 
     /**
      * Sets the not found cache.
-     *
+     * 
      * @param notFoundcache the new not found cache
      */
     public void setNotFoundCache( PathCache notFoundcache )
@@ -537,10 +539,8 @@ public abstract class AbstractRepository
         }
 
         eventBus().post(
-            new RepositoryEventExpireNotFoundCaches(
-                this, request.getRequestPath(), request.getRequestContext().flatten(), cacheAltered
-            )
-        );
+            new RepositoryEventExpireNotFoundCaches( this, request.getRequestPath(),
+                request.getRequestContext().flatten(), cacheAltered ) );
 
         return cacheAltered;
     }
@@ -1167,6 +1167,48 @@ public abstract class AbstractRepository
         return getRepositoryItemUidFactory().createUid( this, path );
     }
 
+    @Override
+    public RepositoryItemUidLock createUidLock( final RepositoryItemUid uid )
+        throws IllegalArgumentException
+    {
+        checkNotNull( uid );
+        if ( uid.getRepository() != this )
+        {
+            throw new IllegalArgumentException( "The UID=" + uid.toString() + " does not belong to this repository: "
+                + this );
+        }
+        return getRepositoryItemUidFactory().createUidLock( getId() + ":" + fixPathForLockKey( uid.getPath() ) );
+    }
+
+    @Override
+    public RepositoryItemUidLock createUidAttributeLock( final RepositoryItemUid uid )
+    {
+        checkNotNull( uid );
+        if ( uid.getRepository() != this )
+        {
+            throw new IllegalArgumentException( "The UID=" + uid.toString() + " does not belong to this repository: "
+                + this );
+        }
+        return getRepositoryItemUidFactory().createUidAttributeLock( getId() + ":" + fixPathForLockKey( uid.getPath() ) );
+    }
+
+    /**
+     * This method should be overridden by some subclass if UIDs having different paths should actually lock against
+     * same lock instance. In other words, if you want to change which Lock instance an UID should use, you should
+     * override it here. Default is "same as input", meaning an UID presented as {@code repoId:/foo/bar} would use Lock
+     * instance keyed with {@code repoId:/foo/bar}. But to override this, and for example have UID
+     * {@code repoId:/foo/bar.ext} use lock keyed with {@code repoId:/foo/bar.baz} you can override this here.
+     * 
+     * @param path
+     * @return
+     * @since 2.4
+     */
+    protected String fixPathForLockKey( final String path )
+    {
+        return path;
+    }
+
+    @Override
     public RepositoryItemUidAttributeManager getRepositoryItemUidAttributeManager()
     {
         return repositoryItemUidAttributeManager;
@@ -1176,7 +1218,7 @@ public abstract class AbstractRepository
     // Inner stuff
     /**
      * Maintains not found cache.
-     *
+     * 
      * @throws ItemNotFoundException the item not found exception
      */
     public void maintainNotFoundCache( ResourceStoreRequest request )
@@ -1257,11 +1299,9 @@ public abstract class AbstractRepository
 
     /**
      * Check conditions, such as availability, permissions, etc.
-     *
-<<<<<<< HEAD
+     * 
      * @param request the request
-=======
->>>>>>> refs/heads/master
+     * @param action the action
      * @return false, if the request should not be processed with response appropriate for current method, or true is
      *         execution should continue as usual.
      * @throws RepositoryNotAvailableException the repository not available exception
@@ -1416,7 +1456,7 @@ public abstract class AbstractRepository
 
     /**
      * Whether or not the requested path should be added to NFC. Item will be added to NFC if is not local/remote only.
-     *
+     * 
      * @param request resource store request
      * @return true if requested path should be added to NFC
      * @since 2.0
