@@ -377,6 +377,22 @@ public abstract class AbstractMavenRepository
 
     // =================================================================================
     // DefaultRepository customizations
+
+    @Override
+    protected String fixPathForLockKey( final String path )
+    {
+        String fixedPath = path;
+        if ( fixedPath.endsWith( ".sha1" ) )
+        {
+            fixedPath = fixedPath.substring( 0, fixedPath.length() - 5 );
+        }
+        else if ( fixedPath.endsWith( ".md5" ) )
+        {
+            fixedPath = fixedPath.substring( 0, fixedPath.length() - 4 );
+        }
+        return super.fixPathForLockKey( path );
+    }
+
     @Override
     protected StorageItem doRetrieveItem( ResourceStoreRequest request )
         throws IllegalOperationException, ItemNotFoundException, StorageException
