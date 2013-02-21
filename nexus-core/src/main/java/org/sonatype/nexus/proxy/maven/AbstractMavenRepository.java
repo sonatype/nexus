@@ -390,7 +390,7 @@ public abstract class AbstractMavenRepository
         {
             fixedPath = fixedPath.substring( 0, fixedPath.length() - 4 );
         }
-        return super.fixPathForLockKey( path );
+        return super.fixPathForLockKey( fixedPath );
     }
 
     @Override
