@@ -12,32 +12,30 @@
  */
 package org.sonatype.nexus.proxy.item;
 
-import static org.mockito.Mockito.doReturn;
-
 import org.junit.Assert;
 import org.junit.Test;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.sonatype.nexus.configuration.model.CRepository;
+import org.sonatype.nexus.configuration.model.DefaultCRepository;
 import org.sonatype.nexus.proxy.AbstractNexusTestEnvironment;
 import org.sonatype.nexus.proxy.access.Action;
+import org.sonatype.nexus.proxy.maven.maven2.M2Repository;
 import org.sonatype.nexus.proxy.repository.Repository;
+
 public class RepositoryItemUidFactoryTest
     extends AbstractNexusTestEnvironment
 {
-    @Mock
     protected RepositoryItemUidFactory factory;
 
-    @Mock
     protected Repository repository;
 
     public void setUp()
         throws Exception
     {
         super.setUp();
-
-        MockitoAnnotations.initMocks( this );
-        doReturn("repo1").when( repository ).getId();
-
+        repository = lookup( Repository.class, M2Repository.ID );
+        final CRepository config = new DefaultCRepository();
+        config.setId( "repo1" );
+        repository.configure( config );
         factory = lookup( RepositoryItemUidFactory.class );
     }
 
@@ -81,6 +79,55 @@ public class RepositoryItemUidFactoryTest
         Assert.assertNotSame( "UIDLock instances should be different", uidLock1, uidLock2 );
         Assert.assertNotSame( "UIDLock lock instances should be different", uidLock1.getContentLock(),
             uidLock2.getContentLock() );
+    }
+
+    @Test
+    public void testPathPeculiaritesInM2Repo()
+        throws Exception
+    {
+        // In Mave repositories, the artifact and their sha1/md5 counterpart locks are
+        // "squashed" all onto the artifact keyed lock (subordinate locking)
+        // see org.sonatype.nexus.proxy.maven.AbstractMavenRepository.fixPathForLockKey(String)
+        final RepositoryItemUid uid1 = repository.createUid( "/some/blammo/poth.jar" );
+        final RepositoryItemUid uid2 = repository.createUid( "/some/blammo/poth.jar.sha1" );
+        final RepositoryItemUid uid3 = repository.createUid( "/some/blammo/poth.jar.md5" );
+        final RepositoryItemUid uid4 = repository.createUid( "/some/blammo/poth.pom" );
+        final RepositoryItemUid uid5 = repository.createUid( "/some/blammo/poth.pom.sha1" );
+        final RepositoryItemUid uid6 = repository.createUid( "/some/blammo/poth.pom.md5" );
+
+        final DefaultRepositoryItemUidLock uidLock1 = (DefaultRepositoryItemUidLock) uid1.getLock();
+        final DefaultRepositoryItemUidLock uidLock2 = (DefaultRepositoryItemUidLock) uid2.getLock();
+        final DefaultRepositoryItemUidLock uidLock3 = (DefaultRepositoryItemUidLock) uid3.getLock();
+        final DefaultRepositoryItemUidLock uidLock4 = (DefaultRepositoryItemUidLock) uid4.getLock();
+        final DefaultRepositoryItemUidLock uidLock5 = (DefaultRepositoryItemUidLock) uid5.getLock();
+        final DefaultRepositoryItemUidLock uidLock6 = (DefaultRepositoryItemUidLock) uid6.getLock();
+
+        // They share SAME lock, but wrapping instances of DefaultRepositoryItemUidLock are not same!
+        Assert.assertNotSame( "UIDLock instances should be same", uidLock1.hashCode(), uidLock2.hashCode() );
+        Assert.assertTrue( "UIDLock instances should be same", uidLock1.equals( uidLock2 ) );
+        Assert.assertSame( "UIDLock lock instances should be same", uidLock1.getContentLock(),
+            uidLock2.getContentLock() );
+        // They share SAME lock, but wrapping instances of DefaultRepositoryItemUidLock are not same!
+        Assert.assertNotSame( "UIDLock instances should be same", uidLock1.hashCode(), uidLock3.hashCode() );
+        Assert.assertTrue( "UIDLock instances should be same", uidLock1.equals( uidLock3 ) );
+        Assert.assertSame( "UIDLock lock instances should be same", uidLock1.getContentLock(),
+            uidLock3.getContentLock() );
+        // They share SAME lock, but wrapping instances of DefaultRepositoryItemUidLock are not same!
+        Assert.assertNotSame( "UIDLock instances should be same", uidLock4.hashCode(), uidLock5.hashCode() );
+        Assert.assertTrue( "UIDLock instances should be same", uidLock4.equals( uidLock5 ) );
+        Assert.assertSame( "UIDLock lock instances should be same", uidLock4.getContentLock(),
+            uidLock5.getContentLock() );
+        // They share SAME lock, but wrapping instances of DefaultRepositoryItemUidLock are not same!
+        Assert.assertNotSame( "UIDLock instances should be same", uidLock4.hashCode(), uidLock6.hashCode() );
+        Assert.assertTrue( "UIDLock instances should be same", uidLock4.equals( uidLock6 ) );
+        Assert.assertSame( "UIDLock lock instances should be same", uidLock4.getContentLock(),
+            uidLock6.getContentLock() );
+
+        // but, uid1 (artifact) and uid4 (pom) are DIFFERENT
+        Assert.assertNotSame( "UIDLock instances should be different", uidLock1.hashCode(), uidLock4.hashCode() );
+        Assert.assertTrue( "UIDLock instances should be different", !uidLock1.equals( uidLock4 ) );
+        Assert.assertNotSame( "UIDLock lock instances should be different", uidLock1.getContentLock(),
+            uidLock4.getContentLock() );
     }
 
     @Test

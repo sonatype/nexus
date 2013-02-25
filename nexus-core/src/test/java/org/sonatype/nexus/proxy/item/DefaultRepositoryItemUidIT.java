@@ -18,7 +18,10 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
+import org.sonatype.nexus.configuration.model.CRepository;
+import org.sonatype.nexus.configuration.model.DefaultCRepository;
 import org.sonatype.nexus.proxy.access.Action;
+import org.sonatype.nexus.proxy.maven.maven2.M2Repository;
 import org.sonatype.nexus.proxy.repository.Repository;
 import org.sonatype.nexus.test.NexusTestSupport;
 
@@ -26,7 +29,6 @@ import org.sonatype.nexus.test.NexusTestSupport;
 public class DefaultRepositoryItemUidIT
     extends NexusTestSupport
 {
-
     private RepositoryItemUidFactory factory;
 
     private Random random;
@@ -41,9 +43,12 @@ public class DefaultRepositoryItemUidIT
 
     @Test
     public void testLocking()
+        throws Exception
     {
-        final Repository repository = Mockito.mock( Repository.class );
-        Mockito.when( repository.getId() ).thenReturn( "dummy" );
+        final Repository repository = lookup( Repository.class, M2Repository.ID );
+        final CRepository config = new DefaultCRepository();
+        config.setId( "dummy" );
+        repository.configure( config );
 
         DefaultRepositoryItemUid uid = (DefaultRepositoryItemUid) factory.createUid( repository, "/some/path.txt" );
 
@@ -89,10 +94,12 @@ public class DefaultRepositoryItemUidIT
 
     @Test
     public void testMultiThreadedLocking()
-        throws InterruptedException
+        throws Exception
     {
-        final Repository repository = Mockito.mock( Repository.class );
-        Mockito.when( repository.getId() ).thenReturn( "dummy" );
+        final Repository repository = lookup( Repository.class, M2Repository.ID );
+        final CRepository config = new DefaultCRepository();
+        config.setId( "dummy" );
+        repository.configure( config );
 
         Sleeper sleeper1 = new Sleeper()
         {
@@ -132,8 +139,7 @@ public class DefaultRepositoryItemUidIT
             new LockingThreadSteps3( factory.createUid( repository, "/some/path.txt" ), 100, sleeper2 );
         LockingThreadSteps1 t4 =
             new LockingThreadSteps1( factory.createUid( repository, "/some/path.txt" ), 100, sleeper2 );
-        LockingThreadSteps1 t5 =
-            new LockingThreadSteps1( factory.createUid( repository, "/some/path.txt" ), 100, null );
+        LockingThreadSteps1 t5 = new LockingThreadSteps1( factory.createUid( repository, "/some/path.txt" ), 100, null );
 
         t1.start();
         t2.start();
@@ -159,10 +165,12 @@ public class DefaultRepositoryItemUidIT
 
     @Test
     public void testMultiThreadedLockingSharedUid()
-        throws InterruptedException
+        throws Exception
     {
-        final Repository repository = Mockito.mock( Repository.class );
-        Mockito.when( repository.getId() ).thenReturn( "dummy" );
+        final Repository repository = lookup( Repository.class, M2Repository.ID );
+        final CRepository config = new DefaultCRepository();
+        config.setId( "dummy" );
+        repository.configure( config );
 
         Sleeper sleeper1 = new Sleeper()
         {
@@ -239,9 +247,9 @@ public class DefaultRepositoryItemUidIT
         String lockToString = ( (DefaultRepositoryItemUidLock) uid.getLock() ).getContentLock().toString();
 
         Assert.assertTrue( "We expect " + wc + " write locks but have " + lockToString,
-                           lockToString.contains( "[Write locks = " + wc ) );
+            lockToString.contains( "[Write locks = " + wc ) );
         Assert.assertTrue( "We expect " + rc + " read locks but have " + lockToString,
-                           lockToString.contains( ", Read locks = " + rc + "]" ) );
+            lockToString.contains( ", Read locks = " + rc + "]" ) );
     }
 
     // test steps

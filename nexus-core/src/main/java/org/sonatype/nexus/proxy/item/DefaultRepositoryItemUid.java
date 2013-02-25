@@ -12,6 +12,8 @@
  */
 package org.sonatype.nexus.proxy.item;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import org.sonatype.nexus.proxy.item.uid.Attribute;
 import org.sonatype.nexus.proxy.repository.Repository;
 
@@ -22,9 +24,6 @@ import org.sonatype.nexus.proxy.repository.Repository;
 public class DefaultRepositoryItemUid
     implements RepositoryItemUid
 {
-    /** The factory. */
-    private final RepositoryItemUidFactory factory;
-
     /** The repository. */
     private final Repository repository;
 
@@ -37,25 +36,12 @@ public class DefaultRepositoryItemUid
     /** Lazily created */
     private RepositoryItemUidLock lock;
 
-    protected DefaultRepositoryItemUid( final RepositoryItemUidFactory factory, final Repository repository,
-                                        final String path )
+    protected DefaultRepositoryItemUid( final Repository repository, final String path )
     {
-        super();
-
-        this.factory = factory;
-
-        this.repository = repository;
-
-        this.path = path;
-
+        this.repository = checkNotNull( repository );
+        this.path = checkNotNull( path );
         this.stringRepresentation = getRepository().getId() + ":" + getPath();
-
         this.lock = null;
-    }
-
-    public RepositoryItemUidFactory getRepositoryItemUidFactory()
-    {
-        return factory;
     }
 
     @Override
@@ -81,18 +67,18 @@ public class DefaultRepositoryItemUid
     {
         if ( lock == null )
         {
-            lock = factory.createUidLock( this );
+            lock = repository.createUidLock( this );
         }
 
         return lock;
     }
-    
+
     @Override
     public synchronized RepositoryItemUidLock getAttributeLock()
     {
         if ( lock == null )
         {
-            lock = factory.createUidAttributeLock( this );
+            lock = repository.createUidAttributeLock( this );
         }
 
         return lock;

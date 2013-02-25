@@ -12,6 +12,8 @@
  */
 package org.sonatype.nexus.proxy.item;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import java.lang.ref.WeakReference;
 import java.util.WeakHashMap;
 
@@ -49,7 +51,7 @@ public abstract class AbstractRepositoryItemUidFactory
             path = RepositoryItemUid.PATH_ROOT;
         }
 
-        return new DefaultRepositoryItemUid( this, repository, path );
+        return new DefaultRepositoryItemUid( repository, path );
     }
 
     @Override
@@ -67,6 +69,7 @@ public abstract class AbstractRepositoryItemUidFactory
         new WeakHashMap<DefaultRepositoryItemUidLock, WeakReference<DefaultRepositoryItemUidLock>>();
 
     @Override
+    @Deprecated
     public DefaultRepositoryItemUidLock createUidLock( final RepositoryItemUid uid )
     {
         final String key = new String( uid.getKey() );
@@ -75,11 +78,24 @@ public abstract class AbstractRepositoryItemUidFactory
     }
 
     @Override
+    @Deprecated
     public DefaultRepositoryItemUidLock createUidAttributeLock( final RepositoryItemUid uid )
     {
         final String key = new String( "attribute:" + uid.getKey() );
 
         return doCreateUidLockForKey( key );
+    }
+
+    @Override
+    public DefaultRepositoryItemUidLock createUidLock( final String key )
+    {
+        return doCreateUidLockForKey( checkNotNull( key ) );
+    }
+
+    @Override
+    public DefaultRepositoryItemUidLock createUidAttributeLock( final String key )
+    {
+        return doCreateUidLockForKey( "attribute:" + checkNotNull( key ) );
     }
 
     // ==
