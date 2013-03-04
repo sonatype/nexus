@@ -12,12 +12,18 @@
  */
 package org.sonatype.nexus.plugins.siesta;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
+import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.ext.ExceptionMapper;
 
 import org.apache.shiro.authz.AuthorizationException;
-import org.sonatype.sisu.siesta.common.internal.ExceptionMapperSupport;
+import org.sonatype.sisu.siesta.common.ErrorResponse;
+import org.sonatype.sisu.siesta.common.ErrorResponseGenerator;
+import org.sonatype.sisu.siesta.common.ExceptionMapperSupport;
 
 /**
  * Converts {@link AuthorizationException} to a JAX-RS {@link Response} with {@link Response.Status#FORBIDDEN}.
@@ -28,12 +34,28 @@ import org.sonatype.sisu.siesta.common.internal.ExceptionMapperSupport;
 @Singleton
 public class AuthorizationExceptionMapper
     extends ExceptionMapperSupport<AuthorizationException>
+    implements ExceptionMapper<AuthorizationException>
 {
+
+    private final ErrorResponseGenerator errorResponseGenerator;
+
+    @Inject
+    public AuthorizationExceptionMapper(final ErrorResponseGenerator errorResponseGenerator)
+    {
+        this.errorResponseGenerator = checkNotNull( errorResponseGenerator );
+    }
 
     @Override
     protected Response convert( final AuthorizationException exception )
     {
-        return Response.status( Response.Status.FORBIDDEN ).entity( exception.getMessage() ).build();
+        final ErrorResponse response = errorResponseGenerator.mapException(
+            exception, Response.Status.FORBIDDEN.getStatusCode()
+        );
+
+        return Response.status( response.getStatusCode() )
+            .type( ErrorResponse.CONTENT_TYPE )
+            .entity( response.getMessageBody() )
+            .build();
     }
 
 }
