@@ -12,11 +12,20 @@
  */
 package org.sonatype.nexus.proxy.maven;
 
+import static org.sonatype.nexus.proxy.maven.ChecksumContentValidator.ATTR_REMOTE_MD5;
+import static org.sonatype.nexus.proxy.maven.ChecksumContentValidator.ATTR_REMOTE_SHA1;
+import static org.sonatype.nexus.proxy.maven.ChecksumContentValidator.SUFFIX_MD5;
+import static org.sonatype.nexus.proxy.maven.ChecksumContentValidator.SUFFIX_SHA1;
+import static org.sonatype.nexus.proxy.maven.ChecksumContentValidator.doRetrieveMD5;
+import static org.sonatype.nexus.proxy.maven.ChecksumContentValidator.doRetrieveSHA1;
+import static org.sonatype.nexus.proxy.maven.ChecksumContentValidator.newHashItem;
+
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
+import java.util.TreeMap;
 
 import org.codehaus.plexus.component.annotations.Requirement;
 import org.codehaus.plexus.util.StringUtils;
@@ -24,16 +33,13 @@ import org.sonatype.configuration.ConfigurationException;
 import org.sonatype.nexus.proxy.AccessDeniedException;
 import org.sonatype.nexus.proxy.IllegalOperationException;
 import org.sonatype.nexus.proxy.ItemNotFoundException;
-import org.sonatype.nexus.proxy.RemoteAccessException;
 import org.sonatype.nexus.proxy.ResourceStoreRequest;
 import org.sonatype.nexus.proxy.StorageException;
-import org.sonatype.nexus.proxy.access.Action;
 import org.sonatype.nexus.proxy.events.RepositoryConfigurationUpdatedEvent;
 import org.sonatype.nexus.proxy.events.RepositoryEventEvictUnusedItems;
 import org.sonatype.nexus.proxy.events.RepositoryEventRecreateMavenMetadata;
 import org.sonatype.nexus.proxy.item.AbstractStorageItem;
 import org.sonatype.nexus.proxy.item.RepositoryItemUid;
-import org.sonatype.nexus.proxy.item.RepositoryItemUidLock;
 import org.sonatype.nexus.proxy.item.StorageItem;
 import org.sonatype.nexus.proxy.item.uid.IsHiddenAttribute;
 import org.sonatype.nexus.proxy.maven.EvictUnusedMavenItemsWalkerProcessor.EvictUnusedMavenItemsWalkerFilter;
@@ -61,6 +67,7 @@ public abstract class AbstractMavenRepository
     extends AbstractProxyRepository
     implements MavenRepository, MavenHostedRepository, MavenProxyRepository
 {
+
     /**
      * Metadata manager.
      */
@@ -404,7 +411,40 @@ public abstract class AbstractMavenRepository
             throw new ItemNotFoundException( request, this );
         }
 
+        if ( getRepositoryKind().isFacetAvailable( ProxyRepository.class )
+            && !request.getRequestPath().startsWith( "/." ) )
+        {
+            if ( request.getRequestPath().endsWith( SUFFIX_SHA1 ) )
+            {
+                return doRetrieveSHA1( this, request, doRetrieveArtifactItem( request, SUFFIX_SHA1 ) ).getHashItem();
+            }
+
+            if ( request.getRequestPath().endsWith( SUFFIX_MD5 ) )
+            {
+                return doRetrieveMD5( this, request, doRetrieveArtifactItem( request, SUFFIX_MD5 ) ).getHashItem();
+            }
+        }
+
         return super.doRetrieveItem( request );
+    }
+
+    /**
+     * Retrieves artifact corresponding to .sha1/.md5 request (or any request suffix).
+     */
+    private StorageItem doRetrieveArtifactItem( ResourceStoreRequest hashRequest, String suffix )
+        throws ItemNotFoundException, StorageException, IllegalOperationException
+    {
+        final String hashPath = hashRequest.getRequestPath();
+        final String itemPath = hashPath.substring( 0, hashPath.length() - suffix.length() );
+        hashRequest.pushRequestPath( itemPath );
+        try
+        {
+            return super.doRetrieveItem( hashRequest );
+        }
+        finally
+        {
+            hashRequest.popRequestPath();
+        }
     }
 
     @Override
@@ -472,79 +512,48 @@ public abstract class AbstractMavenRepository
     // DefaultRepository customizations
 
     @Override
-    protected AbstractStorageItem doRetrieveRemoteItem( ResourceStoreRequest request )
-        throws ItemNotFoundException, RemoteAccessException, StorageException
+    protected Collection<StorageItem> doListItems( ResourceStoreRequest request )
+        throws ItemNotFoundException, StorageException
     {
-        String path = request.getRequestPath();
-
-        if ( !path.endsWith( ".sha1" ) && !path.endsWith( ".md5" ) )
+        Collection<StorageItem> items = super.doListItems( request );
+        if ( getRepositoryKind().isFacetAvailable( ProxyRepository.class ) )
         {
-            // we are about to download an artifact from remote repository
-            // lets clean any existing (stale) checksum files
-            removeLocalChecksum( request );
-        }
+            Map<String, StorageItem> result = new TreeMap<String, StorageItem>();
+            for ( StorageItem item : items )
+            {
+                putChecksumItem( result, request, item, ATTR_REMOTE_SHA1, SUFFIX_SHA1 );
+                putChecksumItem( result, request, item, ATTR_REMOTE_MD5, SUFFIX_MD5 );
+            }
 
-        return super.doRetrieveRemoteItem( request );
+            for ( StorageItem item : items )
+            {
+                if ( !result.containsKey( item.getPath() ) )
+                {
+                    result.put( item.getPath(), item );
+                }
+            }
+
+            items = result.values();
+        }
+        return items;
     }
 
-    private void removeLocalChecksum( ResourceStoreRequest request )
-        throws StorageException
+    private void putChecksumItem( Map<String, StorageItem> checksums, ResourceStoreRequest request,
+                                  StorageItem artifact, String attrname, String suffix )
     {
-        try
+        String hash = artifact.getRepositoryItemAttributes().get( attrname );
+        if ( hash != null )
         {
-            String sha1path = request.getRequestPath() + ".sha1";
-            RepositoryItemUidLock sha1lock = createUid( sha1path ).getLock();
-            sha1lock.lock( Action.delete );
+            String hashPath = artifact.getPath() + suffix;
+            request.pushRequestPath( hashPath );
             try
             {
-                request.pushRequestPath( sha1path );
-
-                try
-                {
-                    getLocalStorage().deleteItem( this, request );
-                }
-                catch ( ItemNotFoundException e )
-                {
-                    // this is exactly what we're trying to achieve
-                }
-                finally
-                {
-                    request.popRequestPath();
-                }
+                checksums.put( hashPath, newHashItem( this, request, artifact, hash ) );
             }
             finally
             {
-                sha1lock.unlock();
+                request.popRequestPath();
             }
-
-            String md5path = request.getRequestPath() + ".md5";
-            RepositoryItemUidLock md5lock = createUid( md5path ).getLock();
-            md5lock.lock( Action.delete );
-            try
-            {
-                request.pushRequestPath( md5path );
-
-                try
-                {
-                    getLocalStorage().deleteItem( this, request );
-                }
-                catch ( ItemNotFoundException e )
-                {
-                    // this is exactly what we're trying to achieve
-                }
-                finally
-                {
-                    request.popRequestPath();
-                }
-            }
-            finally
-            {
-                md5lock.unlock();
-            }
-        }
-        catch ( UnsupportedStorageOperationException e )
-        {
-            // huh?
         }
     }
 
