@@ -26,6 +26,7 @@ import java.util.concurrent.locks.Lock;
 
 import org.codehaus.plexus.component.annotations.Component;
 import org.codehaus.plexus.util.FileUtils;
+import org.codehaus.plexus.util.IOUtil;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 import org.codehaus.plexus.util.xml.Xpp3DomBuilder;
 import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
@@ -52,13 +53,14 @@ public class DefaultConfigurationHelper
     {
         lock.lock();
 
+        Reader r = null;
         Reader fr = null;
         FileInputStream is = null;
 
         E configuration = null;
         try
         {
-            Reader r = new FileReader( configurationFile );
+            r = new FileReader( configurationFile );
 
             Xpp3Dom dom = Xpp3DomBuilder.build( r );
 
@@ -137,6 +139,8 @@ public class DefaultConfigurationHelper
                     // just closing if open
                 }
             }
+
+            IOUtil.close( r );
 
             lock.unlock();
         }

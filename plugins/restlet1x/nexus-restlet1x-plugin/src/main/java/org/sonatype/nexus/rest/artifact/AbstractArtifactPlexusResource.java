@@ -457,6 +457,8 @@ public abstract class AbstractArtifactPlexusResource
                         }
                     }
                 }
+
+                is.close();
             }
         }
         catch ( Exception t )
@@ -465,6 +467,8 @@ public abstract class AbstractArtifactPlexusResource
         }
         finally
         {
+            IOUtil.close( is );
+
             if ( hasPom )
             {
                 pomManager.removeTempPomFile();

@@ -20,6 +20,7 @@ import java.util.Map;
 
 import org.codehaus.plexus.component.annotations.Component;
 import org.codehaus.plexus.component.annotations.Requirement;
+import org.codehaus.plexus.util.IOUtil;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 import org.codehaus.plexus.util.xml.Xpp3DomBuilder;
 import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
@@ -55,10 +56,11 @@ public class DefaultApplicationConfigurationUpgrader
     {
         // try to find out the model version
         String modelVersion = null;
+        Reader r = null;
 
         try
         {
-            Reader r = new FileReader( file );
+            r = new FileReader( file );
 
             Xpp3Dom dom = Xpp3DomBuilder.build( r );
 
@@ -67,6 +69,10 @@ public class DefaultApplicationConfigurationUpgrader
         catch ( XmlPullParserException e )
         {
             throw new ConfigurationIsCorruptedException( file.getAbsolutePath(), e );
+        }
+        finally
+        {
+            IOUtil.close( r );
         }
 
         if ( Configuration.MODEL_VERSION.equals( modelVersion ) )
