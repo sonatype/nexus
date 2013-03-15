@@ -23,6 +23,7 @@ import java.util.List;
 
 import javax.inject.Inject;
 
+import com.google.common.base.Stopwatch;
 import org.codehaus.plexus.component.annotations.Component;
 import org.codehaus.plexus.util.StringUtils;
 import org.sonatype.nexus.mime.MimeSupport;
@@ -312,105 +313,155 @@ public class DefaultFSLocalRepositoryStorage
     public boolean containsItem( Repository repository, ResourceStoreRequest request )
         throws LocalStorageException
     {
-        return getFSPeer().containsItem( repository, getBaseDir( repository, request ), request, getFileFromBase( repository, request ) );
+        Stopwatch stopwatch = timingLog.isDebugEnabled() ? new Stopwatch().start() : null;
+        try
+        {
+            return getFSPeer().containsItem( repository, getBaseDir( repository, request ), request, getFileFromBase( repository, request ) );
+        }
+        finally
+        {
+            if ( stopwatch != null )
+            {
+                timingLog.debug( "[{}] containsItem: {} took {}", repository.getId(), request.getRequestPath(),
+                                 stopwatch.stop() );
+            }
+        }
     }
 
     public AbstractStorageItem retrieveItem( Repository repository, ResourceStoreRequest request )
         throws ItemNotFoundException, LocalStorageException
     {
-        return retrieveItemFromFile( repository, request, getFileFromBase( repository, request ) );
+        Stopwatch stopwatch = timingLog.isDebugEnabled() ? new Stopwatch().start() : null;
+        try
+        {
+            return retrieveItemFromFile( repository, request, getFileFromBase( repository, request ) );
+        }
+        finally
+        {
+            if ( stopwatch != null )
+            {
+                timingLog.debug( "[{}] retrieveItem: {} took {}", repository.getId(), request.getRequestPath(),
+                                 stopwatch.stop() );
+            }
+        }
     }
 
     public void storeItem( Repository repository, StorageItem item )
         throws UnsupportedStorageOperationException, LocalStorageException
     {
-        // set some sanity stuff
-        item.setStoredLocally( System.currentTimeMillis() );
-        item.setRemoteChecked( item.getStoredLocally() );
-        item.setExpired( false );
-
-        File target = getFileFromBase( repository, item.getResourceStoreRequest() );
-
-        ContentLocator cl = null;
-
-        if ( item instanceof StorageFileItem )
-        {
-            StorageFileItem fItem = (StorageFileItem) item;
-
-            prepareStorageFileItemForStore( fItem );
-
-            cl = fItem.getContentLocator();
-        }
-        else if ( item instanceof StorageLinkItem )
-        {
-            ByteArrayOutputStream bos = new ByteArrayOutputStream();
-
-            try
-            {
-                getLinkPersister().writeLinkContent( (StorageLinkItem) item, bos );
-            }
-            catch ( IOException e )
-            {
-                // should not happen, look at implementation
-                // we will handle here two byte array backed streams!
-                throw new LocalStorageException( "Problem ", e );
-            }
-
-            cl = new ByteArrayContentLocator( bos.toByteArray(), "text/xml" );
-        }
-
-        getFSPeer().storeItem( repository, getBaseDir( repository, item.getResourceStoreRequest() ), item, target, cl );
-
-        if ( item instanceof StorageFileItem )
-        {
-            ( (StorageFileItem) item ).setLength( target.length() );
-
-            // replace content locator transparently, if we just consumed a non-reusable one
-            // Hint: in general, those items coming from user uploads or remote proxy caching requests are non
-            // reusable ones
-            ( (StorageFileItem) item ).setContentLocator( new FileContentLocator( target,
-                ( (StorageFileItem) item ).getMimeType() ) );
-        }
-
-        final ContentLocator mdis =
-            item instanceof StorageFileItem ? ( (StorageFileItem) item ).getContentLocator() : null;
+        Stopwatch stopwatch = timingLog.isDebugEnabled() ? new Stopwatch().start() : null;
 
         try
         {
-            repository.getAttributesHandler().storeAttributes( item, mdis );
+            // set some sanity stuff
+            item.setStoredLocally( System.currentTimeMillis() );
+            item.setRemoteChecked( item.getStoredLocally() );
+            item.setExpired( false );
+
+            File target = getFileFromBase( repository, item.getResourceStoreRequest() );
+
+            ContentLocator cl = null;
+
+            if ( item instanceof StorageFileItem )
+            {
+                StorageFileItem fItem = (StorageFileItem) item;
+
+                prepareStorageFileItemForStore( fItem );
+
+                cl = fItem.getContentLocator();
+            }
+            else if ( item instanceof StorageLinkItem )
+            {
+                ByteArrayOutputStream bos = new ByteArrayOutputStream();
+
+                try
+                {
+                    getLinkPersister().writeLinkContent( (StorageLinkItem) item, bos );
+                }
+                catch ( IOException e )
+                {
+                    // should not happen, look at implementation
+                    // we will handle here two byte array backed streams!
+                    throw new LocalStorageException( "Problem ", e );
+                }
+
+                cl = new ByteArrayContentLocator( bos.toByteArray(), "text/xml" );
+            }
+
+            getFSPeer().storeItem( repository, getBaseDir( repository, item.getResourceStoreRequest() ), item, target, cl );
+
+            if ( item instanceof StorageFileItem )
+            {
+                ( (StorageFileItem) item ).setLength( target.length() );
+
+                // replace content locator transparently, if we just consumed a non-reusable one
+                // Hint: in general, those items coming from user uploads or remote proxy caching requests are non
+                // reusable ones
+                ( (StorageFileItem) item ).setContentLocator( new FileContentLocator( target,
+                    ( (StorageFileItem) item ).getMimeType() ) );
+            }
+
+            final ContentLocator mdis =
+                item instanceof StorageFileItem ? ( (StorageFileItem) item ).getContentLocator() : null;
+
+            try
+            {
+                repository.getAttributesHandler().storeAttributes( item, mdis );
+            }
+            catch ( IOException e )
+            {
+                throw new LocalStorageException( "Cannot store attributes!", e );
+            }
         }
-        catch ( IOException e )
+        finally
         {
-            throw new LocalStorageException( "Cannot store attributes!", e );
+            if ( stopwatch != null )
+            {
+                timingLog.debug( "[{}] storeItem: {} took {}", repository.getId(), item.getPath(), stopwatch.stop() );
+            }
         }
     }
 
     public void shredItem( Repository repository, ResourceStoreRequest request )
         throws ItemNotFoundException, UnsupportedStorageOperationException, LocalStorageException
     {
-        RepositoryItemUid uid = repository.createUid( request.getRequestPath() );
+        Stopwatch stopwatch = timingLog.isDebugEnabled() ? new Stopwatch().start() : null;
 
         try
         {
-            repository.getAttributesHandler().deleteAttributes( uid );
+            RepositoryItemUid uid = repository.createUid( request.getRequestPath() );
+
+            try
+            {
+                repository.getAttributesHandler().deleteAttributes( uid );
+            }
+            catch ( IOException e )
+            {
+                throw new LocalStorageException( "Cannot delete attributes!", e );
+            }
+
+            File target = getFileFromBase( repository, request );
+
+            getFSPeer().shredItem( repository, getBaseDir( repository, request ), request, target );
         }
-        catch ( IOException e )
+        finally
         {
-            throw new LocalStorageException( "Cannot delete attributes!", e );
+            if ( stopwatch != null )
+            {
+                timingLog.debug( "[{}] shredItem: {} took {}", repository.getId(), request.getRequestPath(),
+                                 stopwatch.stop() );
+            }
         }
-
-        File target = getFileFromBase( repository, request );
-
-        getFSPeer().shredItem( repository, getBaseDir( repository, request ), request, target );
     }
 
     public void moveItem( Repository repository, ResourceStoreRequest from, ResourceStoreRequest to )
         throws ItemNotFoundException, UnsupportedStorageOperationException, LocalStorageException
     {
-        RepositoryItemUid fromUid = repository.createUid( from.getRequestPath() );
+        Stopwatch stopwatch = timingLog.isDebugEnabled() ? new Stopwatch().start() : null;
 
         try
         {
+            RepositoryItemUid fromUid = repository.createUid( from.getRequestPath() );
             Attributes fromAttr = repository.getAttributesHandler().getAttributeStorage().getAttributes( fromUid );
 
             // check does it have attrs at all
@@ -440,46 +491,65 @@ public class DefaultFSLocalRepositoryStorage
             // cleanup
             throw new LocalStorageException( "Cannot store attributes!", e );
         }
+        finally {
+            if ( stopwatch != null )
+            {
+                timingLog.debug( "[{}] moveItem From: {} To: {} took {}", repository.getId(), from.getRequestPath(),
+                                 to.getRequestPath(), stopwatch.stop() );
+            }
+        }
     }
 
     public Collection<StorageItem> listItems( Repository repository, ResourceStoreRequest request )
         throws ItemNotFoundException, LocalStorageException
     {
         List<StorageItem> result = new ArrayList<StorageItem>();
+        Stopwatch stopwatch = timingLog.isDebugEnabled() ? new Stopwatch().start() : null;
 
-        File target = getFileFromBase( repository, request );
-
-        Collection<File> files = getFSPeer().listItems( repository, getBaseDir( repository, request ), request, target );
-
-        if ( files != null )
+        try
         {
-            for ( File file : files )
+            File target = getFileFromBase( repository, request );
+
+            Collection<File> files = getFSPeer().listItems( repository, getBaseDir( repository, request ), request, target );
+
+            if ( files != null )
             {
-                String newPath = ItemPathUtils.concatPaths( request.getRequestPath(), file.getName() );
-
-                request.pushRequestPath( newPath );
-
-                ResourceStoreRequest collMemberReq = new ResourceStoreRequest( request );
-
-                try
+                for ( File file : files )
                 {
-                    result.add( retrieveItemFromFile( repository, collMemberReq, file ) );
-                }
-                catch ( ItemNotFoundException e )
-                {
-                    getLogger().debug( "ItemNotFoundException while listing directory, for request: {}",
-                        collMemberReq.getRequestPath(), e );
-                }
+                    String newPath = ItemPathUtils.concatPaths( request.getRequestPath(), file.getName() );
 
-                request.popRequestPath();
+                    request.pushRequestPath( newPath );
+
+                    ResourceStoreRequest collMemberReq = new ResourceStoreRequest( request );
+
+                    try
+                    {
+                        result.add( retrieveItemFromFile( repository, collMemberReq, file ) );
+                    }
+                    catch ( ItemNotFoundException e )
+                    {
+                        getLogger().debug( "ItemNotFoundException while listing directory, for request: {}",
+                            collMemberReq.getRequestPath(), e );
+                    }
+
+                    request.popRequestPath();
+                }
+            }
+            else
+            {
+                result.add( retrieveItemFromFile( repository, request, target ) );
+            }
+
+            return result;
+        }
+        finally
+        {
+            if ( stopwatch != null )
+            {
+                timingLog.debug( "[{}] listItems: {} took {}", repository.getId(), request.getRequestPath(),
+                                 stopwatch.stop() );
             }
         }
-        else
-        {
-            result.add( retrieveItemFromFile( repository, request, target ) );
-        }
-
-        return result;
     }
 
 }
