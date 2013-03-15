@@ -95,6 +95,8 @@ public interface RepositoryItemUid
      * As you can see on {@link RepositoryItemUidLock#unlock()} method javadoc, last of the boxed unlocks (if any boxing
      * at all, simply last invocation) also releases the lazily created lock.
      * 
+     * @deprecated this method is fully equivalent to {@link #getLock()}
+     * 
      * @return
      */
     RepositoryItemUidLock getAttributeLock();
