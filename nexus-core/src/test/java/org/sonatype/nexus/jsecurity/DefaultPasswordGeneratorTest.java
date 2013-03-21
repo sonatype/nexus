@@ -12,6 +12,15 @@
  */
 package org.sonatype.nexus.jsecurity;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+
+import java.util.HashSet;
+import java.util.Set;
+
+import junit.framework.Assert;
+
 import org.codehaus.plexus.ContainerConfiguration;
 import org.codehaus.plexus.PlexusConstants;
 import org.sonatype.nexus.test.PlexusTestCaseSupport;
@@ -74,5 +83,44 @@ public class DefaultPasswordGeneratorTest
         assertFalse( newPw.equals( newEncrypted2 ) );
         assertTrue( newEncrypted.equals( newEncrypted2 ) );
         assertFalse( encrypted.equals( newEncrypted ) );
+    }
+    
+    @Test
+    public void testHashSaltedPassword()
+    	throws Exception
+    {
+    	String password = "test-password";
+    	String salt = pwGenerator.generateSalt();
+    	int hashIterations = 1024;
+    	
+    	String hash1 = pwGenerator.hashPassword(password, salt, hashIterations);
+    	String hash2 = pwGenerator.hashPassword(password, salt, hashIterations);
+    	
+    	assertThat(hash2, is(hash1));
+    	
+    	String salt2 = pwGenerator.generateSalt();
+    	String hash3 = pwGenerator.hashPassword(password, salt2, hashIterations);
+
+    	assertThat(hash3, not(hash1));
+    	
+    	String hash4 = pwGenerator.hashPassword(password, salt, 1);
+    	
+    	assertThat(hash4, not(hash1));
+    }
+    
+    @Test
+    public void testGenerateSalt()
+    	throws Exception
+    {
+    	//Just make sure that a unique salt is generated each time generateSalt is called
+    	int iterations = 1000;
+    	Set<String> salts = new HashSet<String>();
+    	
+    	for(int x = 0; x < iterations; ++x)
+    	{
+    		salts.add(pwGenerator.generateSalt());
+    	}
+    	
+    	assertThat(salts.size(), is(iterations));
     }
 }
