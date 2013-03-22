@@ -204,10 +204,16 @@ public class DefaultLdapUserDAO
         {
             NamingEnumeration<SearchResult> existing =
                 searchUsers( username, context, new String[] { userIdAttribute }, configuration, 1 );
-
-            if ( !existing.hasMoreElements() )
+            try
             {
-                throw new NoSuchLdapUserException( username );
+                if ( !existing.hasMoreElements() )
+                {
+                    throw new NoSuchLdapUserException( username );
+                }
+            }
+            finally
+            {
+                existing.close();
             }
         }
         catch ( NamingException e )
@@ -313,15 +319,20 @@ public class DefaultLdapUserDAO
         try
         {
             NamingEnumeration<SearchResult> results = searchUsers( username, context, configuration, limitCount );
-            SortedSet<LdapUser> users = new TreeSet<LdapUser>();
-
-            while ( results.hasMoreElements() )
+            try
             {
-                SearchResult result = results.nextElement();
-                users.add( createUser( result, configuration ) );
+                SortedSet<LdapUser> users = new TreeSet<LdapUser>();
+                while ( results.hasMoreElements() )
+                {
+                    SearchResult result = results.nextElement();
+                    users.add( createUser( result, configuration ) );
+                }
+                return users;
             }
-
-            return users;
+            finally
+            {
+                results.close();
+            }
         }
         catch ( NamingException e )
         {
@@ -341,10 +352,16 @@ public class DefaultLdapUserDAO
         {
             NamingEnumeration<SearchResult> existing =
                 searchUsers( user.getUsername(), context, new String[] { userIdAttribute }, configuration, 1 );
-
-            if ( existing.hasMoreElements() )
+            try
             {
-                throw new LdapDAOException( "User: " + user.getUsername() + " already exists!" );
+                if ( existing.hasMoreElements() )
+                {
+                    throw new LdapDAOException( "User: " + user.getUsername() + " already exists!" );
+                }
+            }
+            finally
+            {
+                existing.close();
             }
         }
         catch ( NamingException e )
@@ -418,14 +435,20 @@ public class DefaultLdapUserDAO
         try
         {
             NamingEnumeration<SearchResult> result = searchUsers( username, context, null, configuration, 1 );
-
-            if ( result.hasMoreElements() )
+            try
             {
-                return createUser( result.nextElement(), configuration );
+                if ( result.hasMoreElements() )
+                {
+                    return createUser( result.nextElement(), configuration );
+                }
+                else
+                {
+                    throw new NoSuchLdapUserException( "A user with username '" + username + "' does not exist" );
+                }
             }
-            else
+            finally
             {
-                throw new NoSuchLdapUserException( "A user with username '" + username + "' does not exist" );
+                result.close();
             }
         }
         catch ( NamingException e )

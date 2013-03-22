@@ -52,7 +52,7 @@ public class DefaultLdapGroupDAO
     private LdapUserDAO ldapUserManager;
 
     private Logger logger = LoggerFactory.getLogger( getClass() );
-    
+
     private static boolean isGroupsEnabled( LdapAuthConfiguration configuration )
     {
         return configuration.isLdapGroupsAsRoles();
@@ -62,10 +62,10 @@ public class DefaultLdapGroupDAO
         throws LdapDAOException,
             NoLdapUserRolesFoundException
     {
-        
+
         boolean dynamicGroups = !StringUtils.isEmpty( configuration.getUserMemberOfAttribute() );
         boolean groupsEnabled = isGroupsEnabled( configuration );
-        
+
         Set<String> roleIds = new HashSet<String>();
         if( groupsEnabled )
         {
@@ -84,7 +84,7 @@ public class DefaultLdapGroupDAO
                     throw new NoLdapUserRolesFoundException( username );
                 }
             }
-    
+
             if ( roleIds == null | roleIds.isEmpty() )
             {
                 throw new NoLdapUserRolesFoundException( username );
@@ -94,7 +94,7 @@ public class DefaultLdapGroupDAO
         {
             throw new NoLdapUserRolesFoundException( username );
         }
-        
+
         return roleIds;
     }
 
@@ -107,53 +107,63 @@ public class DefaultLdapGroupDAO
         {
             try
             {
-    
+
                 if ( StringUtils.isEmpty( configuration.getUserMemberOfAttribute() ) )
                 {
                     // static groups
                     String groupIdAttribute = configuration.getGroupIdAttribute();
                     String groupBaseDn = StringUtils.defaultString( configuration.getGroupBaseDn(), "" );
-    
+
                     String filter = "(objectClass=" + configuration.getGroupObjectClass() + ")";
-    
+
                     getLogger().debug(
                         "Searching for groups in group DN: " + groupBaseDn + "\nUsing filter: \'" + filter + "\'" );
-    
+
                     SearchControls ctls = this.getBaseSearchControls( new String[] { groupIdAttribute }, configuration
                         .isGroupSubtree() );
-    
-                    groups = this.getGroupIdsFromSearch(
-                        context.search( groupBaseDn, filter, ctls ),
-                        groupIdAttribute,
-                        configuration );
+
+                    NamingEnumeration<SearchResult> results = context.search( groupBaseDn, filter, ctls );
+                    try
+                    {
+                         groups = this.getGroupIdsFromSearch( results, groupIdAttribute, configuration );
+                    }
+                    finally
+                    {
+                         results.close();
+                    }
                 }
                 else
                 {
                     // dynamic groups
                     String memberOfAttribute = configuration.getUserMemberOfAttribute();
-    
+
                     String filter = "(objectClass=" + configuration.getUserObjectClass() + ")";
-    
+
                     SearchControls ctls = this.getBaseSearchControls( new String[] { memberOfAttribute }, true );
-    
+
                     String userBaseDn = StringUtils.defaultString( configuration.getUserBaseDn(), "" );
-    
-                    Set<String> roles = this.getGroupIdsFromSearch(
-                        context.search( userBaseDn, filter, ctls ),
-                        memberOfAttribute,
-                        configuration );
-                    
+
+                    NamingEnumeration<SearchResult> results = context.search( userBaseDn, filter, ctls );
+                    Set<String> roles;
+                    try
+                    {
+                        roles = this.getGroupIdsFromSearch( results, memberOfAttribute, configuration );
+                    }
+                    finally
+                    {
+                        results.close();
+                    }
                     for ( String groupDN : roles )
                     {
                         groups.add( this.getGroupFromString( groupDN ) );
                     }
                 }
-    
+
             }
             catch ( NamingException e )
             {
                 String message = "Failed to get list of groups.";
-    
+
                 throw new LdapDAOException( message, e );
             }
         }
@@ -230,7 +240,7 @@ public class DefaultLdapGroupDAO
         if ( groupMemberFormat != null )
         {
             String member = StringUtils.replace( groupMemberFormat, "${username}", username );
-            
+
             if( groupMemberFormat.contains( "${dn}" ) )
             {
                 LdapUser user;
@@ -243,9 +253,9 @@ public class DefaultLdapGroupDAO
                     String message = "Failed to retrieve role information from ldap for user: " + username;
                     throw new LdapDAOException( message, e );
                 }
-                member = StringUtils.replace( member, "${dn}",user.getDn()  );   
+                member = StringUtils.replace( member, "${dn}",user.getDn()  );
             }
-            
+
             filter += groupMemberAttribute + "=" + member + ")))";
         }
         else
@@ -261,13 +271,16 @@ public class DefaultLdapGroupDAO
         {
             SearchControls ctls = this.getBaseSearchControls( new String[] { groupIdAttribute }, configuration
                 .isGroupSubtree() );
-            Set<String> roles = this.getGroupIdsFromSearch(
-                context.search( groupBaseDn, filter, ctls ),
-                groupIdAttribute,
-                configuration );
-
-            return roles;
-
+            NamingEnumeration<SearchResult> results = context.search( groupBaseDn, filter, ctls );
+            try
+            {
+                Set<String> roles = this.getGroupIdsFromSearch( results, groupIdAttribute, configuration );
+                return roles;
+            }
+            finally
+            {
+                results.close();
+            }
         }
         catch ( NamingException e )
         {
@@ -300,7 +313,7 @@ public class DefaultLdapGroupDAO
         {
             throw new NoSuchLdapGroupException( groupId, groupId );
         }
-        
+
         if ( StringUtils.isEmpty( configuration.getUserMemberOfAttribute() ) )
         {
             // static groups
@@ -316,10 +329,15 @@ public class DefaultLdapGroupDAO
             Set<String> groups;
             try
             {
-                groups = this.getGroupIdsFromSearch(
-                    context.search( groupBaseDn, filter, ctls ),
-                    groupIdAttribute,
-                    configuration );
+                NamingEnumeration<SearchResult> results = context.search( groupBaseDn, filter, ctls );
+                try
+                {
+                    groups = this.getGroupIdsFromSearch( results, groupIdAttribute, configuration );
+                }
+                finally
+                {
+                    results.close();
+                }
             }
             catch ( NamingException e )
             {
@@ -351,22 +369,26 @@ public class DefaultLdapGroupDAO
             Set<String> roles;
             try
             {
-                roles = this.getGroupIdsFromSearch(
-                    context.search( userBaseDn, filter, ctls ),
-                    memberOfAttribute,
-                    configuration );
-
-                for ( String groupDN : roles )
+                NamingEnumeration<SearchResult> results = context.search( userBaseDn, filter, ctls );
+                try
                 {
-                    if ( groupId.equals( this.getGroupFromString( groupDN ) ) )
-                    {
-                        return groupId;
-                    }
+                    roles = this.getGroupIdsFromSearch( results, memberOfAttribute, configuration );
+                }
+                finally
+                {
+                    results.close();
                 }
             }
             catch ( NamingException e )
             {
                 throw new LdapDAOException( "Failed to find group: " + groupId, e );
+            }
+            for ( String groupDN : roles )
+            {
+                if ( groupId.equals( this.getGroupFromString( groupDN ) ) )
+                {
+                    return groupId;
+                }
             }
         }
         throw new NoSuchLdapGroupException( groupId, groupId );
