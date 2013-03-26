@@ -12,6 +12,7 @@
  */
 package org.sonatype.nexus.client.internal.rest;
 
+import com.thoughtworks.xstream.mapper.MapperWrapper;
 import org.sonatype.nexus.client.internal.msg.ErrorMessage;
 import org.sonatype.nexus.client.internal.msg.ErrorResponse;
 import org.sonatype.nexus.rest.model.XStreamConfiguratorLightweight;
@@ -33,7 +34,21 @@ public class NexusXStreamFactory
      */
     public XStream createForXml()
     {
-        final XStream xstream = new XStream( new LookAheadXppDriver() );
+        final XStream xstream = new XStream(new LookAheadXppDriver())
+        {
+            // Ignore fields which are present in the payload but not on target class
+            @Override
+            protected MapperWrapper wrapMapper(final MapperWrapper next) {
+                return new MapperWrapper(next)
+                {
+                    @Override
+                    public boolean shouldSerializeMember(final Class definedIn, final String fieldName) {
+                        return definedIn != Object.class && super.shouldSerializeMember(definedIn, fieldName);
+                    }
+                };
+            }
+        };
+
         xstream.setMode( XStream.NO_REFERENCES );
         xstream.autodetectAnnotations( false );
         return xstream;
