@@ -90,6 +90,7 @@ import org.apache.maven.index.treeview.TreeViewRequest;
 import org.apache.maven.index.updater.IndexUpdateRequest;
 import org.apache.maven.index.updater.IndexUpdateResult;
 import org.apache.maven.index.updater.IndexUpdater;
+import org.apache.maven.index.updater.FSDirectoryFactory;
 import org.apache.maven.index.updater.ResourceFetcher;
 import org.codehaus.plexus.util.FileUtils;
 import org.codehaus.plexus.util.IOUtil;
@@ -328,6 +329,16 @@ public class DefaultIndexerManager
     private File workingDirectory;
 
     private File tempDirectory;
+
+    private final FSDirectoryFactory luceneDirectoryFactory = new FSDirectoryFactory()
+    {
+        @Override
+        public FSDirectory open( File indexDir )
+            throws IOException
+        {
+            return openFSDirectory( indexDir );
+        }
+    };
 
     @VisibleForTesting
     protected void setIndexUpdater( final IndexUpdater indexUpdater )
@@ -1250,6 +1261,7 @@ public class DefaultIndexerManager
         } );
 
         updateRequest.setForceFullUpdate( forceFullUpdate );
+        updateRequest.setFSDirectoryFactory( luceneDirectoryFactory );
 
         if ( repository instanceof MavenRepository )
         {
