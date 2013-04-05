@@ -104,7 +104,7 @@ NX.define('Nexus.util.IconContainer', {
      * Reference to installed stylesheet.
      *
      * @private
-     * @type {Stylesheet}
+     * @type {CSSStyleSheet}
      */
     stylesheet: undefined,
 
