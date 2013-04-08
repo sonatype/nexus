@@ -21,6 +21,9 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
+import com.google.common.base.Stopwatch;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.sonatype.nexus.logging.AbstractLoggingComponent;
 import org.sonatype.nexus.mime.MimeSupport;
 import org.sonatype.nexus.proxy.ItemNotFoundException;
@@ -46,6 +49,9 @@ public abstract class AbstractLocalRepositoryStorage
     extends AbstractLoggingComponent
     implements LocalRepositoryStorage
 {
+
+    protected static final Logger timingLog = LoggerFactory.getLogger( "local.storage.timing" );
+
     /**
      * Key used to mark a repository context as "initialized". This flag and the generation together controls how the
      * context is about to be updated. See NEXUS-5145.
@@ -186,7 +192,20 @@ public abstract class AbstractLocalRepositoryStorage
     public final void deleteItem( Repository repository, ResourceStoreRequest request )
         throws ItemNotFoundException, UnsupportedStorageOperationException, LocalStorageException
     {
-        getWastebasket().delete( this, repository, request );
+        Stopwatch stopwatch = timingLog.isDebugEnabled() ? new Stopwatch().start() : null;
+
+        try
+        {
+            getWastebasket().delete( this, repository, request );
+        }
+        finally
+        {
+            if ( stopwatch != null )
+            {
+                timingLog.debug( "[{}] deleteItem: {} took {}", repository.getId(), request.getRequestPath(),
+                                 stopwatch.stop() );
+            }
+        }
     }
 
     // ==
