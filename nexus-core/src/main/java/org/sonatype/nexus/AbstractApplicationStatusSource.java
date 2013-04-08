@@ -116,7 +116,19 @@ public abstract class AbstractApplicationStatusSource
      */
     protected String readVersion( String path )
     {
-        String version = "Unknown";
+        final String version = readVersionIfPresent( path );
+        return version == null ? "Unknown" : version;
+    }
+
+    /**
+     * Reads the version from a properties file (the one embedded by Maven into Jar) returning null if version could
+     * not be determined.
+     *
+     * @since 2.5.0
+     */
+    protected String readVersionIfPresent( String path )
+    {
+        String version = null;
 
         try
         {
