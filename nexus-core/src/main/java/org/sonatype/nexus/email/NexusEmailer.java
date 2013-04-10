@@ -27,6 +27,14 @@ import org.sonatype.nexus.configuration.Configurable;
 public interface NexusEmailer
     extends Configurable
 {
+
+    /**
+     * Key of Nexus base URL.
+     *
+     * @since 2.5
+     */
+    public static final String BASE_URL_KEY = "baseUrl";
+
     /**
      * Gets the preconfigured EMailer instance for prepared for using it.
      * 
