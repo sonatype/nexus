@@ -17,6 +17,7 @@ import org.sonatype.configuration.ConfigurationException;
 import org.sonatype.nexus.configuration.AbstractConfigurable;
 import org.sonatype.nexus.configuration.Configurator;
 import org.sonatype.nexus.configuration.application.ApplicationConfiguration;
+import org.sonatype.nexus.configuration.model.CLocalStorage;
 import org.sonatype.nexus.configuration.model.CRepository;
 import org.sonatype.nexus.configuration.model.CRepositoryCoreConfiguration;
 import org.sonatype.nexus.configuration.model.CRepositoryExternalConfigurationHolderFactory;
@@ -24,6 +25,10 @@ import org.sonatype.nexus.proxy.StorageException;
 import org.sonatype.nexus.proxy.item.RepositoryItemUid;
 import org.sonatype.nexus.proxy.mirror.DefaultPublishedMirrors;
 import org.sonatype.nexus.proxy.mirror.PublishedMirrors;
+import org.sonatype.nexus.proxy.storage.local.fs.DefaultFSLocalRepositoryStorage;
+import org.sonatype.nexus.templates.repository.RepositoryTemplate;
+
+import com.google.common.base.Strings;
 
 public class ConfigurableRepository
     extends AbstractConfigurable
@@ -145,36 +150,86 @@ public class ConfigurableRepository
     {
         getCurrentConfiguration( true ).setSearchable( searchable );
     }
-
-    public String getLocalUrl()
+    
+    /**
+     * Method exposing is local storage URL of this repository explicitly set (and probably located at different
+     * location than default would be), or it relies (relied if this is "live" {@link Repository} instance) to have the
+     * location of local storage defaulted.
+     * 
+     * @return {@code true} if local storage URL of this repository is explicitly set, does not uses default location.
+     * @since 2.5
+     */
+    public boolean isLocalUrlExplicitlySet()
     {
         // see NEXUS-2482
-        if ( getCurrentConfiguration( false ).getLocalStorage() == null 
-            || StringUtils.isEmpty( getCurrentConfiguration( false ).getLocalStorage().getUrl() ) )
-        {
-            return getCurrentConfiguration( false ).defaultLocalStorageUrl; 
-        }
-        
-        return getCurrentConfiguration( false ).getLocalStorage().getUrl();
+        return !( getCurrentConfiguration( false ).getLocalStorage() == null || StringUtils.isEmpty( getCurrentConfiguration(
+            false ).getLocalStorage().getUrl() ) );
     }
 
-    public void setLocalUrl( String localUrl )
+    /**
+     * Returns the local storage URL of this repository as String. In case no location is explicitly set, the
+     * {@link CRepository#defaultLocalStorageUrl} value is returned. This behaviour is aligned with general Nexus
+     * behavior, where if no explicit path is set for {@code repository/localStorage/url} (nexus.xml does not contain
+     * it), it's defaulted at runtime (or better, repository creation time) to default local storage location (usually
+     * at {@code sonatype-work/nexus/storage/REPO_ID}.
+     * 
+     * @return the local storage URL as String. Never {@code null} for "live" {@link Repository} instances. It might be
+     *         {@code null} when accessed over {@link RepositoryTemplate#getConfigurableRepository()} (not yet created
+     *         repository), in which case it means it will be defaulted once created.
+     */
+    public String getLocalUrl()
+    {
+        if ( isLocalUrlExplicitlySet() )
+        {
+            return getCurrentConfiguration( false ).getLocalStorage().getUrl();
+        }
+        return getCurrentConfiguration( false ).defaultLocalStorageUrl;
+    }
+
+    /**
+     * Sets the local storage URL of this repository instance. This method will override the URL value only if needed
+     * (is different than currently in effect, decided by comparing parameter value and value got from
+     * {@link #getLocalUrl()} method), and will handle null-case when no {@link CLocalStorage} instance exists yet in
+     * {@link CRepository} underlying configuration.
+     * 
+     * @param localUrl
+     * @throws StorageException
+     */
+    public void setLocalUrl( final String localUrl )
         throws StorageException
     {
-        String newLocalUrl = null;
-        
-        if ( !StringUtils.isEmpty( localUrl ) )
-        {
-            newLocalUrl = localUrl.trim();
-        }
-        
-        if ( newLocalUrl != null 
-            && newLocalUrl.endsWith( RepositoryItemUid.PATH_SEPARATOR ) )
-        {
-            newLocalUrl = newLocalUrl.substring( 0, newLocalUrl.length() - 1 );
-        }
+        final String oldLocalUrl = getLocalUrl();
+        String newLocalUrl = localUrl == null ? null : localUrl.trim();
 
-        getCurrentConfiguration( true ).getLocalStorage().setUrl( newLocalUrl );
+        // we need to change URL if (any of these is true):
+        // a - old URL was "defaulted" and new URL is not null
+        // b - old URL was "explicit" and new URL is not equal to old URL
+        final boolean changed =
+            ( !isLocalUrlExplicitlySet() && newLocalUrl != null )
+                || ( isLocalUrlExplicitlySet() && !oldLocalUrl.equals( newLocalUrl ) );
+
+        // shave if needed
+        if ( changed && newLocalUrl != null )
+        {
+            // remove if needed trailing "/"
+            if ( newLocalUrl.endsWith( RepositoryItemUid.PATH_SEPARATOR ) )
+            {
+                newLocalUrl = newLocalUrl.substring( 0, newLocalUrl.length() - 1 );
+            }
+            final CRepository newConfiguration = getCurrentConfiguration( true );
+            if (newConfiguration.getLocalStorage() == null) 
+            {
+                final CLocalStorage localStorage = new CLocalStorage();
+                localStorage.setProvider( DefaultFSLocalRepositoryStorage.PROVIDER_STRING );
+                newConfiguration.setLocalStorage( localStorage );
+            }
+            getCurrentConfiguration( true ).getLocalStorage().setUrl( newLocalUrl );
+        }
+        else if ( changed && newLocalUrl == null )
+        {
+            // reset local storage, we want it defaulted
+            getCurrentConfiguration( true ).setLocalStorage( null );
+        }
     }
 
     public LocalStatus getLocalStatus()
