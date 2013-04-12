@@ -134,6 +134,7 @@ public class PreemptiveAuthTest
                         // checksum policy is IGNORE to not have checksum requests implicitly happen
                         exConf.setChecksumPolicy( ChecksumPolicy.IGNORE );
                         repoConf.setRemoteStorage( new CRemoteStorage() );
+                        // change provider here, for example to "apacheHttpClient3x"
                         repoConf.getRemoteStorage().setProvider(
                             env.getRemoteProviderHintFactory().getDefaultHttpRoleHint() );
                         repoConf.getRemoteStorage().setUrl( "http://localhost:" + server1.getPort() + "/" );
@@ -170,7 +171,7 @@ public class PreemptiveAuthTest
         final List<String> requests = record.getRequests();
         assertThat( "To HTTP GET one item from protected repository you'd need one preemptively authed GET", requests,
             hasSize( 1 ) );
-        assertThat( "The item we asked should result as HTTP request on remote server", requests.get( 1 ),
+        assertThat( "The item we asked should result as HTTP request on remote server", requests.get( 0 ),
             containsString( EXISTING_PATH ) );
     }
 
