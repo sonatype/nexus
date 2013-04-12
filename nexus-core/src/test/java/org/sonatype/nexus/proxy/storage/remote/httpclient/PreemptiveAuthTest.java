@@ -115,7 +115,7 @@ public class PreemptiveAuthTest
                 {
                     final PlexusContainer container = env.getPlexusContainer();
                     {
-                        // adding one proxy
+                        // adding proxy that has remote peer protected with Basic scheme
                         final M2Repository repo = (M2Repository) container.lookup( Repository.class, "maven2" );
                         CRepository repoConf = new DefaultCRepository();
                         repoConf.setProviderRole( Repository.class.getName() );
@@ -166,7 +166,7 @@ public class PreemptiveAuthTest
         final String EXISTING_PATH = "/activemq/activemq-core/1.2/activemq-core-1.2.jar";
 
         // we don't care about item really, we want to count needed requests to get it
-        final StorageItem item = proxy.retrieveItem( new ResourceStoreRequest( EXISTING_PATH ) );
+        proxy.retrieveItem( new ResourceStoreRequest( EXISTING_PATH ) );
 
         final List<String> requests = record.getRequests();
         assertThat( "To HTTP GET one item from protected repository you'd need one preemptively authed GET", requests,
