@@ -50,6 +50,11 @@ public class OSSApplicationStatusSource
     @Override
     protected String discoverApplicationVersion()
     {
-        return readVersion( "/META-INF/maven/org.sonatype.nexus/nexus-oss-edition/pom.properties" );
+        String version = readVersionIfPresent( "/META-INF/nexus/nexus-bundle.properties" );
+        if ( version == null )
+        {
+            version = readVersion( "/META-INF/maven/org.sonatype.nexus/nexus-oss-edition/pom.properties" );
+        }
+        return version;
     }
 }
