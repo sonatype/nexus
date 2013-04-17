@@ -14,6 +14,7 @@ package org.sonatype.nexus.email;
 
 import java.util.List;
 
+import org.apache.commons.lang.StringUtils;
 import org.codehaus.plexus.component.annotations.Component;
 import org.codehaus.plexus.component.annotations.Requirement;
 import org.codehaus.plexus.personality.plexus.lifecycle.phase.Startable;
@@ -30,6 +31,7 @@ import org.sonatype.nexus.configuration.AbstractConfigurable;
 import org.sonatype.nexus.configuration.Configurator;
 import org.sonatype.nexus.configuration.CoreConfiguration;
 import org.sonatype.nexus.configuration.application.ApplicationConfiguration;
+import org.sonatype.nexus.configuration.application.GlobalRestApiSettings;
 import org.sonatype.nexus.configuration.model.CSmtpConfiguration;
 import org.sonatype.nexus.configuration.model.CSmtpConfigurationCoreConfiguration;
 
@@ -50,6 +52,9 @@ public class DefaultNexusEmailer
 
     @Requirement
     private ApplicationConfiguration applicationConfiguration;
+
+    @Requirement
+    private GlobalRestApiSettings globalRestApiSettings;
 
     @Requirement
     private ApplicationStatusSource applicationStatusSource;
@@ -81,7 +86,7 @@ public class DefaultNexusEmailer
 
     public String getDefaultMailTypeId()
     {
-        return DefaultMailType.DEFAULT_TYPE_ID;
+        return NexusDefaultMailType.ID;
     }
 
     public MailRequest getDefaultMailRequest( String subject, String body )
@@ -95,6 +100,12 @@ public class DefaultNexusEmailer
         request.getBodyContext().put( DefaultMailType.SUBJECT_KEY, subject );
 
         request.getBodyContext().put( DefaultMailType.BODY_KEY, body );
+
+        final String baseUrl = globalRestApiSettings.getBaseUrl();
+        if ( StringUtils.isNotBlank( baseUrl ) )
+        {
+            request.getBodyContext().put( BASE_URL_KEY, baseUrl );
+        }
 
         return request;
     }
