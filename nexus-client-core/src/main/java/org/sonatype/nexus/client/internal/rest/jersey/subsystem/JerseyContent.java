@@ -18,19 +18,27 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
+import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 
 import org.codehaus.plexus.util.IOUtil;
+import org.sonatype.nexus.client.core.exception.NexusClientNotFoundException;
 import org.sonatype.nexus.client.core.spi.SubsystemSupport;
 import org.sonatype.nexus.client.core.subsystem.content.Content;
 import org.sonatype.nexus.client.core.subsystem.content.Location;
 import org.sonatype.nexus.client.rest.jersey.ContextAwareUniformInterfaceException;
 import org.sonatype.nexus.client.rest.jersey.JerseyNexusClient;
+import org.sonatype.nexus.rest.model.ContentListDescribeResourceResponse;
 
+import com.google.common.collect.Maps;
 import com.sun.jersey.api.client.ClientHandlerException;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.UniformInterfaceException;
+import com.sun.jersey.core.util.MultivaluedMapImpl;
 
 /**
  * @since 2.1
@@ -208,9 +216,50 @@ public class JerseyContent
     public void upload( final Location location, final File target )
         throws IOException
     {
+        uploadWithAttributes( location, target, null );
+    }
+
+    @Override
+    public void uploadWithAttributes( final Location location, final File target, final Map<String, String> tags )
+        throws IOException
+    {
         try
         {
-            getNexusClient().uri( CONTENT_PREFIX + location.toContentPath() ).put( target );
+            if ( tags != null && !tags.isEmpty() )
+            {
+                final MultivaluedMap<String, String> qps = new MultivaluedMapImpl();
+                for ( Map.Entry<String, String> tag : tags.entrySet() )
+                {
+                    final String key;
+                    final String value;
+                    if ( tag.getKey() != null && tag.getKey().startsWith( "tag_" ) && tag.getKey().trim().length() > 4 )
+                    {
+                        key = tag.getKey();
+                    }
+                    else if ( tag.getKey() != null && tag.getKey().trim().length() > 1 )
+                    {
+                        key = "tag_" + tag.getKey();
+                    }
+                    else
+                    {
+                        continue;
+                    }
+                    if ( tag.getValue() != null && tag.getValue().trim().length() > 0 )
+                    {
+                        value = tag.getValue();
+                    }
+                    else
+                    {
+                        continue;
+                    }
+                    qps.add( key, value );
+                }
+                getNexusClient().uri( CONTENT_PREFIX + location.toContentPath(), qps ).put( target );
+            }
+            else
+            {
+                getNexusClient().uri( CONTENT_PREFIX + location.toContentPath() ).put( target );
+            }
         }
         catch ( UniformInterfaceException e )
         {
@@ -255,6 +304,91 @@ public class JerseyContent
                     return null;
                 }
             } );
+        }
+        catch ( ClientHandlerException e )
+        {
+            throw getNexusClient().convert( e );
+        }
+    }
+
+    /**
+     * For now uses the ?describe response but from service resource, as content negotiation on content resource is
+     * broken, and it would emit wrong content type with JSON body.
+     */
+    @Override
+    public Map<String, String> getFileAttributes( final Location location )
+    {
+        try
+        {
+            final ClientResponse response = getNexusClient().serviceResource( location.toServicePath() + "?describe" ).get( ClientResponse.class );
+            if ( !ClientResponse.Status.OK.equals( response.getClientResponseStatus() ) )
+            {
+                throw getNexusClient().convert( new ContextAwareUniformInterfaceException( response )
+                {
+                    @Override
+                    public String getMessage( final int status )
+                    {
+                        if ( status == Response.Status.NOT_FOUND.getStatusCode() )
+                        {
+                            return String.format( "Inexistent path: %s", location );
+                        }
+                        return null;
+                    }
+                } );
+            }
+
+            try
+            {
+                final ContentListDescribeResourceResponse describeResponse =
+                    response.getEntity( ContentListDescribeResourceResponse.class );
+                if ( describeResponse.getData() != null && describeResponse.getData().getResponse() != null
+                    && describeResponse.getData().getResponse().getResponseType() != null )
+                {
+                    if ( "FILE".equals( describeResponse.getData().getResponse().getResponseType() ) )
+                    {
+                        if ( describeResponse.getData() != null && describeResponse.getData().getResponse() != null
+                            && describeResponse.getData().getResponse().getAttributes() != null )
+                        {
+                            final List<String> attributes = describeResponse.getData().getResponse().getAttributes();
+                            Map<String, String> result = Maps.newHashMapWithExpectedSize( attributes.size() );
+                            for ( String attribute : attributes )
+                            {
+                                final String key = attribute.substring( 0, attribute.indexOf( "=" ) );
+                                final String value =
+                                    attribute.substring( attribute.indexOf( "=" ) + 1, attribute.length() );
+                                result.put( key, value );
+                            }
+                            return result;
+                        }
+                        else
+                        {
+                            return Collections.emptyMap();
+                        }
+                    }
+                    else if ( "NOT_FOUND".equals( describeResponse.getData().getResponse().getResponseType() ) )
+                    {
+                        // this is fishy, as server did NOT respond 404, instead it "described" not found
+                        // case with response 200 and a DescribeDTO. So, "simulating" 404, but the
+                        // response body is consumed, I cannot set it as string here
+                        throw new NexusClientNotFoundException( "Not found", "File item on location " + location
+                            + " not found." );
+                    }
+                    else
+                    {
+                        throw new IllegalArgumentException( "Unexpected response type for Location "
+                            + location.toServicePath() + ": "
+                            + describeResponse.getData().getResponse().getResponseType() );
+                    }
+                }
+                else
+                {
+                    throw new IllegalArgumentException( "Unexpected response for Location " + location.toServicePath() );
+                }
+            }
+            finally
+            {
+                response.close();
+            }
         }
         catch ( ClientHandlerException e )
         {
