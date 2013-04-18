@@ -109,11 +109,16 @@ public class ContentIT
         final File toDeploy = testData().resolveFile( "artifacts/" + AOP_POM );
         content().upload( location, toDeploy );
 
-        // this should throw IAEx as we are targeting a directory
-        content().getFileAttributes( repositoryLocation( "releases", AOP_POM_PARENT ) );
-
-        // need to clean up as this IT uses per-class Nexus instance
-        content().delete( location );
+        try
+        {
+            // this should throw IAEx as we are targeting a directory
+            content().getFileAttributes( repositoryLocation( "releases", AOP_POM_PARENT ) );
+        }
+        finally
+        {
+            // need to clean up as this IT uses per-class Nexus instance
+            content().delete( location );
+        }
     }
 
     @Test( expected = NexusClientNotFoundException.class )
