@@ -136,6 +136,25 @@
           </execution>
         </executions>
       </plugin>
+      <plugin>
+        <groupId>nl.secondfloor.mojo.jsduck</groupId>
+        <artifactId>jsduck-maven-plugin</artifactId>
+        <version>0.1.1-SNAPSHOT</version>
+        <configuration>
+          <javascriptDirectory>src/main/resources/static/js</javascriptDirectory>
+          <targetDirectory>${project.build.outputDirectory}/docs</targetDirectory>
+        </configuration>
+        <executions>
+          <execution>
+            <phase>process-sources</phase>
+            <goals>
+              <goal>clean-jsduck</goal>
+              <goal>jsduck</goal>
+            </goals>
+          </execution>
+        </executions>
+
+      </plugin>
     </plugins>
   </build>
 
