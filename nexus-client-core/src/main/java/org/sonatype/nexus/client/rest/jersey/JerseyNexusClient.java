@@ -264,7 +264,9 @@ public class JerseyNexusClient
             final String body = getResponseBody( response );
             ErrorResponse errorResponse = null;
 
-            // HACK:
+            // FIXME: disabled for the moment due to use of XStream, need to resolve.
+            // FIXME: This really should be using jax-rs features to decode the message instead of this custom bullshit.
+
             //try
             //{
             //    errorResponse = (ErrorResponse) getXStream().fromXML( body, new ErrorResponse() );
