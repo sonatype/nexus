@@ -32,7 +32,7 @@ import org.sonatype.nexus.client.core.exception.NexusClientResponseException;
 import org.sonatype.nexus.client.core.spi.SubsystemFactory;
 import org.sonatype.nexus.client.internal.msg.ErrorMessage;
 import org.sonatype.nexus.client.internal.msg.ErrorResponse;
-import org.sonatype.nexus.client.internal.rest.AbstractXStreamNexusClient;
+import org.sonatype.nexus.client.internal.rest.AbstractNexusClient;
 import org.sonatype.nexus.client.internal.util.Check;
 import org.sonatype.nexus.client.rest.ConnectionInfo;
 import org.sonatype.nexus.rest.model.StatusResource;
@@ -42,7 +42,6 @@ import com.sun.jersey.api.client.ClientHandlerException;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.UniformInterfaceException;
 import com.sun.jersey.api.client.WebResource;
-import com.thoughtworks.xstream.XStream;
 
 /**
  * Jersey client with some extra fluff: it maintains reference to XStream used by Provider it uses, to make it able to
@@ -54,7 +53,7 @@ import com.thoughtworks.xstream.XStream;
  * @since 2.1
  */
 public class JerseyNexusClient
-    extends AbstractXStreamNexusClient
+    extends AbstractNexusClient
 {
 
     private Client client;
@@ -65,10 +64,10 @@ public class JerseyNexusClient
 
     public JerseyNexusClient( final Condition connectionCondition,
         final SubsystemFactory<?, JerseyNexusClient>[] subsystemFactories,
-        final ConnectionInfo connectionInfo, final XStream xstream, final Client client,
+        final ConnectionInfo connectionInfo, final Client client,
         final MediaType mediaType )
     {
-        super( connectionInfo, xstream );
+        super( connectionInfo );
         this.client = Check.notNull( client, Client.class );
         this.mediaType = Check.notNull( mediaType, MediaType.class );
         this.subsystemFactoryMap = new LinkedHashMap<Class<?>, SubsystemFactory<?, JerseyNexusClient>>();
@@ -264,15 +263,18 @@ public class JerseyNexusClient
         {
             final String body = getResponseBody( response );
             ErrorResponse errorResponse = null;
-            try
-            {
-                errorResponse = (ErrorResponse) getXStream().fromXML( body, new ErrorResponse() );
-            }
-            catch ( Exception e1 )
-            {
-                // ignore
-                // XStreamException if body is not ErrorResponse
-            }
+
+            // HACK:
+            //try
+            //{
+            //    errorResponse = (ErrorResponse) getXStream().fromXML( body, new ErrorResponse() );
+            //}
+            //catch ( Exception e1 )
+            //{
+            //    // ignore
+            //    // XStreamException if body is not ErrorResponse
+            //}
+
             if ( errorResponse != null )
             {
                 // convert them to hide stupid "old" REST model, and not have it leak out
