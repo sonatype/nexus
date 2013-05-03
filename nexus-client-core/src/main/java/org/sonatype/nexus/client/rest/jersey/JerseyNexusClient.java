@@ -22,6 +22,7 @@ import javax.ws.rs.core.MultivaluedMap;
 
 import org.codehaus.plexus.util.IOUtil;
 import org.sonatype.nexus.client.core.Condition;
+import org.sonatype.nexus.client.core.NexusClient;
 import org.sonatype.nexus.client.core.NexusStatus;
 import org.sonatype.nexus.client.core.exception.NexusClientAccessForbiddenException;
 import org.sonatype.nexus.client.core.exception.NexusClientBadRequestException;
@@ -44,11 +45,9 @@ import com.sun.jersey.api.client.UniformInterfaceException;
 import com.sun.jersey.api.client.WebResource;
 
 /**
- * Jersey client with some extra fluff: it maintains reference to XStream used by Provider it uses, to make it able to
- * pass XStream around (toward subsystems) to apply needed XStream configuration. As Nexus currently is married to
- * XStream, this will probably change, hence, this class, as one of the implementations keeps the fact of XStream use
- * encapsulated, I did not want to proliferate it through all of Nexus Client. This class should not be instantiated
- * manually, use {@link JerseyNexusClientFactory} for it.
+ * {@link NexusClient} implementation using Jersey's client as transport.
+ *
+ * This class should not be instantiated manually, use {@link JerseyNexusClientFactory} for it.
  *
  * @since 2.1
  */
