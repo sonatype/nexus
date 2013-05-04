@@ -36,7 +36,7 @@
       <dependency>
         <groupId>org.sonatype.plexus</groupId>
         <artifactId>plexus-restlet-bridge</artifactId>
-        <version>1.25</version>
+        <version>1.26-SNAPSHOT</version>
         <exclusions>
           <exclusion>
             <groupId>org.slf4j</groupId>
@@ -89,6 +89,14 @@
           <exclusion>
             <groupId>com.thoughtworks.xstream</groupId>
             <artifactId>xstream</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.codehaus.jackson</groupId>
+            <artifactId>jackson-core-asl</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.codehaus.jackson</groupId>
+            <artifactId>jackson-mapper-asl</artifactId>
           </exclusion>
         </exclusions>
       </dependency>
@@ -160,13 +168,12 @@
         <classifier>bundle</classifier>
         <type>${nexus-plugin.type}</type>
       </dependency>
+
       <dependency>
         <groupId>org.sonatype.nexus.plugins</groupId>
         <artifactId>nexus-restlet1x-testsupport-plugin</artifactId>
         <version>${nexus.version}</version>
       </dependency>
-
-
     </dependencies>
   </dependencyManagement>
 

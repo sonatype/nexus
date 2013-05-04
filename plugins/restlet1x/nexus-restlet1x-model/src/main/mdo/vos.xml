@@ -747,6 +747,13 @@
       <version>1.0.0+</version>
       <description>The repository base object, this could be extended by a new object if new fields are required.</description>
       <annotations>
+        <annotation>
+          @org.codehaus.jackson.annotate.JsonTypeInfo(
+            use=org.codehaus.jackson.annotate.JsonTypeInfo.Id.CLASS,
+            include=org.codehaus.jackson.annotate.JsonTypeInfo.As.PROPERTY,
+            property="@class"
+          )
+        </annotation>
         <annotation>@javax.xml.bind.annotation.XmlType( name = "base-repository" )</annotation>
         <annotation>@javax.xml.bind.annotation.XmlAccessorType(javax.xml.bind.annotation.XmlAccessType.FIELD)</annotation>
       </annotations>

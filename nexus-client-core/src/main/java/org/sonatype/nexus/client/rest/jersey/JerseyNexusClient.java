@@ -22,6 +22,7 @@ import javax.ws.rs.core.MultivaluedMap;
 
 import org.codehaus.plexus.util.IOUtil;
 import org.sonatype.nexus.client.core.Condition;
+import org.sonatype.nexus.client.core.NexusClient;
 import org.sonatype.nexus.client.core.NexusStatus;
 import org.sonatype.nexus.client.core.exception.NexusClientAccessForbiddenException;
 import org.sonatype.nexus.client.core.exception.NexusClientBadRequestException;
@@ -32,7 +33,7 @@ import org.sonatype.nexus.client.core.exception.NexusClientResponseException;
 import org.sonatype.nexus.client.core.spi.SubsystemFactory;
 import org.sonatype.nexus.client.internal.msg.ErrorMessage;
 import org.sonatype.nexus.client.internal.msg.ErrorResponse;
-import org.sonatype.nexus.client.internal.rest.AbstractXStreamNexusClient;
+import org.sonatype.nexus.client.internal.rest.AbstractNexusClient;
 import org.sonatype.nexus.client.internal.util.Check;
 import org.sonatype.nexus.client.rest.ConnectionInfo;
 import org.sonatype.nexus.rest.model.StatusResource;
@@ -42,19 +43,16 @@ import com.sun.jersey.api.client.ClientHandlerException;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.UniformInterfaceException;
 import com.sun.jersey.api.client.WebResource;
-import com.thoughtworks.xstream.XStream;
 
 /**
- * Jersey client with some extra fluff: it maintains reference to XStream used by Provider it uses, to make it able to
- * pass XStream around (toward subsystems) to apply needed XStream configuration. As Nexus currently is married to
- * XStream, this will probably change, hence, this class, as one of the implementations keeps the fact of XStream use
- * encapsulated, I did not want to proliferate it through all of Nexus Client. This class should not be instantiated
- * manually, use {@link JerseyNexusClientFactory} for it.
+ * {@link NexusClient} implementation using Jersey's client as transport.
+ *
+ * This class should not be instantiated manually, use {@link JerseyNexusClientFactory} for it.
  *
  * @since 2.1
  */
 public class JerseyNexusClient
-    extends AbstractXStreamNexusClient
+    extends AbstractNexusClient
 {
 
     private Client client;
@@ -65,10 +63,10 @@ public class JerseyNexusClient
 
     public JerseyNexusClient( final Condition connectionCondition,
         final SubsystemFactory<?, JerseyNexusClient>[] subsystemFactories,
-        final ConnectionInfo connectionInfo, final XStream xstream, final Client client,
+        final ConnectionInfo connectionInfo, final Client client,
         final MediaType mediaType )
     {
-        super( connectionInfo, xstream );
+        super( connectionInfo );
         this.client = Check.notNull( client, Client.class );
         this.mediaType = Check.notNull( mediaType, MediaType.class );
         this.subsystemFactoryMap = new LinkedHashMap<Class<?>, SubsystemFactory<?, JerseyNexusClient>>();
@@ -264,15 +262,20 @@ public class JerseyNexusClient
         {
             final String body = getResponseBody( response );
             ErrorResponse errorResponse = null;
-            try
-            {
-                errorResponse = (ErrorResponse) getXStream().fromXML( body, new ErrorResponse() );
-            }
-            catch ( Exception e1 )
-            {
-                // ignore
-                // XStreamException if body is not ErrorResponse
-            }
+
+            // FIXME: disabled for the moment due to use of XStream, need to resolve.
+            // FIXME: This really should be using jax-rs features to decode the message instead of this custom bullshit.
+
+            //try
+            //{
+            //    errorResponse = (ErrorResponse) getXStream().fromXML( body, new ErrorResponse() );
+            //}
+            //catch ( Exception e1 )
+            //{
+            //    // ignore
+            //    // XStreamException if body is not ErrorResponse
+            //}
+
             if ( errorResponse != null )
             {
                 // convert them to hide stupid "old" REST model, and not have it leak out

@@ -31,8 +31,6 @@ import org.slf4j.LoggerFactory;
 import org.sonatype.nexus.client.core.Condition;
 import org.sonatype.nexus.client.core.spi.SubsystemFactory;
 import org.sonatype.nexus.client.internal.rest.AbstractNexusClientFactory;
-import org.sonatype.nexus.client.internal.rest.NexusXStreamFactory;
-import org.sonatype.nexus.client.internal.rest.XStreamXmlProvider;
 import org.sonatype.nexus.client.internal.util.Template;
 import org.sonatype.nexus.client.internal.util.Version;
 import org.sonatype.nexus.client.rest.ConnectionInfo;
@@ -45,7 +43,6 @@ import com.sun.jersey.api.json.JSONConfiguration;
 import com.sun.jersey.client.apache4.ApacheHttpClient4;
 import com.sun.jersey.client.apache4.config.ApacheHttpClient4Config;
 import com.sun.jersey.client.apache4.config.DefaultApacheHttpClient4Config;
-import com.thoughtworks.xstream.XStream;
 
 /**
  * @since 2.1
@@ -55,13 +52,9 @@ import com.thoughtworks.xstream.XStream;
 public class JerseyNexusClientFactory
     extends AbstractNexusClientFactory<JerseyNexusClient>
 {
-
     private static final Logger LOG = LoggerFactory.getLogger( JerseyNexusClientFactory.class );
 
-    /**
-     * Modified "content-type" used by Nexus Client: it enforces body encoding too for UTF8.
-     */
-    private static final MediaType APPLICATION_XML_UTF8_TYPE = MediaType.valueOf( "application/xml; charset=UTF-8" );
+    private static final MediaType DEFAULT_MEDIA_TYPE = JacksonProvider.MEDIA_TYPE; // charset=UTF-8?
 
     public JerseyNexusClientFactory( final SubsystemFactory<?, JerseyNexusClient>... subsystemFactories )
     {
@@ -86,22 +79,20 @@ public class JerseyNexusClientFactory
                                              final SubsystemFactory<?, JerseyNexusClient>[] subsystemFactories,
                                              final ConnectionInfo connectionInfo )
     {
-        // we are java2java client, so we use XML instead of JSON, as
-        // some current Nexus are one way only! So, we fix for XML
-        final XStream xstream = new NexusXStreamFactory().createAndConfigureForXml();
-
         // we use XML for communication (unlike web browsers do, for which JSON makes more sense)
-        return new JerseyNexusClient( connectionCondition, subsystemFactories, connectionInfo, xstream,
-                                      doCreateHttpClientFor( connectionInfo, xstream ),
-                                      APPLICATION_XML_UTF8_TYPE );
+        return new JerseyNexusClient( connectionCondition, subsystemFactories, connectionInfo,
+                                      doCreateHttpClientFor( connectionInfo ),
+                                      DEFAULT_MEDIA_TYPE);
     }
 
     // ==
 
-    protected ApacheHttpClient4 doCreateHttpClientFor( final ConnectionInfo connectionInfo, final XStream xstream )
+    protected ApacheHttpClient4 doCreateHttpClientFor( final ConnectionInfo connectionInfo )
     {
         final ApacheHttpClient4Config config = new DefaultApacheHttpClient4Config();
-        config.getSingletons().add( new XStreamXmlProvider( xstream, APPLICATION_XML_UTF8_TYPE ) );
+
+        config.getSingletons().add(new JacksonProvider());
+
         // set _real_ URL for baseUrl, and not a redirection (typically http instead of https)
         config.getProperties().put( ApacheHttpClient4Config.PROPERTY_FOLLOW_REDIRECTS, Boolean.FALSE );
         config.getFeatures().put( JSONConfiguration.FEATURE_POJO_MAPPING, Boolean.TRUE );

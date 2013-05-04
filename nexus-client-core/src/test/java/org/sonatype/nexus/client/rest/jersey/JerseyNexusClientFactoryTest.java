@@ -32,7 +32,6 @@ import org.sonatype.nexus.client.rest.ProxyInfo;
 import org.sonatype.sisu.litmus.testsupport.TestSupport;
 import com.google.common.collect.ImmutableMap;
 import com.sun.jersey.client.apache4.ApacheHttpClient4;
-import com.thoughtworks.xstream.XStream;
 
 /**
  * Tests for JerseyNexusClientFactory.
@@ -45,9 +44,6 @@ public class JerseyNexusClientFactoryTest
 
     @Mock
     private SubsystemFactory<?, JerseyNexusClient> factory;
-
-    @Mock
-    private XStream xstream;
 
     @Mock
     private ConnectionInfo connection;
@@ -71,7 +67,7 @@ public class JerseyNexusClientFactoryTest
         when( proxyInfo.getProxyPort() ).thenReturn( 8888 );
         when( proxyInfo.getProxyProtocol() ).thenReturn( HTTP );
 
-        final ApacheHttpClient4 client = underTest.doCreateHttpClientFor( connection, xstream );
+        final ApacheHttpClient4 client = underTest.doCreateHttpClientFor( connection );
 
         assertThat( client.getClientHandler().getHttpClient().getParams().getParameter( ConnRoutePNames.DEFAULT_PROXY ),
                     (Matcher) allOf(

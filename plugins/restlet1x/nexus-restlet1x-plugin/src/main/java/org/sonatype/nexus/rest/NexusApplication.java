@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.shiro.util.AntPathMatcher;
+import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.plexus.component.annotations.Component;
 import org.codehaus.plexus.component.annotations.Requirement;
 import org.restlet.Application;
@@ -124,6 +125,12 @@ public class NexusApplication
     {
         return org.sonatype.nexus.rest.model.XStreamConfigurator.configureXStream( xstream );
     }
+
+    //@Override
+    //protected ObjectMapper createObjectMapper() {
+    //    ObjectMapper mapper = super.createObjectMapper();
+    //    return mapper;
+    //}
 
     @Override
     protected Router initializeRouter( Router root, boolean isStarted )
