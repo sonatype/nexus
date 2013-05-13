@@ -43,7 +43,6 @@ import org.restlet.data.Reference;
 import org.restlet.data.Request;
 import org.restlet.data.Response;
 import org.restlet.data.Status;
-import org.restlet.data.Tag;
 import org.restlet.resource.Representation;
 import org.restlet.resource.ResourceException;
 import org.restlet.resource.Variant;
@@ -333,9 +332,16 @@ public abstract class AbstractResourceStoreContentPlexusResource
         // honor if-none-match
         if ( request.getConditions().getNoneMatch() != null && request.getConditions().getNoneMatch().size() > 0 )
         {
-            Tag tag = request.getConditions().getNoneMatch().get( 0 );
-
-            result.setIfNoneMatch( tag.getName() );
+            // NEXUS-5704: Seemingly Restlet 1.1 does NOT support if-none-match HTTP header (according to old ancient docos,
+            // adding support for it was planned for 1.2+ releases). We use 1.1.6.
+            // Still, some "partial" supporting code was present, the header presence is detected, but the Tag
+            // returned is always null. So, getting the value the "hard way".
+            final Series<Parameter> headers = (Series<Parameter>) request.getAttributes().get( "org.restlet.http.headers" );
+            final String matchValue = headers.getFirstValue( "if-none-match", true );
+            if ( matchValue != null )
+            {
+                result.setIfNoneMatch( matchValue );
+            }
         }
 
         // stuff in the originating remote address
@@ -505,28 +511,26 @@ public abstract class AbstractResourceStoreContentPlexusResource
     Representation renderStorageFileItem( final Request req, final StorageFileItem file )
         throws ResourceException
     {
-        if ( req.getConditions().getModifiedSince() != null )
+        final StorageFileItemRepresentation fileRepresentation = new StorageFileItemRepresentation( file );
+        if ( file.getResourceStoreRequest().getIfModifiedSince() != 0 )
         {
-            // this is a conditional GET
-            if ( file.getModified() > req.getConditions().getModifiedSince().getTime() )
+            // this is a conditional GET using time-stamp
+            if ( file.getModified() > file.getResourceStoreRequest().getIfModifiedSince() )
             {
-                return new StorageFileItemRepresentation( file );
+                return fileRepresentation;
             }
             else
             {
                 throw new ResourceException( Status.REDIRECTION_NOT_MODIFIED, "Resource is not modified." );
             }
         }
-        else if ( req.getConditions().getNoneMatch() != null && req.getConditions().getNoneMatch().size() > 0
-            && file.getRepositoryItemAttributes().containsKey( DigestCalculatingInspector.DIGEST_SHA1_KEY ) )
+        else if ( file.getResourceStoreRequest().getIfNoneMatch() != null
+            && fileRepresentation.getTag() != null )
         {
-            Tag tag = req.getConditions().getNoneMatch().get( 0 );
-
-            // this is a conditional get using ETag
-            if ( !file.getRepositoryItemAttributes().get( DigestCalculatingInspector.DIGEST_SHA1_KEY ).equals(
-                tag.getName() ) )
+            // this is a conditional GET using ETag
+            if ( !file.getResourceStoreRequest().getIfNoneMatch().equals( fileRepresentation.getTag().getName() ) )
             {
-                return new StorageFileItemRepresentation( file );
+                return fileRepresentation;
             }
             else
             {
@@ -535,7 +539,7 @@ public abstract class AbstractResourceStoreContentPlexusResource
         }
         else
         {
-            return new StorageFileItemRepresentation( file );
+            return fileRepresentation;
         }
     }
 
