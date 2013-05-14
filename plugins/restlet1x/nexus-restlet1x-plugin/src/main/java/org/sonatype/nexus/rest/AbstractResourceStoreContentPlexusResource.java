@@ -43,6 +43,7 @@ import org.restlet.data.Reference;
 import org.restlet.data.Request;
 import org.restlet.data.Response;
 import org.restlet.data.Status;
+import org.restlet.data.Tag;
 import org.restlet.resource.Representation;
 import org.restlet.resource.ResourceException;
 import org.restlet.resource.Variant;
@@ -60,7 +61,6 @@ import org.sonatype.nexus.proxy.ResourceStore;
 import org.sonatype.nexus.proxy.ResourceStoreRequest;
 import org.sonatype.nexus.proxy.StorageException;
 import org.sonatype.nexus.proxy.access.AccessManager;
-import org.sonatype.nexus.proxy.attributes.inspectors.DigestCalculatingInspector;
 import org.sonatype.nexus.proxy.item.StorageCollectionItem;
 import org.sonatype.nexus.proxy.item.StorageCompositeItem;
 import org.sonatype.nexus.proxy.item.StorageFileItem;
@@ -332,15 +332,14 @@ public abstract class AbstractResourceStoreContentPlexusResource
         // honor if-none-match
         if ( request.getConditions().getNoneMatch() != null && request.getConditions().getNoneMatch().size() > 0 )
         {
-            // NEXUS-5704: Seemingly Restlet 1.1 does NOT support if-none-match HTTP header (according to old ancient docos,
-            // adding support for it was planned for 1.2+ releases). We use 1.1.6.
-            // Still, some "partial" supporting code was present, the header presence is detected, but the Tag
-            // returned is always null. So, getting the value the "hard way".
-            final Series<Parameter> headers = (Series<Parameter>) request.getAttributes().get( "org.restlet.http.headers" );
-            final String matchValue = headers.getFirstValue( "if-none-match", true );
-            if ( matchValue != null )
+            final Tag tag = request.getConditions().getNoneMatch().get( 0 );
+            // NEXUS-5704: 500 Internal Server Error when "If-None-Match" in header
+            // Restlet 1.1 is very strict about properly formatted ETags (must be quoted)
+            // If unquoted, their presence is detected (IF above evals to true), but will
+            // actually return null as parsing the tag
+            if ( tag != null && tag.getName() != null )
             {
-                result.setIfNoneMatch( matchValue );
+                result.setIfNoneMatch( tag.getName() );
             }
         }
 
@@ -512,30 +511,17 @@ public abstract class AbstractResourceStoreContentPlexusResource
         throws ResourceException
     {
         final StorageFileItemRepresentation fileRepresentation = new StorageFileItemRepresentation( file );
-        if ( file.getResourceStoreRequest().getIfModifiedSince() != 0 )
+        if ( file.getResourceStoreRequest().getIfModifiedSince() != 0
+            && file.getModified() <= file.getResourceStoreRequest().getIfModifiedSince() )
         {
             // this is a conditional GET using time-stamp
-            if ( file.getModified() > file.getResourceStoreRequest().getIfModifiedSince() )
-            {
-                return fileRepresentation;
-            }
-            else
-            {
-                throw new ResourceException( Status.REDIRECTION_NOT_MODIFIED, "Resource is not modified." );
-            }
+            throw new ResourceException( Status.REDIRECTION_NOT_MODIFIED, "Resource is not modified." );
         }
-        else if ( file.getResourceStoreRequest().getIfNoneMatch() != null
-            && fileRepresentation.getTag() != null )
+        else if ( file.getResourceStoreRequest().getIfNoneMatch() != null && fileRepresentation.getTag() != null
+            && file.getResourceStoreRequest().getIfNoneMatch().equals( fileRepresentation.getTag().getName() ) )
         {
             // this is a conditional GET using ETag
-            if ( !file.getResourceStoreRequest().getIfNoneMatch().equals( fileRepresentation.getTag().getName() ) )
-            {
-                return fileRepresentation;
-            }
-            else
-            {
-                throw new ResourceException( Status.REDIRECTION_NOT_MODIFIED, "Resource is not modified." );
-            }
+            throw new ResourceException( Status.REDIRECTION_NOT_MODIFIED, "Resource is not modified." );
         }
         else
         {
