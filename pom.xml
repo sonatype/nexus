@@ -1374,16 +1374,15 @@
                   <excludes>
                     <exclude>junit:junit:(,4.10]</exclude>
                   </excludes>
-                  <message>junit:junit includes old versions of hamcrest; use junit:junit-dep instead</message>
+                  <message>junit:junit before 4.11 includes old versions of hamcrest; use junit:junit 4.11+ instead</message>
                 </bannedDependencies>
                 <bannedDependencies>
                   <searchTransitive>true</searchTransitive>
                   <excludes>
                     <exclude>junit:junit-dep:(,4.10]</exclude>
                   </excludes>
-                  <message>junit:junit-dep 4.9 wrongly includes hamcrest api in jar, 4.10 or greater required due to TestRule changes over earlier
-                    versions
-                  </message>
+                  <message>junit:junit-dep ceased to exists since junit:junit:4.11; use junit:junit 4.11+ instead</message>
+                </message>
                 </bannedDependencies>
                 <bannedDependencies>
                   <searchTransitive>true</searchTransitive>
