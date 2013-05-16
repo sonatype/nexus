@@ -771,13 +771,13 @@
       <dependency>
         <groupId>org.sonatype.http-testing-harness</groupId>
         <artifactId>server-provider</artifactId>
-        <version>0.7</version>
+        <version>0.8-SNAPSHOT</version>
       </dependency>
 
       <dependency>
         <groupId>org.sonatype.http-testing-harness</groupId>
         <artifactId>junit-runner</artifactId>
-        <version>0.7</version>
+        <version>0.8-SNAPSHOT</version>
       </dependency>
 
       <dependency>
@@ -789,7 +789,7 @@
       <dependency>
         <groupId>org.sonatype.sisu.litmus</groupId>
         <artifactId>litmus-testsupport</artifactId>
-        <version>1.6</version>
+        <version>1.6.1-SNAPSHOT</version>
       </dependency>
 
       <dependency>
@@ -1372,14 +1372,14 @@
                 <bannedDependencies>
                   <searchTransitive>true</searchTransitive>
                   <excludes>
-                    <exclude>junit:junit</exclude>
+                    <exclude>junit:junit:(,4.10]</exclude>
                   </excludes>
                   <message>junit:junit includes old versions of hamcrest; use junit:junit-dep instead</message>
                 </bannedDependencies>
                 <bannedDependencies>
                   <searchTransitive>true</searchTransitive>
                   <excludes>
-                    <exclude>junit:junit-dep:(,4.9]</exclude>
+                    <exclude>junit:junit-dep:(,4.10]</exclude>
                   </excludes>
                   <message>junit:junit-dep 4.9 wrongly includes hamcrest api in jar, 4.10 or greater required due to TestRule changes over earlier
                     versions
