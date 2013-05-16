@@ -16,6 +16,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
@@ -24,12 +25,6 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.Map;
 
-import com.google.common.collect.Maps;
-import com.noelios.restlet.http.HttpResponse;
-import com.noelios.restlet.http.HttpServerCall;
-
-import org.hamcrest.Matcher;
-import org.hamcrest.MatcherAssert;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
@@ -63,6 +58,10 @@ import org.sonatype.nexus.proxy.item.uid.IsRemotelyAccessibleAttribute;
 import org.sonatype.plexus.rest.resource.PathProtectionDescriptor;
 import org.sonatype.security.SecuritySystem;
 import org.sonatype.sisu.litmus.testsupport.TestSupport;
+
+import com.google.common.collect.Maps;
+import com.noelios.restlet.http.HttpResponse;
+import com.noelios.restlet.http.HttpServerCall;
 
 /**
  * Tests for {@link AbstractResourceStoreContentPlexusResource}
@@ -319,7 +318,7 @@ public class ResourceStoreContentPlexusResourceTest
             when( attributes.get( StorageFileItem.DIGEST_SHA1_KEY ) ).thenReturn( "1234567890" );
 
             underTest.renderStorageFileItem( request, fileItem );
-            assertThat( "ResourceException was expected to be thrown", false );
+            fail( "ResourceException is expected to be thrown" );
         }
         catch ( ResourceException e )
         {
@@ -338,7 +337,8 @@ public class ResourceStoreContentPlexusResourceTest
         final ResourceStoreRequest rsr = fileItem.getResourceStoreRequest();
         rsr.setIfNoneMatch( "{SHA1{1234567890}}" ); // client "knows" hash 1234567890
         when( attributes.containsKey( StorageFileItem.DIGEST_SHA1_KEY ) ).thenReturn( true );
-        when( attributes.get( StorageFileItem.DIGEST_SHA1_KEY ) ).thenReturn( "0987654321" ); // item hash is "0987654321"
+        when( attributes.get( StorageFileItem.DIGEST_SHA1_KEY ) ).thenReturn( "0987654321" ); // item hash is
+                                                                                              // "0987654321"
 
         final StorageFileItemRepresentation representation =
             (StorageFileItemRepresentation) underTest.renderStorageFileItem( request, fileItem );
