@@ -24,6 +24,7 @@ import java.io.Reader;
 import java.io.Writer;
 import java.util.concurrent.locks.Lock;
 
+import org.apache.commons.io.IOUtils;
 import org.codehaus.plexus.component.annotations.Component;
 import org.codehaus.plexus.util.FileUtils;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
@@ -144,19 +145,38 @@ public class DefaultConfigurationHelper
         return configuration;
     }
 
-    public <E> void save( E configuration, File configurationFile, ConfigurationWritter<E> writer, Lock lock )
+    /**
+     * Save the configuration to a file safely, utilizing an intermediate file for writing to prevent possible corruption.
+     */
+    public <E> void save( E configuration, File configurationFile, ConfigurationWriter<E> writer, Lock lock )
     {
         lock.lock();
-
-        configurationFile.getParentFile().mkdirs();
 
         Writer fw = null;
 
         try
         {
-            fw = new OutputStreamWriter( new FileOutputStream( configurationFile ) );
+            configurationFile.getParentFile().mkdirs();
+            File tempFile = new File(configurationFile.getParentFile(), configurationFile.getName() + ".tmp");
+            File copy = new File(configurationFile.getParentFile(), configurationFile.getName() + ".old");
+
+            fw = new OutputStreamWriter( new FileOutputStream( tempFile ) );
 
             writer.write( fw, configuration );
+            fw.flush();
+
+            //move original content out of the way, if it exists
+            if ( configurationFile.exists() )
+            {
+                org.apache.commons.io.FileUtils.moveFile( configurationFile, copy );
+            }
+            //move new content into place
+            org.apache.commons.io.FileUtils.moveFile( tempFile, configurationFile );
+            //if we made a copy of the original content, delete it now
+            if(copy.exists())
+            {
+                copy.delete();
+            }
         }
         catch ( IOException e )
         {
@@ -164,19 +184,7 @@ public class DefaultConfigurationHelper
         }
         finally
         {
-            if ( fw != null )
-            {
-                try
-                {
-                    fw.flush();
-
-                    fw.close();
-                }
-                catch ( IOException e )
-                {
-                    // just closing if open
-                }
-            }
+            IOUtils.closeQuietly( fw );
 
             lock.unlock();
         }

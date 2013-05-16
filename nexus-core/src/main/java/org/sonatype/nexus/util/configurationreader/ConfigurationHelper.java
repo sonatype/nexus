@@ -18,6 +18,9 @@ import java.util.concurrent.locks.Lock;
 import org.sonatype.configuration.upgrade.ConfigurationUpgrader;
 import org.sonatype.nexus.configuration.validator.ConfigurationValidator;
 
+/**
+ * Common operations to load and save configuration files.
+ */
 @SuppressWarnings( "deprecation" )
 public interface ConfigurationHelper
 {
@@ -28,6 +31,6 @@ public interface ConfigurationHelper
                                                                         ConfigurationUpgrader<E> upgrader );
 
     public <E> void save( E configuration, File configurationFile,
-                          ConfigurationWritter<E> configurationXpp3Writter, Lock lock );
+                          ConfigurationWriter<E> configurationXpp3Writter, Lock lock );
 
 }
