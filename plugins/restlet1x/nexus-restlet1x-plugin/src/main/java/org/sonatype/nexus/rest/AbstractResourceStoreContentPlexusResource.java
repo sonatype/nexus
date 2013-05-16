@@ -23,8 +23,10 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 
 import javax.servlet.http.HttpServletRequest;
@@ -80,6 +82,7 @@ import org.sonatype.nexus.rest.model.ContentListResource;
 import org.sonatype.nexus.rest.model.ContentListResourceResponse;
 import org.sonatype.nexus.rest.model.NotFoundReasoning;
 import org.sonatype.nexus.rest.repositories.AbstractRepositoryPlexusResource;
+import org.sonatype.nexus.rest.util.RequestUtil;
 import org.sonatype.nexus.security.filter.authc.NexusHttpAuthenticationFilter;
 import org.sonatype.plexus.rest.representation.VelocityRepresentation;
 import org.sonatype.security.SecuritySystem;
@@ -151,6 +154,85 @@ public abstract class AbstractResourceStoreContentPlexusResource
             throw new IllegalStateException(
                 "Nexus cannot operate on platform not supporting UTF-8 character encoding!", e );
         }
+    }
+
+    private static final String NEXUS_DEPLOY_ATTRIBUTE_HEADER = "X-Nexus-Deploy-Attribute-";
+
+    /**
+     * Creates a map out from some aspects of the upload {@link Request}. It will make use of special Nexus specific
+     * HTTP Header (if present), the header prefixed with {@link #NEXUS_DEPLOY_ATTRIBUTE_HEADER} will be taken, and will
+     * gather all query parameters that has name starting with prefix {@code tag_} (hence, key will be query parameter
+     * name stripped with "tag_" and value the query parameter value). Finally, all the keys gathered above will be
+     * prefixed with "deploy." string. If both, HTTP header and query parameter after these transformations end up with
+     * same key, query parameter wins. Values with {@code null} are not allowed, they will be silently left out.
+     * <p>
+     * Transformations applied to headers: only headers prefixed with {@link #NEXUS_DEPLOY_ATTRIBUTE_HEADER} are
+     * considered, that are <b>real</b> prefixes. The prefix is stripped off, and string "deploy." is prepended.
+     * <p>
+     * Transformations applied to query parameters: only query parameters prefixed with "tag_" are considered, that are
+     * <b>real</b> prefixes. The prefix is stripped off, and string "deploy." is prepended.
+     * <p>
+     * Example requests and results:
+     * <p>
+     * Request:
+     * 
+     * <pre>
+     * PUT /foo/bar.txt?tag_one=1&tag_two=2 HTTP/1.1
+     * X-Nexus-Deploy-Attribute-Foo: bar
+     * </pre>
+     * 
+     * Resulting map:
+     * 
+     * <pre>
+     * deploy.one=1
+     * deploy.two=2
+     * deploy.Foo=bar
+     * </pre>
+     * 
+     * Request:
+     * 
+     * <pre>
+     * PUT /foo/bar.txt?tag_one=1&tag_two=2 HTTP/1.1
+     * X-Nexus-Deploy-Attribute-one: one
+     * </pre>
+     * 
+     * Resulting map: (both {@code tag_one} query parameter and {@code X-Nexus-Deploy-Attribute-one} header will end up
+     * as key "one" after transformations, and query parameter wins).
+     * 
+     * <pre>
+     * deploy.one=1
+     * deploy.two=2
+     * </pre>
+     * 
+     * @param request
+     * @return
+     */
+    protected Map<String, String> getItemAttributesFromUploadRequest( final Request request )
+    {
+        final HashMap<String, String> result = new HashMap<String, String>();
+
+        // get headers, if any
+        final Map<String, String> headers =
+            RequestUtil.gatherRequestHeadersToMap( request, NEXUS_DEPLOY_ATTRIBUTE_HEADER, true, false );
+        if ( headers != null && !headers.isEmpty() )
+        {
+            for ( Map.Entry<String, String> entry : headers.entrySet() )
+            {
+                result.put( "deploy." + entry.getKey(), entry.getValue() );
+            }
+        }
+
+        // get "tags" from query parameters
+        final Map<String, String> tags = RequestUtil.gatherQueryParametersToMap( request, "tag_", true, false );
+        if ( tags != null && !tags.isEmpty() )
+        {
+            for ( Map.Entry<String, String> entry : tags.entrySet() )
+            {
+                result.put( "deploy." + entry.getKey(), entry.getValue() );
+            }
+        }
+
+        return result;
     }
 
     protected boolean isDescribe( Request request )
@@ -227,10 +309,11 @@ public abstract class AbstractResourceStoreContentPlexusResource
         try
         {
             final ResourceStoreRequest req = getResourceStoreRequest( request );
+            final Map<String, String> attributes = getItemAttributesFromUploadRequest( request );
 
             for ( FileItem fileItem : files )
             {
-                getResourceStore( request ).storeItem( req, fileItem.getInputStream(), null );
+                getResourceStore( request ).storeItem( req, fileItem.getInputStream(), attributes );
             }
         }
         catch ( Exception t )

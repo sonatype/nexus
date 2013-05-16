@@ -48,6 +48,11 @@ public class Location
         return String.format( "%s/%s/%s", contentType, repositoryId, repositoryPath );
     }
 
+    public String toServicePath()
+    {
+        return String.format( "%s/%s/content/%s", contentType, repositoryId, repositoryPath );
+    }
+
     // --
 
     @Override
