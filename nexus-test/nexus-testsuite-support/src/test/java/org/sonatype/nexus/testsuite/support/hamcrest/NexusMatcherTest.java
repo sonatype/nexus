@@ -15,7 +15,6 @@ package org.sonatype.nexus.testsuite.support.hamcrest;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.endsWith;
-import static org.hamcrest.Matchers.equalTo;
 
 import java.io.File;
 
@@ -52,6 +51,7 @@ public class NexusMatcherTest
             containsString( "java.io.FileNotFoundException" ),
             containsString( "nexus.log" )
         ) );
+        thrown.handleAssertionErrors();
         assertThat(
             new File( "nexus.log" ),
             NexusMatchers.doesNotHaveCommonExceptions()
@@ -81,6 +81,7 @@ public class NexusMatcherTest
             containsString( "Log file does not contain any of the common unwanted exceptions" ),
             endsWith( "contained on line <1>: \"java.lang.ClassNotFoundException: some.package.Foo\"" )
         ) );
+        thrown.handleAssertionErrors();
         assertThat(
             resolveLogFile(),
             NexusMatchers.doesNotHaveCommonExceptions()
