@@ -42,6 +42,7 @@ public class DefaultConfigurationHelper
             fw = new BufferedWriter( new FileWriter( tempFile ) );
             writer.write( fw, configuration );
             fw.flush();
+            fw.close();
 
             Files.move( tempFile, configurationFile );
         }
