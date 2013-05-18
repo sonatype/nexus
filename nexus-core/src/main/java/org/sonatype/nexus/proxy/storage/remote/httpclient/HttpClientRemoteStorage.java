@@ -23,8 +23,10 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 
 import org.apache.http.Header;
+import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
+import org.apache.http.client.AuthCache;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpDelete;
@@ -33,9 +35,12 @@ import org.apache.http.client.methods.HttpHead;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.client.methods.HttpUriRequest;
+import org.apache.http.client.protocol.ClientContext;
 import org.apache.http.conn.ConnectionPoolTimeoutException;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.InputStreamEntity;
+import org.apache.http.impl.auth.BasicScheme;
+import org.apache.http.impl.client.BasicAuthCache;
 import org.apache.http.impl.cookie.DateParseException;
 import org.apache.http.impl.cookie.DateUtils;
 import org.apache.http.protocol.BasicHttpContext;
@@ -484,6 +489,28 @@ public class HttpClientRemoteStorage
         {
             final BasicHttpContext httpContext = new BasicHttpContext();
             httpContext.setAttribute( Hc4Provider.HTTP_CTX_KEY_REPOSITORY, repository );
+
+            // TODO: This makes test happy but am unsure would I put this in.
+            // These below makes HttpClient to preemptively authenticate if...
+            // remote does uses Basic scheme only. 
+            // According to HttpClient doco, the HttpContext created above,
+            // IF saved and reused, would allow HttpClient to play the 401, 200 "ping pong"
+            // only once, for the very first request, and then the actual stuff (the whole
+            // execution actually) would be cached and reused for subsequent requests
+            // using same context. But, this would mean we'd need some pool of 
+            // contexts (as they are per-repo and per-repo mirror), as Context
+            // should be accessed by single thread.
+            // As we currently create the context over and over (above),
+            // HttpClient will for every remote request repeat the ping-pong.
+            // In other words, with default config for Maven2 repo (checksum
+            // policy STRICT_IF_EXISTS), in worst case -- JAR exists hashes not
+            // Nexus will make 6 HTTP request to deliver one client request.
+            // Those 6 requests are: JAR 401, JAR 200, SHA1 401, SHA 404,
+            // MD5 401, MD5 404, while client asked for JAR only.
+            final AuthCache authCache = new BasicAuthCache();
+            authCache.put( new HttpHost( methodUri.getHost(), methodUri.getPort(), methodUri.getScheme() ),
+                new BasicScheme() );
+            httpContext.setAttribute( ClientContext.AUTH_CACHE, authCache );
 
             httpResponse = httpClient.execute( httpRequest, httpContext );
             final int statusCode = httpResponse.getStatusLine().getStatusCode();
