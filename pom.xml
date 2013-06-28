@@ -169,7 +169,7 @@
     <it.nexus.log.level>INFO</it.nexus.log.level>
 
     <!-- version properties -->
-    <nexus.version>2.5.1-SNAPSHOT</nexus.version>
+    <nexus.version>${project.version}</nexus.version>
     <slf4j.version>1.7.2</slf4j.version>
     <logback.version>1.0.7</logback.version>
     <aether.version>1.13.1</aether.version>
