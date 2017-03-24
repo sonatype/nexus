@@ -10,17 +10,15 @@
  * of Sonatype, Inc. Apache Maven is a trademark of the Apache Software Foundation. M2eclipse is a trademark of the
  * Eclipse Foundation. All other trademarks are the property of their respective owners.
  */
-package org.sonatype.nexus.util.configurationreader;
+package org.sonatype.nexus.util.configuration;
 
 import java.io.IOException;
-import java.io.Reader;
+import java.io.Writer;
 
-import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
-
-public interface ConfigurationReader<E>
+public interface ConfigurationWriter<E>
 {
 
-    E read( Reader fr )
-        throws IOException, XmlPullParserException;
+    void write( Writer fr, E configuration )
+        throws IOException;
 
 }

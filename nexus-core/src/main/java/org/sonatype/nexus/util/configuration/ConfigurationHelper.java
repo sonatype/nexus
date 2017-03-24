@@ -10,24 +10,16 @@
  * of Sonatype, Inc. Apache Maven is a trademark of the Apache Software Foundation. M2eclipse is a trademark of the
  * Eclipse Foundation. All other trademarks are the property of their respective owners.
  */
-package org.sonatype.nexus.util.configurationreader;
+package org.sonatype.nexus.util.configuration;
 
 import java.io.File;
-import java.util.concurrent.locks.Lock;
+import java.io.IOException;
 
-import org.sonatype.configuration.upgrade.ConfigurationUpgrader;
-import org.sonatype.nexus.configuration.validator.ConfigurationValidator;
-
-@SuppressWarnings( "deprecation" )
+/**
+ * Common operations to save configuration files.
+ */
 public interface ConfigurationHelper
 {
-    public <E extends org.sonatype.configuration.Configuration> E load( E emptyInstance, String modelVersion,
-                                                                        File configurationFile, Lock lock,
-                                                                        ConfigurationReader<E> reader,
-                                                                        ConfigurationValidator<E> validator,
-                                                                        ConfigurationUpgrader<E> upgrader );
-
     public <E> void save( E configuration, File configurationFile,
-                          ConfigurationWritter<E> configurationXpp3Writter, Lock lock );
-
+                          ConfigurationWriter<E> configurationWriter) throws IOException;
 }
